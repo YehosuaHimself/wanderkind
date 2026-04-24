@@ -18,13 +18,33 @@ interface StampDetail {
   description?: string;
   image_url?: string;
   host_id: string;
+  reflection?: string;
+  reflection_public?: boolean;
+  verification_hash?: string;
+  previous_hash?: string;
+  walker_id?: string;
 }
+
+// Trust level based on total stamp count
+const getTrustLevel = (count: number): { label: string; color: string } => {
+  if (count >= 15) return { label: 'DEEP TRUST', color: colors.green };
+  if (count >= 5) return { label: 'ESTABLISHED', color: colors.amber };
+  return { label: 'BUILDING', color: colors.ink3 };
+};
+
+// Truncate hash for display
+const truncateHash = (hash?: string): string => {
+  if (!hash || hash.length < 16) return hash || '—';
+  return `${hash.substring(0, 8)}...${hash.substring(hash.length - 8)}`;
+};
 
 export default function StampDetailScreen() {
   const { id } = useLocalSearchParams();
   const [stamp, setStamp] = useState<StampDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [stampCount, setStampCount] = useState(0);
+  const [chainPosition, setChainPosition] = useState(0);
 
   useEffect(() => {
     fetchStamp();
@@ -40,6 +60,26 @@ export default function StampDetailScreen() {
 
       if (queryError) throw queryError;
       setStamp(data);
+
+      // Fetch total stamp count and chain position for this walker
+      if (data?.walker_id) {
+        const { count } = await supabase
+          .from('stamps')
+          .select('*', { count: 'exact', head: true })
+          .eq('walker_id', data.walker_id);
+        setStampCount(count || 0);
+
+        // Find this stamp's position in the chain
+        const { data: chainData } = await supabase
+          .from('stamps')
+          .select('id')
+          .eq('walker_id', data.walker_id)
+          .order('created_at', { ascending: true });
+        if (chainData) {
+          const pos = chainData.findIndex((s: any) => s.id === data.id);
+          setChainPosition(pos >= 0 ? pos + 1 : 0);
+        }
+      }
     } catch (err) {
       setError('Stamp not found');
     } finally {
@@ -131,14 +171,27 @@ export default function StampDetailScreen() {
           </WKCard>
         )}
 
-        {/* Reflection — personal note from the ceremony */}
-        {(stamp as any).reflection && (
+        {/* Reflection — with public/private indicator */}
+        {stamp.reflection && (
           <WKCard style={styles.reflectionCard}>
             <View style={styles.reflectionHeader}>
               <Ionicons name="leaf-outline" size={16} color={colors.amber} />
               <Text style={styles.reflectionLabel}>YOUR REFLECTION</Text>
+              <View style={styles.reflectionVisibility}>
+                <Ionicons
+                  name={stamp.reflection_public ? 'eye-outline' : 'lock-closed-outline'}
+                  size={12}
+                  color={stamp.reflection_public ? colors.green : colors.ink3}
+                />
+                <Text style={[
+                  styles.visibilityText,
+                  stamp.reflection_public && { color: colors.green },
+                ]}>
+                  {stamp.reflection_public ? 'Hosts can see' : 'Private'}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.reflectionText}>{(stamp as any).reflection}</Text>
+            <Text style={styles.reflectionText}>{stamp.reflection}</Text>
           </WKCard>
         )}
 
@@ -156,6 +209,55 @@ export default function StampDetailScreen() {
             </View>
           </View>
         </WKCard>
+
+        {/* Trust Chain Verification — US3 */}
+        {stamp.verification_hash && (
+          <WKCard style={styles.trustCard}>
+            <View style={styles.trustHeader}>
+              <Ionicons name="shield-checkmark" size={20} color={colors.green} />
+              <Text style={styles.trustTitle}>CHAIN VERIFIED</Text>
+            </View>
+
+            {/* Trust Level */}
+            <View style={styles.trustLevelRow}>
+              <Text style={styles.trustLevelLabel}>Trust Level</Text>
+              <View style={[styles.trustBadge, { backgroundColor: `${getTrustLevel(stampCount).color}1A` }]}>
+                <Text style={[styles.trustBadgeText, { color: getTrustLevel(stampCount).color }]}>
+                  {getTrustLevel(stampCount).label}
+                </Text>
+              </View>
+            </View>
+
+            {/* Chain Position */}
+            <View style={styles.trustRow}>
+              <Text style={styles.trustRowLabel}>Chain Position</Text>
+              <Text style={styles.trustRowValue}>
+                Stamp {chainPosition} of {stampCount}
+              </Text>
+            </View>
+
+            {/* Hash */}
+            <View style={styles.trustRow}>
+              <Text style={styles.trustRowLabel}>SHA-256</Text>
+              <Text style={styles.trustHash}>{truncateHash(stamp.verification_hash)}</Text>
+            </View>
+
+            {/* Previous Hash Link */}
+            {stamp.previous_hash && (
+              <View style={styles.trustRow}>
+                <Text style={styles.trustRowLabel}>Prev Hash</Text>
+                <Text style={styles.trustHash}>{truncateHash(stamp.previous_hash)}</Text>
+              </View>
+            )}
+
+            <View style={styles.trustFooter}>
+              <Ionicons name="link" size={12} color={colors.ink3} />
+              <Text style={styles.trustFooterText}>
+                Cryptographic chain links each stamp to the previous one
+              </Text>
+            </View>
+          </WKCard>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -307,11 +409,100 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: colors.ink3,
     fontWeight: '600',
+    flex: 1,
+  },
+  reflectionVisibility: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  visibilityText: {
+    ...typography.caption,
+    color: colors.ink3,
+    fontSize: 10,
   },
   reflectionText: {
     ...typography.body,
     color: colors.ink2,
     fontStyle: 'italic',
     lineHeight: 24,
+  },
+  trustCard: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: `${colors.green}33`,
+  },
+  trustHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  trustTitle: {
+    fontFamily: 'Courier New',
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.green,
+    fontWeight: '700',
+  },
+  trustLevelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  trustLevelLabel: {
+    ...typography.bodySm,
+    color: colors.ink2,
+  },
+  trustBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+  },
+  trustBadgeText: {
+    ...typography.caption,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  trustRowLabel: {
+    ...typography.caption,
+    color: colors.ink3,
+    fontWeight: '600',
+  },
+  trustRowValue: {
+    ...typography.bodySm,
+    color: colors.ink,
+    fontWeight: '500',
+  },
+  trustHash: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    color: colors.ink2,
+    letterSpacing: 0.5,
+  },
+  trustFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLt,
+  },
+  trustFooterText: {
+    ...typography.caption,
+    color: colors.ink3,
+    fontStyle: 'italic',
+    flex: 1,
   },
 });

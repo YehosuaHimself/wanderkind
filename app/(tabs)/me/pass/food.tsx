@@ -14,6 +14,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
+import { supabase } from '../../../src/lib/supabase';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passFood; // #27864A — deep green
@@ -21,6 +22,29 @@ const ACCENT = colors.passFood; // #27864A — deep green
 export default function FoodPassScreen() {
   const { profile } = useAuth();
   const textTrackAnimation = useRef(new Animated.Value(0)).current;
+  const [activeRoute, setActiveRoute] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (!profile?.id) return;
+      const { data: stamps } = await supabase
+        .from('stamps')
+        .select('route_id')
+        .eq('walker_id', profile.id)
+        .not('route_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (stamps?.[0]?.route_id) {
+        const { data: route } = await supabase
+          .from('routes')
+          .select('name')
+          .eq('id', stamps[0].route_id)
+          .single();
+        if (route) setActiveRoute(route.name);
+      }
+    };
+    fetchRoute();
+  }, [profile?.id]);
 
   useEffect(() => {
     Animated.loop(
@@ -125,8 +149,8 @@ export default function FoodPassScreen() {
               <Text style={styles.bioValue}>2026</Text>
             </View>
             <View style={styles.bioField}>
-              <Text style={styles.bioLabel}>REGION</Text>
-              <Text style={styles.bioValue}>GLOBAL</Text>
+              <Text style={styles.bioLabel}>ROUTE</Text>
+              <Text style={styles.bioValue}>{activeRoute?.toUpperCase() || 'UNSET'}</Text>
             </View>
           </View>
 

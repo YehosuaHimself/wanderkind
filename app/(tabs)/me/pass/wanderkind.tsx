@@ -14,6 +14,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
+import { supabase } from '../../../src/lib/supabase';
 
 const DARK_BG = '#0B0705';
 const DARK_INK = '#1A120A';
@@ -48,6 +49,30 @@ export default function WanderkindPassScreen() {
   const { profile } = useAuth();
   const scrollX = useRef(new Animated.Value(0)).current;
   const textTrackAnimation = useRef(new Animated.Value(0)).current;
+  const [activeRoute, setActiveRoute] = React.useState<string | null>(null);
+
+  // Fetch active route from most recent stamp
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (!profile?.id) return;
+      const { data: stamps } = await supabase
+        .from('stamps')
+        .select('route_id')
+        .eq('walker_id', profile.id)
+        .not('route_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (stamps?.[0]?.route_id) {
+        const { data: route } = await supabase
+          .from('routes')
+          .select('name')
+          .eq('id', stamps[0].route_id)
+          .single();
+        if (route) setActiveRoute(route.name);
+      }
+    };
+    fetchRoute();
+  }, [profile?.id]);
 
   // Animate the kinetic text track
   useEffect(() => {
@@ -173,8 +198,8 @@ export default function WanderkindPassScreen() {
               <Text style={styles.bioValue}>{profile?.nationality || 'WORLD'}</Text>
             </View>
             <View style={styles.bioField}>
-              <Text style={styles.bioLabel}>STATUS</Text>
-              <Text style={styles.bioValue}>ACTIVE</Text>
+              <Text style={styles.bioLabel}>ROUTE</Text>
+              <Text style={styles.bioValue}>{activeRoute?.toUpperCase() || 'UNSET'}</Text>
             </View>
           </View>
 

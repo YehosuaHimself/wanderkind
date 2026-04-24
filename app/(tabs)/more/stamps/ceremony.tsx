@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, TextInput, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ export default function StampCeremony() {
   const [particleOpacity] = useState(new Animated.Value(0));
   const [showContinue, setShowContinue] = useState(false);
   const [reflection, setReflection] = useState('');
+  const [reflectionPublic, setReflectionPublic] = useState(true); // default: share with hosts
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -121,7 +122,26 @@ export default function StampCeremony() {
               maxLength={280}
               textAlignVertical="top"
             />
-            <Text style={styles.reflectionHint}>Optional — only you can see this</Text>
+            {/* Share with hosts toggle */}
+            <View style={styles.shareToggleRow}>
+              <View style={styles.shareToggleLeft}>
+                <Ionicons
+                  name={reflectionPublic ? 'eye-outline' : 'lock-closed-outline'}
+                  size={14}
+                  color={reflectionPublic ? colors.green : colors.ink3}
+                />
+                <Text style={[styles.reflectionHint, reflectionPublic && { color: colors.green, fontStyle: 'normal' }]}>
+                  {reflectionPublic ? 'Visible to hosts' : 'Only you can see this'}
+                </Text>
+              </View>
+              <Switch
+                value={reflectionPublic}
+                onValueChange={setReflectionPublic}
+                trackColor={{ false: colors.borderLt, true: `${colors.green}66` }}
+                thumbColor={reflectionPublic ? colors.green : colors.ink3}
+                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+              />
+            </View>
           </View>
         )}
       </View>
@@ -139,7 +159,10 @@ export default function StampCeremony() {
                 setSaving(true);
                 await supabase
                   .from('stamps')
-                  .update({ reflection: reflection.trim() })
+                  .update({
+                    reflection: reflection.trim(),
+                    reflection_public: reflectionPublic,
+                  } as any)
                   .eq('id', stampId as string);
                 setSaving(false);
               }
@@ -229,8 +252,21 @@ const styles = StyleSheet.create({
   reflectionHint: {
     ...typography.caption,
     color: colors.ink3,
-    marginTop: 4,
     fontStyle: 'italic',
+  },
+  shareToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLt,
+  },
+  shareToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   footer: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
   continueBtn: {

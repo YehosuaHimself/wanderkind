@@ -86,6 +86,7 @@ export type Database = {
           photo_url: string | null;
           note: string | null;
           reflection: string | null;
+          reflection_public: boolean;
           category: StampCategory;
           verification_hash: string;
           previous_hash: string | null;
