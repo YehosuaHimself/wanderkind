@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   photoSection: {
     alignItems: 'center',
-    marginBottom: spacing.2xl,
+    marginBottom: spacing['2xl'],
     gap: spacing.md,
   },
   photoPreview: {
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   placeholderSection: {
     alignItems: 'center',
-    marginBottom: spacing.2xl,
+    marginBottom: spacing['2xl'],
     gap: spacing.md,
   },
   photoPlaceholder: {

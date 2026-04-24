@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.ink2,
     textAlign: 'center',
-    marginBottom: spacing.2xl,
+    marginBottom: spacing['2xl'],
     lineHeight: 24,
   },
   successActions: {

@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    gap: spacing.2xl,
+    gap: spacing['2xl'],
   },
   logoContainer: {
     marginBottom: spacing.xl,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     color: colors.ink2,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: spacing.2xl,
+    marginBottom: spacing['2xl'],
   },
   highlightSection: {
     gap: spacing.lg,
