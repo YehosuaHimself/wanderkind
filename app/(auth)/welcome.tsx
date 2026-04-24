@@ -1,14 +1,44 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, AccessibilityInfo } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WKButton } from '../../src/components/ui/WKButton';
 import { colors, typography, spacing } from '../../src/lib/theme';
+import { supabase } from '../../src/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [stats, setStats] = useState({ hosts: 505, routes: 26, countries: 10 });
+
+  useEffect(() => {
+    // Fetch live stats from Supabase
+    const fetchStats = async () => {
+      try {
+        const [hostsRes, routesRes] = await Promise.all([
+          supabase.from('hosts').select('id', { count: 'exact', head: true }),
+          supabase.from('routes').select('id', { count: 'exact', head: true }),
+        ]);
+        const hostCount = hostsRes.count ?? 505;
+        const routeCount = routesRes.count ?? 26;
+        // Estimate countries from host data
+        const { data: countryData } = await supabase
+          .from('hosts')
+          .select('country')
+          .not('country', 'is', null);
+        const uniqueCountries = new Set((countryData ?? []).map((h: any) => h.country));
+        setStats({
+          hosts: hostCount,
+          routes: routeCount,
+          countries: uniqueCountries.size || 10,
+        });
+      } catch {
+        // Keep defaults on error
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,28 +53,28 @@ export default function WelcomeScreen() {
         </View>
 
         {/* Logo mark */}
-        <View style={styles.logoContainer}>
+        <View style={styles.logoContainer} accessible accessibilityLabel="Wanderkind logo" accessibilityRole="image">
           <Text style={styles.logoW}>W</Text>
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>WANDERKIND</Text>
+        <Text style={styles.title} accessibilityRole="header">WANDERKIND</Text>
         <Text style={styles.subtitle}>Free shelter across Europe.{'\n'}Your pass. Open your door.</Text>
 
-        {/* Stats row */}
-        <View style={styles.statsRow}>
+        {/* Stats row — dynamic from Supabase */}
+        <View style={styles.statsRow} accessibilityLabel={`${stats.hosts} hosts, ${stats.routes} routes, ${stats.countries} countries`}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>505</Text>
+            <Text style={styles.statValue}>{stats.hosts}</Text>
             <Text style={styles.statLabel}>HOSTS</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>26</Text>
+            <Text style={styles.statValue}>{stats.routes}</Text>
             <Text style={styles.statLabel}>ROUTES</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>10</Text>
+            <Text style={styles.statValue}>{stats.countries}</Text>
             <Text style={styles.statLabel}>COUNTRIES</Text>
           </View>
         </View>
@@ -67,7 +97,7 @@ export default function WelcomeScreen() {
           fullWidth
         />
 
-        <Text style={styles.footer}>
+        <Text style={styles.footer} accessibilityRole="text">
           Every Wanderkind is a host.
         </Text>
       </View>

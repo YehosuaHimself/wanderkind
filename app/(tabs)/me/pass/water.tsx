@@ -1,211 +1,262 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Share,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
-import { WKCard } from '../../../src/components/ui/WKCard';
+import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 
+const DARK_BG = '#0B0705';
+const ACCENT = colors.passWater; // #4CA8C9 — cerulean blue
+
 export default function WaterPassScreen() {
   const { profile } = useAuth();
-  const waterSourcesShared = profile?.water_sources_shared ?? 0;
-  const fountainsMarked = profile?.fountains_marked ?? 0;
+  const textTrackAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(textTrackAnimation, {
+        toValue: -1000,
+        duration: 22000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [textTrackAnimation]);
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `I hold the Wanderkind Water Pass — protecting sources, sustaining journeys.`,
+        title: `${profile?.trail_name || 'Wanderkind'}'s Water Pass`,
+      });
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
+
+  const waterSources = (profile as any)?.water_sources_shared ?? 0;
+  const fountainsMarked = (profile as any)?.fountains_marked ?? 0;
+  const initials = profile?.trail_name
+    ? profile.trail_name.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
+    : 'WK';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Water Pass" showBack />
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {/* Main Stat */}
-        <WKCard variant="gold" style={styles.statsCard}>
-          <View style={styles.mainStat}>
-            <Text style={styles.mainValue}>{waterSourcesShared}</Text>
-            <Text style={styles.mainLabel}>WATER SOURCES</Text>
-          </View>
-        </WKCard>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.page}>
+          {/* Corner Brackets */}
+          <View style={[styles.corner, styles.cornerTL]}><View style={styles.bracketH} /><View style={styles.bracketV} /></View>
+          <View style={[styles.corner, styles.cornerTR]}><View style={[styles.bracketH, { right: 0 }]} /><View style={[styles.bracketV, { right: 0 }]} /></View>
+          <View style={[styles.corner, styles.cornerBL]}><View style={[styles.bracketH, { bottom: 0 }]} /><View style={[styles.bracketV, { bottom: 0 }]} /></View>
+          <View style={[styles.corner, styles.cornerBR]}><View style={[styles.bracketH, { right: 0, bottom: 0 }]} /><View style={[styles.bracketV, { right: 0, bottom: 0 }]} /></View>
 
-        {/* Secondary Stats */}
-        <WKCard style={styles.secondaryCard}>
-          <View style={styles.statRow}>
-            <View style={styles.stat}>
-              <Ionicons name="water" size={24} color={colors.passWater} />
-              <Text style={styles.statValue}>{fountainsMarked}</Text>
+          {/* Kinetic Text Track */}
+          <View style={styles.threadContainer}>
+            <Animated.View style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
+              <Text style={styles.threadText}>
+                WATER·PASS·SOURCE·FOUNTAIN·STEWARDSHIP·SUSTAIN·WATER·PASS·SOURCE·FOUNTAIN·STEWARDSHIP·SUSTAIN·
+              </Text>
+            </Animated.View>
+          </View>
+
+          {/* Embassy Header */}
+          <View style={styles.headerSection}>
+            <Ionicons name="water" size={24} color={ACCENT} />
+            <Text style={styles.embassyTitle}>Wanderkind Embassy</Text>
+            <Text style={styles.embassySubtitle}>Water & Stewardship Pass</Text>
+          </View>
+
+          {/* Status Line */}
+          <View style={styles.statusLine}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>WATER STEWARD</Text>
+          </View>
+
+          {/* Initials Circle */}
+          <View style={styles.photoSection}>
+            <View style={styles.initialsCircle}>
+              <Text style={styles.initialsText}>{initials}</Text>
+            </View>
+          </View>
+
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>SOURCES SHARED</Text>
+              <Text style={styles.statValue}>{waterSources}</Text>
+            </View>
+            <View style={styles.statCard}>
               <Text style={styles.statLabel}>FOUNTAINS</Text>
+              <Text style={styles.statValue}>{fountainsMarked}</Text>
             </View>
-            <View style={styles.divider} />
-            <View style={styles.stat}>
-              <Ionicons name="leaf" size={24} color={colors.green} />
-              <Text style={styles.statValue}>{Math.floor((waterSourcesShared + fountainsMarked) / 10)}</Text>
+            <View style={styles.statCard}>
               <Text style={styles.statLabel}>IMPACT</Text>
+              <Text style={styles.statValue}>{Math.floor((waterSources + fountainsMarked) / 10)}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>STATUS</Text>
+              <Text style={styles.statValue}>ACTIVE</Text>
             </View>
           </View>
-        </WKCard>
 
-        {/* Description */}
-        <WKCard>
-          <Text style={styles.title}>Water Sources & Sustainability</Text>
-          <Text style={styles.description}>
-            The Water Pass tracks your contribution to a hydrated, sustainable pilgrimage. Every fountain marked and water source shared helps fellow wanderers walk safely and respectfully.
-          </Text>
-        </WKCard>
-
-        {/* How to Contribute */}
-        <WKCard>
-          <Text style={styles.title}>Share Water Sources</Text>
-          <View style={styles.actionList}>
-            <View style={styles.actionItem}>
-              <View style={styles.actionNumber}>
-                <Text style={styles.actionNumberText}>1</Text>
-              </View>
-              <Text style={styles.actionText}>Mark fountains and water stations on the map</Text>
+          {/* Bio Fields */}
+          <View style={styles.bioGrid}>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>HOLDER</Text>
+              <Text style={styles.bioValue}>{profile?.trail_name || 'Wanderer'}</Text>
             </View>
-            <View style={styles.actionItem}>
-              <View style={styles.actionNumber}>
-                <Text style={styles.actionNumberText}>2</Text>
-              </View>
-              <Text style={styles.actionText}>Report water quality and availability</Text>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>CLASS</Text>
+              <Text style={styles.bioValue}>STEWARDSHIP</Text>
             </View>
-            <View style={styles.actionItem}>
-              <View style={styles.actionNumber}>
-                <Text style={styles.actionNumberText}>3</Text>
-              </View>
-              <Text style={styles.actionText}>Help other wanderers stay hydrated</Text>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>ISSUED</Text>
+              <Text style={styles.bioValue}>2026</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>REGION</Text>
+              <Text style={styles.bioValue}>GLOBAL</Text>
             </View>
           </View>
-        </WKCard>
 
-        {/* Stats */}
-        <WKCard>
-          <Text style={styles.title}>Your Water Stewardship</Text>
-          <View style={styles.statsList}>
-            <View style={styles.infoRow}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.passWater} />
-              <Text style={styles.infoLabel}>Active Contributor</Text>
-              <Text style={styles.infoValue}>Yes</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="trending-up" size={16} color={colors.passWater} />
-              <Text style={styles.infoLabel}>Community Impact</Text>
-              <Text style={styles.infoValue}>Growing</Text>
-            </View>
+          {/* Charter */}
+          <View style={styles.charterSection}>
+            <Text style={styles.charterTitle}>WATER CHARTER</Text>
+            <Text style={styles.charterText}>
+              Water is life on the trail. The Water Pass honours those who map fountains, share sources, and ensure fellow wanderers walk hydrated and safe.
+            </Text>
           </View>
-        </WKCard>
+
+          {/* Verified Badge */}
+          <View style={styles.verifiedBadge}>
+            <Text style={styles.verifiedText}>✓ VERIFIED · STEWARD PROTOCOL · WKD-W</Text>
+          </View>
+
+          {/* MRZ Zone */}
+          <View style={styles.mrzZone}>
+            <Text style={styles.mrzLine}>P{'<'}WKD{(profile?.trail_name || 'UNKNOWN').toUpperCase().padEnd(38, '<')}</Text>
+            <Text style={styles.mrzLine}>WATR{'<'.repeat(8)}STEWARDSHIP{'<'.repeat(21)}</Text>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.pageFooter}>
+            <Text style={styles.footerSignature}>Wanderkind Authority</Text>
+            <Text style={styles.pageNumber}>WATER PASS · SINGLE PAGE</Text>
+          </View>
+        </View>
       </ScrollView>
+
+      <View style={styles.actions}>
+        <WKButton
+          title="Share Pass"
+          onPress={handleShare}
+          variant="primary"
+          size="lg"
+          fullWidth
+          icon={<Ionicons name="share-social" size={16} color="#fff" />}
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
+  page: {
+    backgroundColor: DARK_BG,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
+    borderRadius: radii.lg,
+    position: 'relative',
   },
-  statsCard: {
-    marginBottom: spacing.lg,
+  corner: { position: 'absolute', width: 20, height: 20, overflow: 'hidden' },
+  cornerTL: { top: spacing.md, left: spacing.md },
+  cornerTR: { top: spacing.md, right: spacing.md },
+  cornerBL: { bottom: spacing.md, left: spacing.md },
+  cornerBR: { bottom: spacing.md, right: spacing.md },
+  bracketH: { position: 'absolute', width: 16, height: 0.5, backgroundColor: ACCENT, opacity: 0.5 },
+  bracketV: { position: 'absolute', width: 0.5, height: 16, backgroundColor: ACCENT, opacity: 0.5 },
+  threadContainer: { height: 20, overflow: 'hidden', marginBottom: spacing.lg, justifyContent: 'center' },
+  thread: { flexDirection: 'row' },
+  threadText: { ...typography.caption, color: ACCENT, opacity: 0.3, letterSpacing: 1 },
+  headerSection: {
     alignItems: 'center',
-    paddingVertical: spacing['2xl'],
-  },
-  mainStat: {
-    alignItems: 'center',
-  },
-  mainValue: {
-    ...typography.display,
-    color: colors.passWater,
-  },
-  mainLabel: {
-    ...typography.bodySm,
-    color: colors.gold,
-    marginTop: spacing.md,
-    letterSpacing: 1,
-    fontWeight: '600',
-  },
-  secondaryCard: {
     marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${ACCENT}4D`,
   },
-  statRow: {
+  embassyTitle: { ...typography.h3, color: ACCENT, letterSpacing: 2, fontWeight: '700', marginTop: spacing.sm },
+  embassySubtitle: { ...typography.caption, color: ACCENT, marginTop: spacing.xs, opacity: 0.7 },
+  statusLine: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  statValue: {
-    ...typography.h2,
-    color: colors.passWater,
-  },
-  statLabel: {
-    ...typography.monoXs,
-    color: colors.ink3,
-  },
-  divider: {
-    width: 1,
-    height: 60,
-    backgroundColor: colors.borderLt,
-  },
-  title: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  description: {
-    ...typography.body,
-    color: colors.ink2,
-    lineHeight: 24,
-  },
-  actionList: {
-    gap: spacing.lg,
-    marginTop: spacing.md,
-  },
-  actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  actionNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: radii.full,
-    backgroundColor: colors.passWater,
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green, opacity: 0.8 },
+  statusText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600' },
+  photoSection: { alignItems: 'center', marginBottom: spacing.lg },
+  initialsCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: `${ACCENT}26`,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: `${ACCENT}4D`,
   },
-  actionNumberText: {
-    ...typography.bodySm,
-    color: '#fff',
-    fontWeight: '600',
+  initialsText: { ...typography.h2, color: ACCENT, fontWeight: '700' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.lg },
+  statCard: {
+    width: '47%',
+    backgroundColor: colors.ink,
+    padding: spacing.md,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: `${ACCENT}33`,
   },
-  actionText: {
-    ...typography.body,
-    color: colors.ink2,
-    flex: 1,
-  },
-  statsList: {
-    gap: spacing.lg,
-    marginTop: spacing.md,
-  },
-  infoRow: {
-    flexDirection: 'row',
+  statLabel: { ...typography.caption, color: ACCENT, opacity: 0.7, marginBottom: spacing.xs, letterSpacing: 1 },
+  statValue: { ...typography.body, color: ACCENT, fontSize: 14, fontWeight: '600' },
+  bioGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg, gap: spacing.md },
+  bioField: { width: '47%', paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: `${ACCENT}33` },
+  bioLabel: { ...typography.monoXs, color: ACCENT, opacity: 0.6, marginBottom: spacing.xs, letterSpacing: 1 },
+  bioValue: { ...typography.body, color: ACCENT, fontWeight: '500' },
+  charterSection: { marginBottom: spacing.lg },
+  charterTitle: { ...typography.caption, color: ACCENT, letterSpacing: 2, marginBottom: spacing.md, opacity: 0.7 },
+  charterText: { ...typography.bodySm, color: ACCENT, opacity: 0.6, lineHeight: 20, fontStyle: 'italic' },
+  verifiedBadge: {
     alignItems: 'center',
-    gap: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: `${ACCENT}33`,
   },
-  infoLabel: {
-    ...typography.body,
-    color: colors.ink2,
-    flex: 1,
+  verifiedText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600' },
+  mrzZone: { backgroundColor: colors.ink, padding: spacing.md, marginBottom: spacing.lg, borderRadius: radii.sm },
+  mrzLine: { fontFamily: 'Courier New', fontSize: 9, color: ACCENT, marginBottom: spacing.xs, letterSpacing: 1 },
+  pageFooter: {
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: `${ACCENT}33`,
+    gap: spacing.xs,
   },
-  infoValue: {
-    ...typography.bodySm,
-    color: colors.ink,
-    fontWeight: '600',
-  },
+  footerSignature: { ...typography.caption, color: ACCENT, opacity: 0.5, letterSpacing: 1 },
+  pageNumber: { ...typography.monoXs, color: ACCENT, opacity: 0.4 },
+  actions: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
 });

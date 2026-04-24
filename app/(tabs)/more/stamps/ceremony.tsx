@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { supabase } from '../../../../src/lib/supabase';
 
 export default function StampCeremony() {
   const router = useRouter();
-  const { hostName } = useLocalSearchParams();
+  const { hostName, stampId } = useLocalSearchParams();
   const [stampScale] = useState(new Animated.Value(0));
   const [stampOpacity] = useState(new Animated.Value(0));
   const [particleOpacity] = useState(new Animated.Value(0));
   const [showContinue, setShowContinue] = useState(false);
+  const [reflection, setReflection] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     // Sequence: fade in, scale stamp, animate particles
@@ -103,17 +106,51 @@ export default function StampCeremony() {
             "May your journey be blessed{'\n'}with hospitality and wonder."
           </Text>
         </View>
+
+        {/* Reflection Field — optional, appears after animation */}
+        {showContinue && (
+          <View style={styles.reflectionBox}>
+            <Text style={styles.reflectionLabel}>REFLECTION</Text>
+            <TextInput
+              style={styles.reflectionInput}
+              placeholder="What will you remember from this stay?"
+              placeholderTextColor={colors.ink3}
+              value={reflection}
+              onChangeText={setReflection}
+              multiline
+              maxLength={280}
+              textAlignVertical="top"
+            />
+            <Text style={styles.reflectionHint}>Optional — only you can see this</Text>
+          </View>
+        )}
       </View>
 
       {showContinue && (
-        <View style={styles.footer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.footer}
+        >
           <TouchableOpacity
-            style={styles.continueBtn}
-            onPress={() => router.back()}
+            style={[styles.continueBtn, saving && { opacity: 0.6 }]}
+            disabled={saving}
+            onPress={async () => {
+              if (reflection.trim() && stampId) {
+                setSaving(true);
+                await supabase
+                  .from('stamps')
+                  .update({ reflection: reflection.trim() })
+                  .eq('id', stampId as string);
+                setSaving(false);
+              }
+              router.back();
+            }}
           >
-            <Text style={styles.continueBtnText}>View Your Stamps</Text>
+            <Text style={styles.continueBtnText}>
+              {saving ? 'Saving...' : 'View Your Stamps'}
+            </Text>
           </TouchableOpacity>
-        </View>
+        </KeyboardAvoidingView>
       )}
     </SafeAreaView>
   );
@@ -165,6 +202,36 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.amber,
   },
   blessingText: { ...typography.bodySm, color: colors.ink, textAlign: 'center', fontStyle: 'italic', lineHeight: 20 },
+  reflectionBox: {
+    width: '100%',
+    marginTop: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    padding: spacing.md,
+  },
+  reflectionLabel: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    letterSpacing: 2,
+    color: colors.ink3,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  reflectionInput: {
+    ...typography.body,
+    color: colors.ink,
+    minHeight: 60,
+    maxHeight: 100,
+    textAlignVertical: 'top',
+  },
+  reflectionHint: {
+    ...typography.caption,
+    color: colors.ink3,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   footer: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
   continueBtn: {
     height: 48,

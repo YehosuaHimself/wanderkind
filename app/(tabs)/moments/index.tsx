@@ -70,12 +70,12 @@ export default function MomentsFeed() {
 
       {/* Actions */}
       <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.actionBtn}>
-          <Ionicons name="heart-outline" size={18} color={colors.ink3} />
+        <TouchableOpacity style={styles.actionBtn} accessibilityLabel={`Like, ${item.likes_count || 0} likes`} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="heart-outline" size={20} color={colors.ink3} />
           <Text style={styles.actionCount}>{item.likes_count || ''}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn}>
-          <Ionicons name="chatbubble-outline" size={16} color={colors.ink3} />
+        <TouchableOpacity style={styles.actionBtn} accessibilityLabel={`Comment, ${item.replies_count || 0} replies`} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="chatbubble-outline" size={18} color={colors.ink3} />
           <Text style={styles.actionCount}>{item.replies_count || ''}</Text>
         </TouchableOpacity>
       </View>
@@ -234,7 +234,10 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: 4,
   },
   actionCount: { fontSize: 12, color: colors.ink3, fontWeight: '500' },
   emptyState: {

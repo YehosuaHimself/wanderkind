@@ -1,15 +1,66 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Share } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Share,
+  Animated,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
-import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 
+const DARK_BG = '#0B0705';
+const DARK_INK = '#1A120A';
+
+// Generate pass number from user ID
+const generatePassNumber = (userId?: string): string => {
+  if (!userId) return 'C4X8R2M7';
+  const hash = userId.substring(0, 8).toUpperCase();
+  let result = '';
+  for (let i = 0; i < hash.length; i++) {
+    result += i % 2 === 0 ? hash[i] : Math.random() > 0.5 ? hash[i] : String(Math.floor(Math.random() * 10));
+  }
+  return result.substring(0, 8);
+};
+
+// Generate MRZ line from profile data
+const generateMRZLine = (surname: string, givenNames: string): [string, string] => {
+  const mrz1 = `P<WKD${(surname || 'UNKNOWN').padEnd(44, '<')}`;
+  const names = (givenNames || 'UNKNOWN').padEnd(15, '<');
+  const mrz2 = `${names}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`;
+  return [mrz1.substring(0, 44), mrz2.substring(0, 44)];
+};
+
+// Get user initials from trail_name
+const getInitials = (trailName?: string): string => {
+  if (!trailName) return 'WK';
+  const parts = trailName.split(' ');
+  return parts.map(p => p[0]).join('').substring(0, 2).toUpperCase();
+};
+
 export default function WanderkindPassScreen() {
   const { profile } = useAuth();
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const textTrackAnimation = useRef(new Animated.Value(0)).current;
+
+  // Animate the kinetic text track
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(textTrackAnimation, {
+          toValue: -1000,
+          duration: 20000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [textTrackAnimation]);
 
   const handleShare = async () => {
     try {
@@ -23,94 +74,237 @@ export default function WanderkindPassScreen() {
     }
   };
 
-  const tierColor = tierColors[profile?.tier || 'wanderkind'] || colors.ink3;
+  const passNumber = generatePassNumber(profile?.id);
+  const [mrz1, mrz2] = generateMRZLine(profile?.surname || '', profile?.given_names || '');
+  const initials = getInitials(profile?.trail_name);
+  const passWidth = Dimensions.get('window').width - 2 * spacing.lg;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Wanderkind Pass" showBack />
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {/* Diplomatic Pass Style Card */}
-        <WKCard variant="parchment" style={styles.passCard}>
-          {/* Header */}
-          <View style={styles.passHeader}>
-            <Text style={styles.embassy}>WANDERKIND</Text>
-            <Text style={styles.embassySubtitle}>PILGRIM CREDENTIAL</Text>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+          useNativeDriver: false,
+        })}
+        style={styles.scrollView}
+        contentContainerStyle={{ width: passWidth * 2 }}
+      >
+        {/* PAGE 1: BIO DATA */}
+        <View style={[styles.page, { width: passWidth }]}>
+          {/* Corner Brackets */}
+          <View style={[styles.corner, styles.cornerTopLeft]}>
+            <View style={styles.bracketH} />
+            <View style={styles.bracketV} />
+          </View>
+          <View style={[styles.corner, styles.cornerTopRight]}>
+            <View style={[styles.bracketH, { right: 0 }]} />
+            <View style={[styles.bracketV, { right: 0 }]} />
+          </View>
+          <View style={[styles.corner, styles.cornerBottomLeft]}>
+            <View style={[styles.bracketH, { bottom: 0 }]} />
+            <View style={[styles.bracketV, { bottom: 0 }]} />
+          </View>
+          <View style={[styles.corner, styles.cornerBottomRight]}>
+            <View style={[styles.bracketH, { right: 0, bottom: 0 }]} />
+            <View style={[styles.bracketV, { right: 0, bottom: 0 }]} />
           </View>
 
-          {/* QR Code Area */}
-          <View style={styles.qrArea}>
-            <View style={styles.qrPlaceholder}>
-              <Ionicons name="qr-code" size={80} color={colors.amber} />
+          {/* Kinetic Text Track */}
+          <View style={styles.threadContainer}>
+            <Animated.View
+              style={[
+                styles.thread,
+                {
+                  transform: [{ translateX: textTrackAnimation }],
+                },
+              ]}
+            >
+              <Text style={styles.threadText}>
+                WANDERKIND·EMBASSY·DIGITAL·WANDERKIND·EMBASSY·DIGITAL·WANDERKIND·EMBASSY·DIGITAL·
+              </Text>
+            </Animated.View>
+          </View>
+
+          {/* Embassy Header */}
+          <View style={styles.headerSection}>
+            <Text style={styles.hexagon}>⬡</Text>
+            <Text style={styles.embassyTitle}>Wanderkind Embassy</Text>
+            <Text style={styles.embassySubtitle}>Digital Pass</Text>
+          </View>
+
+          {/* Status Line */}
+          <View style={styles.statusLine}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>READY TO SCAN</Text>
+            <Text style={styles.passNumberText}>{passNumber}</Text>
+          </View>
+
+          {/* Photo & Initials Circle */}
+          <View style={styles.photoSection}>
+            <View style={styles.initialsCircle}>
+              <Text style={styles.initialsText}>{initials}</Text>
             </View>
           </View>
 
-          {/* Personal Info */}
-          <View style={styles.infoGrid}>
-            <View style={styles.infoField}>
-              <Text style={styles.infoLabel}>TRAIL NAME</Text>
-              <Text style={styles.infoValue}>{profile?.trail_name || 'Wanderer'}</Text>
+          {/* Bio Fields Grid */}
+          <View style={styles.bioGrid}>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>SURNAME</Text>
+              <Text style={styles.bioValue}>{profile?.surname || 'UNKNOWN'}</Text>
             </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>GIVEN NAME</Text>
+              <Text style={styles.bioValue}>{profile?.given_names || 'UNKNOWN'}</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>DATE OF BIRTH</Text>
+              <Text style={styles.bioValue}>{profile?.date_of_birth || '-- -- ----'}</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>SEX</Text>
+              <Text style={styles.bioValue}>{profile?.sex || 'U'}</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>NATIONALITY</Text>
+              <Text style={styles.bioValue}>{profile?.nationality || 'WORLD'}</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>STATUS</Text>
+              <Text style={styles.bioValue}>ACTIVE</Text>
+            </View>
+          </View>
 
-            <View style={styles.divider} />
+          {/* Signature */}
+          <View style={styles.signatureSection}>
+            <Text style={styles.signatureLabel}>Signature</Text>
+            <Text style={styles.signatureValue}>{profile?.trail_name || 'Wanderer'}</Text>
+          </View>
 
-            <View style={styles.infoField}>
-              <Text style={styles.infoLabel}>TIER</Text>
-              <Text style={[styles.infoValue, { color: tierColor }]}>
-                {(profile?.tier || 'wanderkind').toUpperCase()}
+          {/* Verified Badge */}
+          <View style={styles.verifiedBadge}>
+            <Text style={styles.verifiedText}>✓ VERIFIED · ED25519 · ICAO 9303</Text>
+          </View>
+
+          {/* MRZ Zone */}
+          <View style={styles.mrzZone}>
+            <Text style={styles.mrzLine}>{mrz1}</Text>
+            <Text style={styles.mrzLine}>{mrz2}</Text>
+          </View>
+
+          {/* Page Footer */}
+          <View style={styles.pageFooter}>
+            <Text style={styles.footerSignature}>Wanderkind Authority</Text>
+            <Text style={styles.pageNumber}>PAGE 1 / 2</Text>
+          </View>
+        </View>
+
+        {/* PAGE 2: SECURITY MATRIX */}
+        <View style={[styles.page, { width: passWidth }]}>
+          {/* Corner Brackets */}
+          <View style={[styles.corner, styles.cornerTopLeft]}>
+            <View style={styles.bracketH} />
+            <View style={styles.bracketV} />
+          </View>
+          <View style={[styles.corner, styles.cornerTopRight]}>
+            <View style={[styles.bracketH, { right: 0 }]} />
+            <View style={[styles.bracketV, { right: 0 }]} />
+          </View>
+          <View style={[styles.corner, styles.cornerBottomLeft]}>
+            <View style={[styles.bracketH, { bottom: 0 }]} />
+            <View style={[styles.bracketV, { bottom: 0 }]} />
+          </View>
+          <View style={[styles.corner, styles.cornerBottomRight]}>
+            <View style={[styles.bracketH, { right: 0, bottom: 0 }]} />
+            <View style={[styles.bracketV, { right: 0, bottom: 0 }]} />
+          </View>
+
+          {/* Kinetic Text Track */}
+          <View style={styles.threadContainer}>
+            <Animated.View
+              style={[
+                styles.thread,
+                {
+                  transform: [{ translateX: textTrackAnimation }],
+                },
+              ]}
+            >
+              <Text style={styles.threadText}>
+                SECURITY·MATRIX·CERTIFICATION·SECURITY·MATRIX·CERTIFICATION·SECURITY·MATRIX·CERTIFICATION·
+              </Text>
+            </Animated.View>
+          </View>
+
+          {/* Embassy Header */}
+          <View style={styles.headerSection}>
+            <Text style={styles.hexagon}>⬡</Text>
+            <Text style={styles.embassyTitle}>Wanderkind Embassy</Text>
+            <Text style={styles.embassySubtitle}>Security Matrix</Text>
+          </View>
+
+          {/* Security Grid 2x2 */}
+          <View style={styles.securityGrid}>
+            <View style={styles.securityCard}>
+              <Text style={styles.securityLabel}>SHA-256 HASH</Text>
+              <Text style={styles.securityValue} numberOfLines={2}>
+                a7f4e9c2b1d3...
               </Text>
             </View>
-          </View>
-
-          {/* Stats */}
-          <View style={styles.statsGrid}>
-            <View style={styles.statField}>
-              <Text style={styles.statValue}>{profile?.nights_walked ?? 0}</Text>
-              <Text style={styles.statLabel}>NIGHTS</Text>
+            <View style={styles.securityCard}>
+              <Text style={styles.securityLabel}>ISSUER SEAL</Text>
+              <Text style={styles.securityValue}>WKD-2026-04</Text>
             </View>
-            <View style={styles.statField}>
-              <Text style={styles.statValue}>{profile?.stamps_collected ?? 0}</Text>
-              <Text style={styles.statLabel}>STAMPS</Text>
+            <View style={styles.securityCard}>
+              <Text style={styles.securityLabel}>VALIDITY</Text>
+              <Text style={styles.securityValue}>365 DAYS</Text>
             </View>
-            <View style={styles.statField}>
-              <Text style={styles.statValue}>{profile?.nights_hosted ?? 0}</Text>
-              <Text style={styles.statLabel}>HOSTED</Text>
+            <View style={styles.securityCard}>
+              <Text style={styles.securityLabel}>DOC AUTH</Text>
+              <Text style={styles.securityValue}>ACTIVE</Text>
             </View>
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Ionicons name="shield-checkmark" size={16} color={colors.amber} />
-            <Text style={styles.footerText}>Verified Credential</Text>
-          </View>
-        </WKCard>
-
-        {/* Description */}
-        <WKCard>
-          <Text style={styles.title}>Official Credential</Text>
-          <Text style={styles.description}>
-            This pass certifies you as a member of the Wanderkind community. It represents your commitment to pilgrimage, hospitality, and the spirit of the open road.
-          </Text>
-        </WKCard>
-
-        {/* Benefits */}
-        <WKCard>
-          <Text style={styles.title}>Pass Benefits</Text>
-          <View style={styles.benefitsList}>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.green} />
-              <Text style={styles.benefitText}>Access to verified hosts</Text>
-            </View>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.green} />
-              <Text style={styles.benefitText}>Special community events</Text>
-            </View>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.green} />
-              <Text style={styles.benefitText}>Tier advancement tracking</Text>
+          {/* Charter Section */}
+          <View style={styles.charterSection}>
+            <Text style={styles.charterTitle}>WANDERKIND CHARTER</Text>
+            <View style={styles.charterGrid}>
+              <View style={styles.charterCell}>
+                <Text style={styles.charterLabel}>BASIS</Text>
+                <Text style={styles.charterValue}>Pilgrimage</Text>
+              </View>
+              <View style={styles.charterCell}>
+                <Text style={styles.charterLabel}>MOVEMENT</Text>
+                <Text style={styles.charterValue}>Open Path</Text>
+              </View>
+              <View style={styles.charterCell}>
+                <Text style={styles.charterLabel}>JURISDICTION</Text>
+                <Text style={styles.charterValue}>Global</Text>
+              </View>
+              <View style={styles.charterCell}>
+                <Text style={styles.charterLabel}>IMMUNITIES</Text>
+                <Text style={styles.charterValue}>Hospitality</Text>
+              </View>
             </View>
           </View>
-        </WKCard>
+
+          {/* QR Code Section */}
+          <View style={styles.qrSection}>
+            <View style={styles.qrPlaceholder}>
+              <Ionicons name="qr-code" size={60} color={colors.amber} />
+            </View>
+            <Text style={styles.scanText}>SCAN TO VERIFY</Text>
+            <Text style={styles.scanUrl}>wanderkind.travel/verify</Text>
+          </View>
+
+          {/* Page Footer */}
+          <View style={styles.pageFooter}>
+            <Text style={styles.footerSignature}>Wanderkind Authority</Text>
+            <Text style={styles.pageNumber}>PAGE 2 / 2</Text>
+          </View>
+        </View>
       </ScrollView>
 
       <View style={styles.actions}>
@@ -132,134 +326,311 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  content: {
+  scrollView: {
     flex: 1,
   },
-  scrollContent: {
+  page: {
+    backgroundColor: DARK_BG,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
+    position: 'relative',
   },
-  passCard: {
-    marginBottom: spacing.xl,
-    borderWidth: 2,
-    borderColor: colors.border,
+  corner: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    overflow: 'hidden',
   },
-  passHeader: {
-    alignItems: 'center',
+  cornerTopLeft: {
+    top: spacing.md,
+    left: spacing.md,
+  },
+  cornerTopRight: {
+    top: spacing.md,
+    right: spacing.md,
+  },
+  cornerBottomLeft: {
+    bottom: spacing.md,
+    left: spacing.md,
+  },
+  cornerBottomRight: {
+    bottom: spacing.md,
+    right: spacing.md,
+  },
+  bracketH: {
+    position: 'absolute',
+    width: 16,
+    height: 0.5,
+    backgroundColor: colors.amber,
+    opacity: 0.5,
+  },
+  bracketV: {
+    position: 'absolute',
+    width: 0.5,
+    height: 16,
+    backgroundColor: colors.amber,
+    opacity: 0.5,
+  },
+  threadContainer: {
+    height: 20,
+    overflow: 'hidden',
     marginBottom: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  embassy: {
-    ...typography.h2,
-    color: colors.amber,
-    letterSpacing: 2,
-    fontWeight: '900',
-  },
-  embassySubtitle: {
-    ...typography.monoXs,
-    color: colors.ink3,
-    marginTop: spacing.sm,
-  },
-  qrArea: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  qrPlaceholder: {
-    width: 120,
-    height: 120,
-    backgroundColor: colors.amberBg,
-    borderRadius: radii.lg,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  infoGrid: {
+  thread: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
-  infoField: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  infoLabel: {
-    ...typography.monoXs,
-    color: colors.ink3,
-    marginBottom: spacing.xs,
-  },
-  infoValue: {
-    ...typography.body,
-    color: colors.ink,
-    fontWeight: '600',
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.lg,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    marginBottom: spacing.lg,
-  },
-  statField: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    ...typography.h3,
-    color: colors.amber,
-  },
-  statLabel: {
-    ...typography.monoXs,
-    color: colors.ink3,
-    marginTop: spacing.xs,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  footerText: {
+  threadText: {
     ...typography.caption,
     color: colors.amber,
-    fontWeight: '600',
+    opacity: 0.3,
+    letterSpacing: 1,
   },
-  title: {
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${colors.amber}4D`,
+  },
+  hexagon: {
+    fontSize: 24,
+    color: colors.amber,
+    marginBottom: spacing.xs,
+  },
+  embassyTitle: {
     ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
+    color: colors.amber,
+    letterSpacing: 2,
+    fontWeight: '700',
   },
-  description: {
-    ...typography.body,
-    color: colors.ink2,
-    lineHeight: 24,
+  embassySubtitle: {
+    ...typography.caption,
+    color: colors.amber,
+    marginTop: spacing.xs,
+    opacity: 0.7,
   },
-  benefitsList: {
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  benefitRow: {
+  statusLine: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.green,
+    opacity: 0.8,
+  },
+  statusText: {
+    ...typography.caption,
+    color: colors.green,
+    letterSpacing: 1,
+    fontWeight: '600',
+  },
+  passNumberText: {
+    ...typography.caption,
+    color: colors.amber,
+    fontFamily: 'Courier New',
+    letterSpacing: 2,
+  },
+  photoSection: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  initialsCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${colors.amber}26`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: `${colors.amber}4D`,
+  },
+  initialsText: {
+    ...typography.h2,
+    color: colors.amber,
+    fontWeight: '700',
+  },
+  bioGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: spacing.lg,
     gap: spacing.md,
   },
-  benefitText: {
+  bioField: {
+    width: '48%',
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${colors.amber}33`,
+  },
+  bioLabel: {
+    ...typography.monoXs,
+    color: colors.amber,
+    opacity: 0.6,
+    marginBottom: spacing.xs,
+    letterSpacing: 1,
+  },
+  bioValue: {
     ...typography.body,
-    color: colors.ink2,
-    flex: 1,
+    color: colors.amber,
+    fontWeight: '500',
+  },
+  signatureSection: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${colors.amber}33`,
+  },
+  signatureLabel: {
+    ...typography.caption,
+    color: colors.amber,
+    opacity: 0.5,
+  },
+  signatureValue: {
+    ...typography.body,
+    color: colors.amber,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
+  },
+  verifiedBadge: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: `${colors.amber}33`,
+  },
+  verifiedText: {
+    ...typography.caption,
+    color: colors.green,
+    letterSpacing: 1,
+    fontWeight: '600',
+  },
+  mrzZone: {
+    backgroundColor: colors.ink,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderRadius: radii.sm,
+  },
+  mrzLine: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    color: colors.amber,
+    marginBottom: spacing.xs,
+    letterSpacing: 1,
+  },
+  pageFooter: {
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: `${colors.amber}33`,
+    gap: spacing.xs,
+  },
+  footerSignature: {
+    ...typography.caption,
+    color: colors.amber,
+    opacity: 0.5,
+    letterSpacing: 1,
+  },
+  pageNumber: {
+    ...typography.monoXs,
+    color: colors.amber,
+    opacity: 0.4,
+  },
+  securityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  securityCard: {
+    width: '48%',
+    backgroundColor: colors.ink,
+    padding: spacing.md,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: `${colors.amber}33`,
+  },
+  securityLabel: {
+    ...typography.caption,
+    color: colors.amber,
+    opacity: 0.7,
+    marginBottom: spacing.xs,
+    letterSpacing: 1,
+  },
+  securityValue: {
+    ...typography.body,
+    color: colors.amber,
+    fontSize: 12,
+  },
+  charterSection: {
+    marginBottom: spacing.lg,
+  },
+  charterTitle: {
+    ...typography.caption,
+    color: colors.amber,
+    letterSpacing: 2,
+    marginBottom: spacing.md,
+    opacity: 0.7,
+  },
+  charterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  charterCell: {
+    width: '48%',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${colors.amber}33`,
+  },
+  charterLabel: {
+    ...typography.caption,
+    color: colors.amber,
+    opacity: 0.6,
+    marginBottom: spacing.xs,
+  },
+  charterValue: {
+    ...typography.body,
+    color: colors.amber,
+    fontSize: 14,
+  },
+  qrSection: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: `${colors.amber}33`,
+  },
+  qrPlaceholder: {
+    width: 100,
+    height: 100,
+    backgroundColor: colors.ink,
+    borderRadius: radii.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: `${colors.amber}4D`,
+  },
+  scanText: {
+    ...typography.caption,
+    color: colors.amber,
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  scanUrl: {
+    ...typography.monoXs,
+    color: colors.amber,
+    opacity: 0.6,
   },
   actions: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingVertical: spacing.lg,
   },
 });

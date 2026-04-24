@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.md,
     padding: spacing.md,
-    backgroundColor: 'rgba(192,57,43,0.08)',
+    backgroundColor: colors.redBg,
     borderRadius: 8,
     borderLeftWidth: 3,
     borderLeftColor: colors.red,

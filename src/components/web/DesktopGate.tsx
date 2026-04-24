@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
+import { colors, typography, spacing } from '../../lib/theme';
 
 const useIsDesktop = () => {
   if (Platform.OS !== 'web') return false;
@@ -47,7 +48,7 @@ export function DesktopGate({ children }: { children: React.ReactNode }) {
         <div className="wk-rotating-w" style={{
           fontSize: 120,
           fontWeight: 200,
-          color: '#C8762A',
+          color: '#C8762A', // amber — inline for web div
           marginBottom: 24,
           fontFamily: 'Georgia, serif',
           lineHeight: 1,
@@ -70,7 +71,7 @@ export function DesktopGate({ children }: { children: React.ReactNode }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF5',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
@@ -78,35 +79,34 @@ const styles = StyleSheet.create({
   w: {
     fontSize: 120,
     fontWeight: '200',
-    color: '#C8762A',
-    marginBottom: 24,
+    color: colors.amber,
+    marginBottom: spacing.lg,
     fontFamily: Platform.OS === 'web' ? 'Georgia, serif' : undefined,
   },
   title: {
     fontSize: 28,
     fontWeight: '600',
-    color: '#1A120A',
+    color: colors.ink,
     letterSpacing: 6,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   subtitle: {
     fontSize: 18,
-    color: '#6B5D4F',
+    color: colors.ink2,
     fontWeight: '300',
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   divider: {
     width: 60,
     height: 1,
-    backgroundColor: '#C8762A',
+    backgroundColor: colors.amber,
     opacity: 0.4,
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   body: {
-    fontSize: 16,
-    color: '#6B5D4F',
+    ...typography.body,
+    color: colors.ink2,
     textAlign: 'center',
-    lineHeight: 26,
     marginBottom: 40,
   },
 });

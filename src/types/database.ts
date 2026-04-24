@@ -85,6 +85,8 @@ export type Database = {
           night_number: number;
           photo_url: string | null;
           note: string | null;
+          reflection: string | null;
+          category: StampCategory;
           verification_hash: string;
           previous_hash: string | null;
           created_at: string;
@@ -227,6 +229,10 @@ export type Database = {
 // ════════════════════════════════════════════
 // DOMAIN TYPES
 // ════════════════════════════════════════════
+
+export type StampCategory =
+  | 'hospitality' | 'food' | 'culture' | 'nature'
+  | 'community' | 'water' | 'adventure' | 'workshops';
 
 export type TierLevel =
   | 'wanderkind' | 'wunderkind' | 'wandersmann' | 'ehrenmann'

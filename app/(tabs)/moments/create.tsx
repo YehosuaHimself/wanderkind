@@ -165,10 +165,10 @@ export default function CreateMoment() {
             numberOfLines={4}
             value={content}
             onChangeText={setContent}
-            maxLength={280}
+            maxLength={500}
           />
           <Text style={styles.charCount}>
-            {content.length} / 280
+            {content.length} / 500
           </Text>
         </View>
 

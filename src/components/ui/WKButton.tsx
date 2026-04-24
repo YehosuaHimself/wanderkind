@@ -40,6 +40,9 @@ export function WKButton({
       onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading }}
       style={[
         styles.base,
         styles[variant],
@@ -86,18 +89,17 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: colors.surfaceAlt },
   outline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.redBg, borderWidth: 1, borderColor: 'rgba(192,57,43,0.2)' },
+  danger: { backgroundColor: colors.redBg, borderWidth: 1, borderColor: 'rgba(176,58,58,0.18)' },
 
-  // Sizes
-  size_sm: { paddingVertical: 8, paddingHorizontal: 16, minHeight: 36 },
+  // Sizes — all meet WCAG 44px minimum touch target
+  size_sm: { paddingVertical: 10, paddingHorizontal: 16, minHeight: 44 },
   size_md: { paddingVertical: 12, paddingHorizontal: 24, minHeight: 44 },
   size_lg: { paddingVertical: 16, paddingHorizontal: 32, minHeight: 52 },
 
-  // Text
+  // Text — guidelines V3 §07: "Helvetica 700 14px uppercase" for buttons
   text: {
-    fontFamily: 'Courier New',
-    fontWeight: '600',
-    letterSpacing: 1.5,
+    fontWeight: '700',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   text_primary: { color: '#FFFFFF' },

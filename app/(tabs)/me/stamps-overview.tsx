@@ -53,6 +53,7 @@ export default function StampsOverviewScreen() {
       hospitality: colors.passHosp,
       water: colors.passWater,
       adventure: colors.tramp,
+      workshops: '#D97706',
     };
     return categoryColors[category.toLowerCase()] || colors.ink3;
   };

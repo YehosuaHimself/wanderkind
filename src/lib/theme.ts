@@ -12,10 +12,10 @@ export const colors = {
   parchmentInk: '#1A120A',
   parchmentSoft: '#6B5A3E',
 
-  // Ink
+  // Ink — per Design Guidelines V3 §04
   ink: '#1A120A',
-  ink2: '#6B5D4F',
-  ink3: '#9B8E7E',
+  ink2: '#6B5A3E',    // ink-soft per guidelines
+  ink3: '#9A8B73',    // ink-muted per guidelines
 
   // Brand
   amber: '#C8762A',
@@ -27,12 +27,12 @@ export const colors = {
   gold: '#D4A017',
   goldBg: 'rgba(212,160,23,0.1)',
   goldBorder: 'rgba(212,160,23,0.25)',
-  green: '#27864A',
-  greenBg: 'rgba(39,134,74,0.08)',
+  green: '#5A7A2B',    // success per guidelines V3 §04
+  greenBg: 'rgba(90,122,43,0.08)',
   blue: '#2E6DA4',
   blueBg: 'rgba(46,109,164,0.08)',
-  red: '#C0392B',
-  redBg: 'rgba(192,57,43,0.08)',
+  red: '#B03A3A',     // error per guidelines V3 §04
+  redBg: 'rgba(176,58,58,0.06)',
   tramp: '#E8740A',
   trampBg: 'rgba(232,116,10,0.08)',
 
@@ -62,27 +62,28 @@ export const colors = {
 export const spacing = {
   xs: 4,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 32,
-  '4xl': 48,
-  screenPx: 20,
-  safeTop: 54,
-  navHeight: 54,
+  md: 16,     // 8-point grid per guidelines V3 §06
+  lg: 24,     // 8-point grid
+  xl: 32,     // 8-point grid
+  '2xl': 48,  // 8-point grid
+  '3xl': 64,  // 8-point grid
+  '4xl': 96,  // 8-point grid
+  screenPx: 24, // page horizontal per guidelines §06 (22px → 24px nearest grid)
+  safeTop: 56,  // 8-point grid
+  navHeight: 56, // 8-point grid
 } as const;
 
 export const typography = {
-  display: { fontSize: 48, fontWeight: '900' as const, letterSpacing: -1.44, lineHeight: 48 },
+  // Per Design Guidelines V3 §03 — 1.25× ratio: 11→14→16→18→20→24→32→42
+  display: { fontSize: 42, fontWeight: '900' as const, letterSpacing: -0.84, lineHeight: 42 },
   h1: { fontSize: 32, fontWeight: '900' as const, letterSpacing: -0.64, lineHeight: 35 },
-  h2: { fontSize: 24, fontWeight: '800' as const, letterSpacing: -0.24, lineHeight: 29 },
-  h3: { fontSize: 18, fontWeight: '700' as const, lineHeight: 23 },
-  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 24 },
-  bodySm: { fontSize: 13, fontWeight: '400' as const, lineHeight: 19.5 },
-  caption: { fontSize: 11, fontWeight: '400' as const, lineHeight: 15.4 },
-  monoXs: { fontSize: 10, fontWeight: '500' as const, letterSpacing: 1.2, lineHeight: 13 },
-  mono2xs: { fontSize: 9, fontWeight: '500' as const, letterSpacing: 1.35, lineHeight: 11.7 },
+  h2: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.48, lineHeight: 29 },
+  h3: { fontSize: 18, fontWeight: '700' as const, lineHeight: 24 },
+  body: { fontSize: 16, fontWeight: '400' as const, lineHeight: 26 },     // 16px minimum per §03
+  bodySm: { fontSize: 14, fontWeight: '400' as const, lineHeight: 22 },   // secondary info per §03
+  caption: { fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },  // mono labels per §03
+  monoXs: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 1.65, lineHeight: 14 },
+  mono2xs: { fontSize: 10, fontWeight: '500' as const, letterSpacing: 1.5, lineHeight: 13 },
   label: { fontSize: 10, fontWeight: '600' as const, letterSpacing: 3, lineHeight: 12, textTransform: 'uppercase' as const },
 } as const;
 

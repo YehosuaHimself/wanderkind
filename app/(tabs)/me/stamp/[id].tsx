@@ -131,6 +131,17 @@ export default function StampDetailScreen() {
           </WKCard>
         )}
 
+        {/* Reflection — personal note from the ceremony */}
+        {(stamp as any).reflection && (
+          <WKCard style={styles.reflectionCard}>
+            <View style={styles.reflectionHeader}>
+              <Ionicons name="leaf-outline" size={16} color={colors.amber} />
+              <Text style={styles.reflectionLabel}>YOUR REFLECTION</Text>
+            </View>
+            <Text style={styles.reflectionText}>{(stamp as any).reflection}</Text>
+          </WKCard>
+        )}
+
         {/* Stats */}
         <WKCard>
           <View style={styles.statsRow}>
@@ -278,5 +289,29 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: colors.borderLt,
+  },
+  reflectionCard: {
+    marginBottom: spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.amber,
+  },
+  reflectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: spacing.sm,
+  },
+  reflectionLabel: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    letterSpacing: 2,
+    color: colors.ink3,
+    fontWeight: '600',
+  },
+  reflectionText: {
+    ...typography.body,
+    color: colors.ink2,
+    fontStyle: 'italic',
+    lineHeight: 24,
   },
 });

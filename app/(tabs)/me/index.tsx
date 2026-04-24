@@ -42,6 +42,7 @@ export default function MeScreen() {
   };
 
   const tierColor = tierColors[profile?.tier ?? 'wanderkind'] ?? colors.ink3;
+  const isQuietMode = (profile as any)?.quiet_mode ?? false;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -84,31 +85,35 @@ export default function MeScreen() {
 
           <Text style={styles.trailName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
 
-          {/* Tier badge */}
-          <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
-            <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
-            <Text style={[styles.tierText, { color: tierColor }]}>
-              {(profile?.tier ?? 'wanderkind').toUpperCase()}
-            </Text>
-          </View>
+          {/* Tier badge — hidden in Quiet Mode */}
+          {!isQuietMode && (
+            <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
+              <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
+              <Text style={[styles.tierText, { color: tierColor }]}>
+                {(profile?.tier ?? 'wanderkind').toUpperCase()}
+              </Text>
+            </View>
+          )}
 
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{profile?.nights_walked ?? 0}</Text>
-              <Text style={styles.statLabel}>NIGHTS</Text>
+          {/* Stats — hidden in Quiet Mode */}
+          {!isQuietMode && (
+            <View style={styles.statsRow}>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{profile?.nights_walked ?? 0}</Text>
+                <Text style={styles.statLabel}>NIGHTS</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{profile?.stamps_count ?? 0}</Text>
+                <Text style={styles.statLabel}>STAMPS</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
+                <Text style={styles.statLabel}>HOSTED</Text>
+              </View>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{profile?.stamps_count ?? 0}</Text>
-              <Text style={styles.statLabel}>STAMPS</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
-              <Text style={styles.statLabel}>HOSTED</Text>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Walking / Hosting toggles */}
@@ -193,26 +198,28 @@ export default function MeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Journey section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Journey</Text>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/me/journey' as any)}
-          >
-            <Ionicons name="ribbon-outline" size={18} color={colors.ink2} />
-            <Text style={styles.menuItemText}>Journey Tiers</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/me/verification' as any)}
-          >
-            <Ionicons name="shield-checkmark-outline" size={18} color={colors.ink2} />
-            <Text style={styles.menuItemText}>Verification</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-        </View>
+        {/* Journey section — hidden in Quiet Mode */}
+        {!isQuietMode && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Journey</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/(tabs)/me/journey' as any)}
+            >
+              <Ionicons name="ribbon-outline" size={18} color={colors.ink2} />
+              <Text style={styles.menuItemText}>Journey Tiers</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/(tabs)/me/verification' as any)}
+            >
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.ink2} />
+              <Text style={styles.menuItemText}>Verification</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>

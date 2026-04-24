@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,7 +49,7 @@ export default function MapHome() {
 
   const filteredHosts = hosts.filter(h => {
     if (filter === 'free') return h.host_type === 'free';
-    if (filter === 'donativo') return h.host_type === 'donativo';
+    if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
     return true;
   });
 
@@ -88,6 +89,9 @@ export default function MapHome() {
               key={f}
               style={[styles.filterChip, filter === f && styles.filterChipActive]}
               onPress={() => setFilter(f)}
+              accessibilityLabel={`Filter: ${f === 'free' ? 'Free only' : f === 'donativo' ? 'Free and donativo' : 'All hosts'}`}
+              accessibilityState={{ selected: filter === f }}
+              accessibilityRole="button"
             >
               <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
                 {f === 'free' ? 'FREE' : f === 'donativo' ? 'FREE + DONATIVO' : 'ALL'}
@@ -110,8 +114,22 @@ export default function MapHome() {
       {/* My location button */}
       <TouchableOpacity
         style={styles.locationButton}
-        onPress={() => {
-          // Center on user location
+        accessibilityLabel="Center on my location"
+        accessibilityRole="button"
+        onPress={async () => {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') return;
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            mapRef.current?.animateToRegion({
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              latitudeDelta: 0.5,
+              longitudeDelta: 0.5,
+            }, 800);
+          } catch {
+            // Location unavailable — silently fail
+          }
         }}
       >
         <Ionicons name="locate" size={20} color={colors.amber} />

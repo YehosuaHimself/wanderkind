@@ -21,6 +21,9 @@ export default function SignUpScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [parentConsent, setParentConsent] = useState(false);
+
+  const isMinor = birthYear ? (new Date().getFullYear() - parseInt(birthYear, 10)) < 18 : false;
 
   const { signUp } = useAuthStore();
 
@@ -32,17 +35,20 @@ export default function SignUpScreen() {
 
     if (!password) newErrors.password = 'Password is required';
     else if (password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+    else if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) newErrors.password = 'Include at least one uppercase letter and one number';
 
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
     if (!birthYear) newErrors.birthYear = 'Birth year is required';
     else {
       const year = parseInt(birthYear, 10);
-      const age = new Date().getFullYear() - year;
-      if (age < 18) newErrors.birthYear = 'You must be at least 18 years old';
+      const currentYear = new Date().getFullYear();
+      if (year > currentYear || year < 1900) newErrors.birthYear = 'Please enter a valid birth year';
+      else if (currentYear - year < 13) newErrors.birthYear = 'You must be at least 13 years old';
     }
 
     if (!agreeTerms) newErrors.terms = 'You must agree to the terms';
+    if (isMinor && !parentConsent) newErrors.parent = 'Parent or guardian consent is required for users under 18';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -117,7 +123,7 @@ export default function SignUpScreen() {
           keyboardType="number-pad"
           maxLength={4}
           error={errors.birthYear}
-          helper="You must be 18 or older"
+          helper="You must be at least 13 years old"
         />
 
         <View style={styles.termsContainer}>
@@ -138,6 +144,28 @@ export default function SignUpScreen() {
           </Text>
         </View>
         {errors.terms && <Text style={styles.error}>{errors.terms}</Text>}
+
+        {isMinor && (
+          <>
+            <View style={styles.termsContainer}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setParentConsent(!parentConsent)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={parentConsent ? 'checkbox' : 'checkbox-outline'}
+                  size={20}
+                  color={parentConsent ? colors.amber : colors.ink3}
+                />
+              </TouchableOpacity>
+              <Text style={styles.termsText}>
+                My parent or guardian has given permission for me to use this app
+              </Text>
+            </View>
+            {errors.parent && <Text style={styles.error}>{errors.parent}</Text>}
+          </>
+        )}
       </ScrollView>
 
       <View style={styles.actions}>

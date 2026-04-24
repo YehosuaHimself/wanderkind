@@ -24,6 +24,8 @@ export function WKInput({ label, error, helper, style, ...rest }: Props) {
         placeholderTextColor={colors.ink3}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        accessibilityLabel={label}
+        accessibilityHint={helper}
         {...rest}
       />
       {error && <Text style={styles.error}>{error}</Text>}
@@ -46,9 +48,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    paddingHorizontal: 16,    // 8-point grid
+    paddingVertical: 12,     // acceptable: ensures 44px min-height with fontSize 16
+    fontSize: 16,     // body minimum per guidelines V3 §03
     color: colors.ink,
   },
   inputFocused: {

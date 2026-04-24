@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,9 @@ export default function EditProfileScreen() {
   const [homeCountry, setHomeCountry] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
   const [experience, setExperience] = useState('');
+  const [skills, setSkills] = useState('');
+  const [quietMode, setQuietMode] = useState(false);
+  const [privateProfile, setPrivateProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -33,6 +36,9 @@ export default function EditProfileScreen() {
       setHomeCountry(profile.home_country || '');
       setLanguages(profile.languages || []);
       setExperience(profile.walking_experience || '');
+      setSkills((profile as any).skills?.join(', ') || '');
+      setQuietMode((profile as any).quiet_mode || false);
+      setPrivateProfile(!(profile as any).searchable);
     }
   }, [profile]);
 
@@ -61,6 +67,9 @@ export default function EditProfileScreen() {
         home_country: homeCountry,
         languages,
         walking_experience: experience,
+        skills: skills ? skills.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+        quiet_mode: quietMode,
+        searchable: !privateProfile,
       }).eq('id', user.id);
 
       if (updateError) throw updateError;
@@ -107,7 +116,7 @@ export default function EditProfileScreen() {
           value={bio}
           onChangeText={setBio}
           placeholder="Tell your story..."
-          maxLength={200}
+          maxLength={500}
           multiline
           numberOfLines={3}
         />
@@ -142,6 +151,14 @@ export default function EditProfileScreen() {
           ))}
         </View>
 
+        <WKInput
+          label="Skills & Services"
+          value={skills}
+          onChangeText={setSkills}
+          placeholder="e.g. Cooking, Massage, Carpentry, First Aid"
+          helper="Comma-separated list of what you can offer"
+        />
+
         <Text style={styles.label}>Walking Experience</Text>
         <View style={styles.experienceGrid}>
           {EXPERIENCE_LEVELS.map(level => (
@@ -163,6 +180,32 @@ export default function EditProfileScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+        {/* Privacy Settings */}
+        <Text style={styles.label}>Privacy</Text>
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleInfo}>
+            <Text style={styles.toggleLabel}>Private Profile</Text>
+            <Text style={styles.toggleHint}>Hide your profile from search and map</Text>
+          </View>
+          <Switch
+            value={privateProfile}
+            onValueChange={setPrivateProfile}
+            trackColor={{ false: colors.borderLt, true: colors.amberBg }}
+            thumbColor={privateProfile ? colors.amber : '#f4f3f4'}
+          />
+        </View>
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleInfo}>
+            <Text style={styles.toggleLabel}>Quiet Mode</Text>
+            <Text style={styles.toggleHint}>Hide tiers, stats, and gamification</Text>
+          </View>
+          <Switch
+            value={quietMode}
+            onValueChange={setQuietMode}
+            trackColor={{ false: colors.borderLt, true: colors.amberBg }}
+            thumbColor={quietMode ? colors.amber : '#f4f3f4'}
+          />
         </View>
       </ScrollView>
 
@@ -279,6 +322,32 @@ const styles = StyleSheet.create({
   expTextActive: {
     color: colors.amber,
     fontWeight: '600',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    marginBottom: spacing.md,
+  },
+  toggleInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  toggleLabel: {
+    ...typography.body,
+    color: colors.ink,
+    fontWeight: '600',
+  },
+  toggleHint: {
+    ...typography.bodySm,
+    color: colors.ink3,
+    marginTop: 2,
   },
   actions: {
     paddingHorizontal: spacing.lg,

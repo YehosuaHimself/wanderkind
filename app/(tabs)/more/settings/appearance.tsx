@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Slider } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
@@ -9,6 +9,8 @@ import { WKCard } from '../../../../src/components/ui/WKCard';
 export default function AppearanceScreen() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [textSize, setTextSize] = useState(1);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
 
   const themes = [
     { id: 'light', label: 'Light', icon: 'sunny-outline' as const },
@@ -74,18 +76,20 @@ export default function AppearanceScreen() {
             </View>
 
             <View style={styles.sizeLabels}>
-              <Text style={styles.sizeLabel}>A</Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={1}
-                step={0.25}
-                value={textSize}
-                onValueChange={setTextSize}
-                minimumTrackTintColor={colors.amber}
-                maximumTrackTintColor={colors.border}
-              />
-              <Text style={[styles.sizeLabel, styles.sizeLabelLarge]}>A</Text>
+              {[0, 0.25, 0.5, 0.75, 1].map((size) => (
+                <TouchableOpacity
+                  key={size}
+                  style={[styles.sizeStep, textSize === size && styles.sizeStepActive]}
+                  onPress={() => setTextSize(size)}
+                  accessibilityLabel={`Text size ${Math.round((0.8 + size * 0.4) * 100)}%`}
+                >
+                  <Text style={[
+                    styles.sizeStepLabel,
+                    { fontSize: 12 + size * 6 },
+                    textSize === size && styles.sizeStepLabelActive,
+                  ]}>A</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </WKCard>
         </View>
@@ -98,23 +102,25 @@ export default function AppearanceScreen() {
               <Text style={[typography.body, styles.optionLabel]}>
                 Reduce Motion
               </Text>
-              <TouchableOpacity
-                style={styles.toggle}
-                activeOpacity={0.7}
-              >
-                <View style={styles.toggleOff} />
-              </TouchableOpacity>
+              <Switch
+                value={reduceMotion}
+                onValueChange={setReduceMotion}
+                trackColor={{ false: colors.borderLt, true: colors.amberBg }}
+                thumbColor={reduceMotion ? colors.amber : '#f4f3f4'}
+                accessibilityLabel="Reduce motion"
+              />
             </View>
             <View style={styles.optionRow}>
               <Text style={[typography.body, styles.optionLabel]}>
                 High Contrast
               </Text>
-              <TouchableOpacity
-                style={styles.toggle}
-                activeOpacity={0.7}
-              >
-                <View style={styles.toggleOff} />
-              </TouchableOpacity>
+              <Switch
+                value={highContrast}
+                onValueChange={setHighContrast}
+                trackColor={{ false: colors.borderLt, true: colors.amberBg }}
+                thumbColor={highContrast ? colors.amber : '#f4f3f4'}
+                accessibilityLabel="High contrast mode"
+              />
             </View>
           </View>
         </View>
@@ -158,17 +164,29 @@ const styles = StyleSheet.create({
   sizeLabels: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  sizeLabel: {
-    fontSize: 12,
-    color: colors.ink3,
-    fontWeight: '600',
-  },
-  sizeLabelLarge: { fontSize: 16 },
-  slider: {
+  sizeStep: {
     flex: 1,
-    height: 40,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  sizeStepActive: {
+    backgroundColor: colors.amberBg,
+    borderColor: colors.amber,
+  },
+  sizeStepLabel: {
+    fontWeight: '600',
+    color: colors.ink3,
+  },
+  sizeStepLabelActive: {
+    color: colors.amber,
   },
   optionsList: { gap: spacing.sm },
   optionRow: {
@@ -183,18 +201,5 @@ const styles = StyleSheet.create({
     borderColor: colors.borderLt,
   },
   optionLabel: { color: colors.ink, flex: 1 },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.border,
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleOff: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-  },
+  // Toggle styles removed — using native Switch component
 });

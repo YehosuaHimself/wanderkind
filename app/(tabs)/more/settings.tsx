@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.redBg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(192,57,43,0.2)',
+    borderColor: 'rgba(176,58,58,0.18)',
     marginTop: spacing.md,
   },
   deleteButtonText: { ...typography.body, color: colors.red, textAlign: 'center', fontWeight: '600' },

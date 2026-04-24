@@ -1,210 +1,263 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Share,
+  Animated,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
-import { WKCard } from '../../../src/components/ui/WKCard';
+import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 
+const DARK_BG = '#0B0705';
+const ACCENT = colors.passFood; // #27864A — deep green
+
 export default function FoodPassScreen() {
   const { profile } = useAuth();
-  const mealsShared = profile?.meals_shared ?? 0;
-  const donativoContributions = profile?.donativo_contributions ?? 0;
+  const textTrackAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(textTrackAnimation, {
+        toValue: -1000,
+        duration: 22000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [textTrackAnimation]);
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `I hold the Wanderkind Food Pass — sharing meals, sharing life.`,
+        title: `${profile?.trail_name || 'Wanderkind'}'s Food Pass`,
+      });
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
+
+  const mealsShared = (profile as any)?.meals_shared ?? 0;
+  const donativoCount = (profile as any)?.donativo_contributions ?? 0;
+  const initials = profile?.trail_name
+    ? profile.trail_name.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
+    : 'WK';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Food Pass" showBack />
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {/* Main Stats */}
-        <WKCard variant="gold" style={styles.statsCard}>
-          <View style={styles.mainStat}>
-            <Text style={styles.mainValue}>{mealsShared}</Text>
-            <Text style={styles.mainLabel}>MEALS SHARED</Text>
-          </View>
-        </WKCard>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.page}>
+          {/* Corner Brackets */}
+          <View style={[styles.corner, styles.cornerTL]}><View style={styles.bracketH} /><View style={styles.bracketV} /></View>
+          <View style={[styles.corner, styles.cornerTR]}><View style={[styles.bracketH, { right: 0 }]} /><View style={[styles.bracketV, { right: 0 }]} /></View>
+          <View style={[styles.corner, styles.cornerBL]}><View style={[styles.bracketH, { bottom: 0 }]} /><View style={[styles.bracketV, { bottom: 0 }]} /></View>
+          <View style={[styles.corner, styles.cornerBR]}><View style={[styles.bracketH, { right: 0, bottom: 0 }]} /><View style={[styles.bracketV, { right: 0, bottom: 0 }]} /></View>
 
-        {/* Secondary Stats */}
-        <WKCard style={styles.secondaryCard}>
-          <View style={styles.statRow}>
-            <View style={styles.stat}>
-              <Ionicons name="heart" size={24} color={colors.passFood} />
-              <Text style={styles.statValue}>{donativoContributions}</Text>
+          {/* Kinetic Text Track */}
+          <View style={styles.threadContainer}>
+            <Animated.View style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
+              <Text style={styles.threadText}>
+                FOOD·PASS·DONATIVO·SHARED·MEALS·COMMUNITY·FOOD·PASS·DONATIVO·SHARED·MEALS·COMMUNITY·FOOD·PASS·
+              </Text>
+            </Animated.View>
+          </View>
+
+          {/* Embassy Header */}
+          <View style={styles.headerSection}>
+            <Ionicons name="restaurant" size={24} color={ACCENT} />
+            <Text style={styles.embassyTitle}>Wanderkind Embassy</Text>
+            <Text style={styles.embassySubtitle}>Food & Sustenance Pass</Text>
+          </View>
+
+          {/* Status Line */}
+          <View style={styles.statusLine}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>ACTIVE CONTRIBUTOR</Text>
+          </View>
+
+          {/* Initials Circle */}
+          <View style={styles.photoSection}>
+            <View style={styles.initialsCircle}>
+              <Text style={styles.initialsText}>{initials}</Text>
+            </View>
+          </View>
+
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>MEALS SHARED</Text>
+              <Text style={styles.statValue}>{mealsShared}</Text>
+            </View>
+            <View style={styles.statCard}>
               <Text style={styles.statLabel}>DONATIVO</Text>
+              <Text style={styles.statValue}>{donativoCount}</Text>
             </View>
-            <View style={styles.divider} />
-            <View style={styles.stat}>
-              <Ionicons name="star" size={24} color={colors.gold} />
-              <Text style={styles.statValue}>{Math.floor(mealsShared / 10)}</Text>
+            <View style={styles.statCard}>
               <Text style={styles.statLabel}>MILESTONES</Text>
+              <Text style={styles.statValue}>{Math.floor(mealsShared / 10)}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>STATUS</Text>
+              <Text style={styles.statValue}>ACTIVE</Text>
             </View>
           </View>
-        </WKCard>
 
-        {/* Progress */}
-        <WKCard>
-          <Text style={styles.title}>Progress to Next Milestone</Text>
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${((mealsShared % 10) / 10) * 100}%` },
-                ]}
-              />
+          {/* Bio Fields */}
+          <View style={styles.bioGrid}>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>HOLDER</Text>
+              <Text style={styles.bioValue}>{profile?.trail_name || 'Wanderer'}</Text>
             </View>
-            <Text style={styles.progressText}>
-              {mealsShared % 10}/10 meals
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>CLASS</Text>
+              <Text style={styles.bioValue}>SUSTENANCE</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>ISSUED</Text>
+              <Text style={styles.bioValue}>2026</Text>
+            </View>
+            <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>REGION</Text>
+              <Text style={styles.bioValue}>GLOBAL</Text>
+            </View>
+          </View>
+
+          {/* Charter */}
+          <View style={styles.charterSection}>
+            <Text style={styles.charterTitle}>FOOD CHARTER</Text>
+            <Text style={styles.charterText}>
+              Every meal shared is an act of communion. The Food Pass honours those who nourish fellow wanderers through donativo kitchens, shared tables, and trail provisions.
             </Text>
           </View>
-        </WKCard>
 
-        {/* Description */}
-        <WKCard>
-          <Text style={styles.title}>What This Means</Text>
-          <Text style={styles.description}>
-            The Food Pass tracks meals you've shared with other wanderers. Whether through a hosted dinner, shared supplies, or culinary generosity on the road, every meal builds community.
-          </Text>
-        </WKCard>
-
-        {/* How to Contribute */}
-        <WKCard>
-          <Text style={styles.title}>How to Contribute</Text>
-          <View style={styles.contributeList}>
-            <View style={styles.item}>
-              <View style={styles.itemNumber}>
-                <Text style={styles.itemNumberText}>1</Text>
-              </View>
-              <Text style={styles.itemText}>Share meals with guests</Text>
-            </View>
-            <View style={styles.item}>
-              <View style={styles.itemNumber}>
-                <Text style={styles.itemNumberText}>2</Text>
-              </View>
-              <Text style={styles.itemText}>Mark donations to the cause</Text>
-            </View>
-            <View style={styles.item}>
-              <View style={styles.itemNumber}>
-                <Text style={styles.itemNumberText}>3</Text>
-              </View>
-              <Text style={styles.itemText}>Earn community recognition</Text>
-            </View>
+          {/* Verified Badge */}
+          <View style={styles.verifiedBadge}>
+            <Text style={styles.verifiedText}>✓ VERIFIED · DONATIVO PROTOCOL · WKD-F</Text>
           </View>
-        </WKCard>
+
+          {/* MRZ Zone */}
+          <View style={styles.mrzZone}>
+            <Text style={styles.mrzLine}>P{'<'}WKD{(profile?.trail_name || 'UNKNOWN').toUpperCase().padEnd(38, '<')}</Text>
+            <Text style={styles.mrzLine}>FOOD{'<'.repeat(8)}SUSTENANCE{'<'.repeat(22)}</Text>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.pageFooter}>
+            <Text style={styles.footerSignature}>Wanderkind Authority</Text>
+            <Text style={styles.pageNumber}>FOOD PASS · SINGLE PAGE</Text>
+          </View>
+        </View>
       </ScrollView>
+
+      <View style={styles.actions}>
+        <WKButton
+          title="Share Pass"
+          onPress={handleShare}
+          variant="primary"
+          size="lg"
+          fullWidth
+          icon={<Ionicons name="share-social" size={16} color="#fff" />}
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
+  page: {
+    backgroundColor: DARK_BG,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
+    borderRadius: radii.lg,
+    position: 'relative',
   },
-  statsCard: {
-    marginBottom: spacing.lg,
+  corner: { position: 'absolute', width: 20, height: 20, overflow: 'hidden' },
+  cornerTL: { top: spacing.md, left: spacing.md },
+  cornerTR: { top: spacing.md, right: spacing.md },
+  cornerBL: { bottom: spacing.md, left: spacing.md },
+  cornerBR: { bottom: spacing.md, right: spacing.md },
+  bracketH: { position: 'absolute', width: 16, height: 0.5, backgroundColor: ACCENT, opacity: 0.5 },
+  bracketV: { position: 'absolute', width: 0.5, height: 16, backgroundColor: ACCENT, opacity: 0.5 },
+  threadContainer: { height: 20, overflow: 'hidden', marginBottom: spacing.lg, justifyContent: 'center' },
+  thread: { flexDirection: 'row' },
+  threadText: { ...typography.caption, color: ACCENT, opacity: 0.3, letterSpacing: 1 },
+  headerSection: {
     alignItems: 'center',
-    paddingVertical: spacing['2xl'],
-  },
-  mainStat: {
-    alignItems: 'center',
-  },
-  mainValue: {
-    ...typography.display,
-    color: colors.passFood,
-  },
-  mainLabel: {
-    ...typography.bodySm,
-    color: colors.gold,
-    marginTop: spacing.md,
-    letterSpacing: 1,
-    fontWeight: '600',
-  },
-  secondaryCard: {
     marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${ACCENT}4D`,
   },
-  statRow: {
+  embassyTitle: { ...typography.h3, color: ACCENT, letterSpacing: 2, fontWeight: '700', marginTop: spacing.sm },
+  embassySubtitle: { ...typography.caption, color: ACCENT, marginTop: spacing.xs, opacity: 0.7 },
+  statusLine: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  statValue: {
-    ...typography.h2,
-    color: colors.passFood,
-  },
-  statLabel: {
-    ...typography.monoXs,
-    color: colors.ink3,
-  },
-  divider: {
-    width: 1,
-    height: 60,
-    backgroundColor: colors.borderLt,
-  },
-  title: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  progressContainer: {
-    gap: spacing.md,
-  },
-  progressBar: {
-    width: '100%',
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: radii.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.passFood,
-  },
-  progressText: {
-    ...typography.caption,
-    color: colors.ink3,
-  },
-  description: {
-    ...typography.body,
-    color: colors.ink2,
-    lineHeight: 24,
-  },
-  contributeList: {
-    gap: spacing.lg,
-    marginTop: spacing.md,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  itemNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: radii.full,
-    backgroundColor: colors.passFood,
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green, opacity: 0.8 },
+  statusText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600' },
+  photoSection: { alignItems: 'center', marginBottom: spacing.lg },
+  initialsCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: `${ACCENT}26`,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: `${ACCENT}4D`,
   },
-  itemNumberText: {
-    ...typography.bodySm,
-    color: '#fff',
-    fontWeight: '600',
+  initialsText: { ...typography.h2, color: ACCENT, fontWeight: '700' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.lg },
+  statCard: {
+    width: '47%',
+    backgroundColor: colors.ink,
+    padding: spacing.md,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: `${ACCENT}33`,
   },
-  itemText: {
-    ...typography.body,
-    color: colors.ink2,
+  statLabel: { ...typography.caption, color: ACCENT, opacity: 0.7, marginBottom: spacing.xs, letterSpacing: 1 },
+  statValue: { ...typography.body, color: ACCENT, fontSize: 14, fontWeight: '600' },
+  bioGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg, gap: spacing.md },
+  bioField: { width: '47%', paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: `${ACCENT}33` },
+  bioLabel: { ...typography.monoXs, color: ACCENT, opacity: 0.6, marginBottom: spacing.xs, letterSpacing: 1 },
+  bioValue: { ...typography.body, color: ACCENT, fontWeight: '500' },
+  charterSection: { marginBottom: spacing.lg },
+  charterTitle: { ...typography.caption, color: ACCENT, letterSpacing: 2, marginBottom: spacing.md, opacity: 0.7 },
+  charterText: { ...typography.bodySm, color: ACCENT, opacity: 0.6, lineHeight: 20, fontStyle: 'italic' },
+  verifiedBadge: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: `${ACCENT}33`,
   },
+  verifiedText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600' },
+  mrzZone: { backgroundColor: colors.ink, padding: spacing.md, marginBottom: spacing.lg, borderRadius: radii.sm },
+  mrzLine: { fontFamily: 'Courier New', fontSize: 9, color: ACCENT, marginBottom: spacing.xs, letterSpacing: 1 },
+  pageFooter: {
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: `${ACCENT}33`,
+    gap: spacing.xs,
+  },
+  footerSignature: { ...typography.caption, color: ACCENT, opacity: 0.5, letterSpacing: 1 },
+  pageNumber: { ...typography.monoXs, color: ACCENT, opacity: 0.4 },
+  actions: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
 });
