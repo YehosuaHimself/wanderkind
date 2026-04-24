@@ -36,7 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Listen for auth changes
-      supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         set({ session, user: session?.user ?? null });
         if (session?.user) {
           await get().fetchProfile();
@@ -44,6 +44,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({ profile: null, isOnboarded: false });
         }
       });
+
+      // Store subscription for potential cleanup
+      (globalThis as any).__wanderkind_auth_sub = subscription;
+    } catch (err) {
+      console.error('Auth initialization failed:', err);
     } finally {
       set({ isLoading: false });
     }

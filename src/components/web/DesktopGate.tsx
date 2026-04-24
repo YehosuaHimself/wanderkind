@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform, Dimensions, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
 
 const useIsDesktop = () => {
   if (Platform.OS !== 'web') return false;
@@ -7,21 +7,28 @@ const useIsDesktop = () => {
   return width > 768;
 };
 
+// Inject CSS keyframes for 3D Y-axis rotation (web only)
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const styleId = 'wk-desktop-gate-styles';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes wk-rotate-y {
+        0% { transform: perspective(800px) rotateY(0deg); }
+        100% { transform: perspective(800px) rotateY(360deg); }
+      }
+      .wk-rotating-w {
+        animation: wk-rotate-y 8s linear infinite;
+        display: inline-block;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 export function DesktopGate({ children }: { children: React.ReactNode }) {
   const isDesktop = useIsDesktop();
-  const spinValue = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    if (!isDesktop) return;
-    Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 20000,
-        easing: Easing.linear,
-        useNativeDriver: Platform.OS !== 'web',
-      })
-    ).start();
-  }, [isDesktop]);
 
   // Listen for resize on web
   const [, forceUpdate] = React.useState(0);
@@ -34,27 +41,28 @@ export function DesktopGate({ children }: { children: React.ReactNode }) {
 
   if (!isDesktop) return <>{children}</>;
 
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
     <View style={styles.container}>
-      <Animated.Text style={[styles.w, { transform: [{ rotate: spin }] }]}>
-        W
-      </Animated.Text>
+      {Platform.OS === 'web' ? (
+        <div className="wk-rotating-w" style={{
+          fontSize: 120,
+          fontWeight: 200,
+          color: '#C8762A',
+          marginBottom: 24,
+          fontFamily: 'Georgia, serif',
+          lineHeight: 1,
+        }}>
+          W
+        </div>
+      ) : (
+        <Text style={styles.w}>W</Text>
+      )}
       <Text style={styles.title}>WANDERKIND</Text>
       <Text style={styles.subtitle}>is a mobile experience</Text>
       <View style={styles.divider} />
       <Text style={styles.body}>
         Open wanderkind.love on your phone{'\n'}to begin your journey.
       </Text>
-      <View style={styles.qrHint}>
-        <Text style={styles.hintText}>
-          Scan the QR code or visit wanderkind.love on mobile
-        </Text>
-      </View>
     </View>
   );
 }
@@ -100,18 +108,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 26,
     marginBottom: 40,
-  },
-  qrHint: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(200,118,42,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(200,118,42,0.15)',
-  },
-  hintText: {
-    fontSize: 14,
-    color: '#9B8E7E',
-    textAlign: 'center',
   },
 });

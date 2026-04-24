@@ -48,7 +48,7 @@ export default function MapHome() {
 
   const filteredHosts = hosts.filter(h => {
     if (filter === 'free') return h.host_type === 'free';
-    if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
+    if (filter === 'donativo') return h.host_type === 'donativo';
     return true;
   });
 

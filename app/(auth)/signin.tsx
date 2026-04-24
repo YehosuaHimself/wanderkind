@@ -41,8 +41,8 @@ export default function SignInScreen() {
         return;
       }
 
-      // Navigation will be handled by the auth state change
-      router.replace('/(app)');
+      // Navigation will be handled by the auth state change in index.tsx
+      router.replace('/');
     } catch (error) {
       setErrors({ form: 'An unexpected error occurred' });
     } finally {

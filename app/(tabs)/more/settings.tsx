@@ -11,7 +11,7 @@ import { useAuth } from '../../../src/stores/auth';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const [notifications, setNotifications] = useState(true);
 
   const handleSignOut = async () => {
@@ -81,18 +81,15 @@ export default function SettingsScreen() {
                 <Ionicons name="person-circle-outline" size={32} color={colors.amber} />
               </View>
               <View style={styles.accountDetails}>
-                <Text style={styles.accountName}>Your Trail Name</Text>
-                <Text style={styles.accountEmail}>user@wanderkind.com</Text>
+                <Text style={styles.accountName}>{profile?.trail_name || 'Your Trail Name'}</Text>
+                <Text style={styles.accountEmail}>{profile?.email || ''}</Text>
               </View>
             </View>
           </WKCard>
 
           <View style={styles.accountActions}>
-            <TouchableOpacity style={styles.accountButton} onPress={() => {}}>
+            <TouchableOpacity style={styles.accountButton} onPress={() => router.push('/(tabs)/me/edit-profile' as any)}>
               <Text style={styles.accountButtonText}>Edit Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.accountButton} onPress={() => {}}>
-              <Text style={styles.accountButtonText}>Change Password</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -107,7 +104,7 @@ export default function SettingsScreen() {
           />
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => {}}
+            onPress={() => router.push('/(tabs)/me/delete-account' as any)}
             activeOpacity={0.7}
           >
             <Text style={styles.deleteButtonText}>Delete Account</Text>
