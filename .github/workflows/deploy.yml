@@ -34,6 +34,21 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      - name: Add service worker kill switch (unregister old Vite PWA)
+        run: |
+          cat > dist/sw.js << 'SWEOF'
+          self.addEventListener('install', () => self.skipWaiting());
+          self.addEventListener('activate', (event) => {
+            event.waitUntil(
+              caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+                .then(() => self.clients.matchAll())
+                .then(clients => clients.forEach(c => c.navigate(c.url)))
+                .then(() => self.registration.unregister())
+            );
+          });
+          SWEOF
+          cp dist/sw.js dist/service-worker.js
+
       - name: Add custom domain CNAME
         run: echo "wanderkind.love" > dist/CNAME
 
