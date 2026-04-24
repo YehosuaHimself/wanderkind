@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Wanderkind",
+    "slug": "wanderkind-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "wanderkind",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAF5"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wanderkind.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Wanderkind needs camera access for stamps, moments, and your profile photo.",
+        "NSPhotoLibraryUsageDescription": "Wanderkind needs photo library access to share photos from your journey.",
+        "NSLocationWhenInUseUsageDescription": "Wanderkind uses your location to find nearby hosts and show your position on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Wanderkind uses your location to track your walking route and find nearby hosts."
+      }
+    },
+    "android": {
+      "package": "com.wanderkind.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAFAF5"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-location",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "wanderkind-app"
+      }
+    }
+  }
+}
