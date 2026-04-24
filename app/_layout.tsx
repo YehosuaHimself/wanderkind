@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Platform } from 'react-native';
 import { useAuthStore } from '../src/stores/auth';
+import { DesktopGate } from '../src/components/web/DesktopGate';
 import '../global.css';
 
 // Web error boundary to show errors instead of white screen
@@ -58,7 +59,9 @@ function RootLayoutInner() {
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <RootLayoutInner />
+      <DesktopGate>
+        <RootLayoutInner />
+      </DesktopGate>
     </ErrorBoundary>
   );
 }
