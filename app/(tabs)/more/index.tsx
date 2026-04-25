@@ -53,6 +53,19 @@ const menuItems: MenuItem[] = [
     route: '/(tabs)/more/group-walk',
   },
   {
+    icon: 'car-outline',
+    title: 'Tramp Mode',
+    subtitle: 'Hitchhike safely between stages',
+    route: '/(tabs)/map/tramp-mode',
+    accent: colors.green,
+  },
+  {
+    icon: 'scan-outline',
+    title: 'Scan Stamp',
+    subtitle: 'Scan QR codes for check-ins',
+    route: '/(tabs)/more/scan',
+  },
+  {
     icon: 'information-circle-outline',
     title: 'About',
     subtitle: 'About Wanderkind',

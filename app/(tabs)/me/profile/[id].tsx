@@ -8,6 +8,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
+import { SEED_PROFILES } from '../../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface PublicProfile {
@@ -46,13 +47,33 @@ export default function PublicProfileScreen() {
         .eq('id', id)
         .single();
 
-      if (queryError) throw queryError;
-      setProfile(data);
+      if (!queryError && data) {
+        setProfile(data);
+        setLoading(false);
+        return;
+      }
     } catch (err) {
-      setError('Profile not found');
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch profile:', err);
     }
+
+    // Fallback to seed profiles
+    const seedProfile = SEED_PROFILES.find(p => p.id === id);
+    if (seedProfile) {
+      setProfile({
+        id: seedProfile.id,
+        trail_name: seedProfile.trail_name,
+        bio: seedProfile.bio,
+        avatar_url: seedProfile.avatar_url,
+        tier: seedProfile.tier,
+        nights_walked: seedProfile.nights_walked,
+        nights_hosted: seedProfile.hosts_stayed,
+        stamps_collected: seedProfile.stamps_count,
+        verification_level: seedProfile.verification_level,
+      } as PublicProfile);
+    } else {
+      setError('Profile not found');
+    }
+    setLoading(false);
   };
 
   if (loading) {

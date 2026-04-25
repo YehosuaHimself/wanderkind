@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Moment, Profile } from '../../../src/types/database';
+import { SEED_MOMENTS } from '../../../src/data/seed-moments';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type MomentWithAuthor = Moment & { author?: Profile };
@@ -19,13 +20,23 @@ export default function MomentsFeed() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchMoments = useCallback(async () => {
-    const { data } = await supabase
-      .from('moments')
-      .select('*, author:profiles!moments_author_id_fkey(*)')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    try {
+      const { data, error } = await supabase
+        .from('moments')
+        .select('*, author:profiles!moments_author_id_fkey(*)')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    if (data) setMoments(data as MomentWithAuthor[]);
+      if (!error && data && data.length > 0) {
+        setMoments(data as MomentWithAuthor[]);
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to fetch moments:', err);
+    }
+
+    // Fallback to seed data if Supabase returns empty or fails
+    setMoments(SEED_MOMENTS as unknown as MomentWithAuthor[]);
   }, []);
 
   useEffect(() => { fetchMoments(); }, []);

@@ -16,6 +16,7 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Profile } from '../../../src/types/database';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface NearbyWanderer extends Profile {
@@ -45,7 +46,7 @@ export default function Wanderkinder() {
         .eq('profile_id', '!=', 'null')
         .order('updated_at', { ascending: false });
 
-      if (data) {
+      if (data && data.length > 0) {
         const profileIds = (data as any[]).map(p => p.profile_id);
         const { data: profiles } = await supabase
           .from('profiles')
@@ -53,11 +54,22 @@ export default function Wanderkinder() {
           .in('id', profileIds)
           .eq('is_walking', true);
 
-        setWanderers(profiles as NearbyWanderer[] || []);
+        if (profiles && profiles.length > 0) {
+          setWanderers(profiles as NearbyWanderer[] || []);
+          setLoading(false);
+          return;
+        }
       }
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch nearby wanderers:', err);
     }
+
+    // Fallback to seed profiles who are currently walking
+    const walkingSeed = SEED_PROFILES
+      .filter(p => p.is_walking)
+      .map(p => ({ ...p, distance_km: Math.floor(Math.random() * 20) + 1 }));
+    setWanderers(walkingSeed as unknown as NearbyWanderer[]);
+    setLoading(false);
   };
 
   const renderWandererCard = ({ item }: { item: NearbyWanderer }) => {
@@ -68,7 +80,7 @@ export default function Wanderkinder() {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push(`/(auth)/public-profile/${item.id}`)}
+        onPress={() => router.push(`/(tabs)/me/profile/${item.id}`)}
         activeOpacity={0.7}
       >
         <View style={styles.cardContent}>

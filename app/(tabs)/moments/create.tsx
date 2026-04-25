@@ -8,12 +8,16 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+let FileSystem: any = null;
+if (Platform.OS !== 'web') {
+  try { FileSystem = require('expo-file-system'); } catch {}
+}
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { showAlert } from '../../../src/lib/alert';
 import { WKButton } from '../../../src/components/ui/WKButton';
@@ -58,27 +62,53 @@ export default function CreateMoment() {
 
   const validatePhotoFile = async (uri: string): Promise<boolean> => {
     try {
-      // Get file info
-      const fileInfo = await FileSystem.getInfoAsync(uri);
+      if (Platform.OS === 'web') {
+        // On web, expo-image-picker returns data URIs or blob URLs
+        // Basic validation — size check not possible without fetching the blob
+        if (!uri || uri.length === 0) {
+          showAlert('Invalid File', 'No file was selected.');
+          return false;
+        }
+        // If it's a blob URL, fetch and check size
+        if (uri.startsWith('blob:') || uri.startsWith('data:')) {
+          try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const fileSizeInMB = blob.size / (1024 * 1024);
+            if (fileSizeInMB > 10) {
+              showAlert('File Too Large', `Please choose a photo smaller than 10MB. Current size: ${fileSizeInMB.toFixed(2)}MB`);
+              return false;
+            }
+            // Check MIME type
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(blob.type)) {
+              showAlert('Invalid Format', 'Please choose a JPEG, PNG, or WebP image.');
+              return false;
+            }
+          } catch {
+            // Can't validate blob — allow it through
+          }
+        }
+        return true;
+      }
 
+      // Native: use FileSystem
+      if (!FileSystem) return true; // Skip if FileSystem unavailable
+
+      const fileInfo = await FileSystem.getInfoAsync(uri);
       if (!fileInfo.exists) {
         showAlert('Invalid File', 'The selected file does not exist.');
         return false;
       }
 
       const fileSizeInMB = (fileInfo.size || 0) / (1024 * 1024);
-      const maxSizeInMB = 10;
-
-      // Check file size
-      if (fileSizeInMB > maxSizeInMB) {
-        showAlert('File Too Large', `Please choose a photo smaller than ${maxSizeInMB}MB. Current size: ${fileSizeInMB.toFixed(2)}MB`);
+      if (fileSizeInMB > 10) {
+        showAlert('File Too Large', `Please choose a photo smaller than 10MB. Current size: ${fileSizeInMB.toFixed(2)}MB`);
         return false;
       }
 
-      // Check MIME type by file extension
       const extension = uri.split('.').pop()?.toLowerCase();
       const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-
       if (!extension || !validExtensions.includes(extension)) {
         showAlert('Invalid Format', 'Please choose a JPEG, PNG, or WebP image.');
         return false;
