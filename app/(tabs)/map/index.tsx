@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch, ScrollView, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +41,22 @@ if (Platform.OS !== 'web') {
   PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
   Location = require('expo-location');
 }
+
+// Haversine distance (km)
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const HOST_CARD_WIDTH = width - 48;
 
 // Get walking seed profiles for map markers
 const walkingSeedProfiles = SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng);
@@ -414,8 +430,13 @@ export default function MapHome() {
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('all');
-  const [nearestFree, setNearestFree] = useState<Host | null>(null);
+  const [nearbyHosts, setNearbyHosts] = useState<Host[]>([]);
+  const [activeHostIndex, setActiveHostIndex] = useState(0);
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(false);
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
+  const hostListRef = useRef<FlatList>(null);
   const [layers, setLayers] = useState<LayerState>({
     hosts: true,
     wanderkinder: true,
@@ -425,9 +446,55 @@ export default function MapHome() {
     mountains: false,
   });
 
+  // Get user location on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        if (Platform.OS === 'web') {
+          if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => { setUserLat(pos.coords.latitude); setUserLng(pos.coords.longitude); },
+              () => { /* fallback: no location */ }
+            );
+          }
+        } else {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            setUserLat(loc.coords.latitude);
+            setUserLng(loc.coords.longitude);
+          }
+        }
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     fetchHosts();
   }, []);
+
+  // Sort hosts by distance whenever hosts or user location changes
+  useEffect(() => {
+    if (hosts.length === 0) return;
+    let sorted: Host[];
+    if (userLat != null && userLng != null) {
+      sorted = [...hosts].sort((a, b) =>
+        haversineKm(userLat, userLng, a.lat, a.lng) - haversineKm(userLat, userLng, b.lat, b.lng)
+      );
+    } else {
+      // No user location — sort by popularity
+      sorted = [...hosts].sort((a, b) => (b.total_hosted ?? 0) - (a.total_hosted ?? 0));
+    }
+    // Apply filter
+    const filtered = sorted.filter(h => {
+      if (filter === 'free') return h.host_type === 'free';
+      if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
+      return true;
+    });
+    setNearbyHosts(filtered);
+    setActiveHostIndex(0);
+    setExpandedCardId(null);
+  }, [hosts, userLat, userLng, filter]);
 
   const fetchHosts = async () => {
     try {
@@ -440,20 +507,14 @@ export default function MapHome() {
 
         if (data && data.length > 0) {
           setHosts(data as Host[]);
-          const free = data.find(h => h.host_type === 'free' || h.host_type === 'donativo');
-          setNearestFree(free as Host | null);
           return;
         }
       } catch (err) {
         console.error('Failed to fetch hosts from Supabase:', err);
-        toast.error('Could not load hosts');
       }
 
       // Fallback to seed data
-      const seedHosts = SEED_HOSTS as unknown as Host[];
-      setHosts(seedHosts);
-      const free = seedHosts.find(h => h.host_type === 'free' || h.host_type === 'donativo');
-      setNearestFree(free || null);
+      setHosts(SEED_HOSTS as unknown as Host[]);
     } catch (err) {
       console.error('Failed to load hosts:', err);
       toast.error('Could not load hosts');
@@ -468,12 +529,55 @@ export default function MapHome() {
     router.push(`/(tabs)/map/host/${hostId}`);
   };
 
+  // Center map on a specific host
+  const centerMapOnHost = useCallback((host: Host) => {
+    if (Platform.OS === 'web') {
+      const iframe = document.querySelector('iframe');
+      iframe?.contentWindow?.postMessage({
+        type: 'center-on-location',
+        lat: host.lat,
+        lng: host.lng,
+      }, '*');
+    } else {
+      mapRef.current?.animateToRegion({
+        latitude: host.lat,
+        longitude: host.lng,
+        latitudeDelta: 0.15,
+        longitudeDelta: 0.15,
+      }, 800);
+    }
+  }, []);
+
+  // On card swipe — center map on the newly visible host
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+    if (viewableItems.length > 0) {
+      const idx = viewableItems[0].index ?? 0;
+      setActiveHostIndex(idx);
+      const host = viewableItems[0].item as Host;
+      if (host) {
+        // Center map
+        if (Platform.OS === 'web') {
+          const iframe = document.querySelector('iframe');
+          iframe?.contentWindow?.postMessage({
+            type: 'center-on-location',
+            lat: host.lat,
+            lng: host.lng,
+          }, '*');
+        }
+      }
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+
   const handleLocationPress = async () => {
     try {
       if (Platform.OS === 'web') {
         if ('geolocation' in navigator) {
           navigator.geolocation.getCurrentPosition((position) => {
             const { latitude, longitude } = position.coords;
+            setUserLat(latitude);
+            setUserLng(longitude);
             const iframe = document.querySelector('iframe');
             iframe?.contentWindow?.postMessage({
               type: 'center-on-location',
@@ -486,6 +590,8 @@ export default function MapHome() {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserLat(loc.coords.latitude);
+        setUserLng(loc.coords.longitude);
         mapRef.current?.animateToRegion({
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
@@ -495,6 +601,137 @@ export default function MapHome() {
       }
     } catch {}
   };
+
+  // Format distance for display
+  const formatDistance = (host: Host): string => {
+    if (userLat != null && userLng != null) {
+      const d = haversineKm(userLat, userLng, host.lat, host.lng);
+      if (d < 1) return `${Math.round(d * 1000)} m`;
+      if (d < 100) return `${d.toFixed(1)} km`;
+      return `${Math.round(d)} km`;
+    }
+    if (host.route_km) return `km ${host.route_km}`;
+    return 'Nearby';
+  };
+
+  // Render a single host card
+  const renderHostCard = useCallback(({ item, index }: { item: Host; index: number }) => {
+    const config = hostTypeConfig[item.host_type as keyof typeof hostTypeConfig];
+    const isExpanded = expandedCardId === item.id;
+    const dist = formatDistance(item);
+
+    return (
+      <TouchableOpacity
+        style={styles.hostCard}
+        activeOpacity={0.95}
+        onPress={() => setExpandedCardId(isExpanded ? null : item.id)}
+      >
+        {/* Top label row */}
+        <View style={styles.hostCardHeader}>
+          <View style={[styles.hostTypeBadge, { backgroundColor: config?.bg ?? colors.amberBg }]}>
+            <Text style={[styles.hostTypeBadgeText, { color: config?.color ?? colors.amber }]}>
+              {config?.label ?? 'HOST'}
+            </Text>
+          </View>
+          <Text style={styles.hostCardDistance}>{dist}</Text>
+          <Text style={styles.hostCardIndex}>{index + 1}/{nearbyHosts.length}</Text>
+        </View>
+
+        {/* Name */}
+        <Text style={styles.hostCardName} numberOfLines={isExpanded ? 3 : 1}>{item.name}</Text>
+
+        {/* Address / Region */}
+        <View style={styles.hostCardRow}>
+          <Ionicons name="location-outline" size={13} color={colors.ink3} />
+          <Text style={styles.hostCardDetail} numberOfLines={1}>
+            {(item as any).region ? `${(item as any).region}, ${(item as any).country}` : 'Along the Way'}
+          </Text>
+        </View>
+
+        {/* Capacity */}
+        <View style={styles.hostCardRow}>
+          <Ionicons name="bed-outline" size={13} color={colors.ink3} />
+          <Text style={styles.hostCardDetail}>
+            {item.capacity ? `${item.capacity} beds` : 'Beds available'}
+          </Text>
+        </View>
+
+        {/* Contact row — phone & email */}
+        <View style={styles.hostContactRow}>
+          {(item as any).phone ? (
+            <TouchableOpacity
+              style={styles.contactBtn}
+              onPress={() => Linking.openURL(`tel:${(item as any).phone}`)}
+            >
+              <Ionicons name="call" size={14} color={colors.green} />
+              <Text style={styles.contactBtnText}>Call</Text>
+            </TouchableOpacity>
+          ) : null}
+          {(item as any).email ? (
+            <TouchableOpacity
+              style={styles.contactBtn}
+              onPress={() => Linking.openURL(`mailto:${(item as any).email}`)}
+            >
+              <Ionicons name="mail" size={14} color={colors.amber} />
+              <Text style={styles.contactBtnText}>Email</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            style={styles.contactBtn}
+            onPress={() => {
+              centerMapOnHost(item);
+            }}
+          >
+            <Ionicons name="navigate" size={14} color={colors.ink2} />
+            <Text style={styles.contactBtnText}>Focus</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.contactBtn, styles.contactBtnPrimary]}
+            onPress={() => router.push(`/(tabs)/map/host/${item.id}`)}
+          >
+            <Ionicons name="open-outline" size={14} color="#FFF" />
+            <Text style={[styles.contactBtnText, { color: '#FFF' }]}>Details</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Expanded section */}
+        {isExpanded && (
+          <View style={styles.expandedSection}>
+            {item.description ? (
+              <Text style={styles.expandedDesc}>{item.description}</Text>
+            ) : null}
+            <View style={styles.expandedMeta}>
+              <Text style={styles.expandedMetaItem}>
+                <Text style={styles.expandedMetaLabel}>Hosted: </Text>
+                {item.total_hosted?.toLocaleString() ?? '—'} pilgrims
+              </Text>
+              {(item as any).country && (
+                <Text style={styles.expandedMetaItem}>
+                  <Text style={styles.expandedMetaLabel}>Country: </Text>
+                  {(item as any).country}
+                </Text>
+              )}
+              {item.route_km != null && (
+                <Text style={styles.expandedMetaItem}>
+                  <Text style={styles.expandedMetaLabel}>Route km: </Text>
+                  {item.route_km}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Expand hint */}
+        <View style={styles.expandHint}>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={14}
+            color={colors.ink3}
+          />
+        </View>
+      </TouchableOpacity>
+    );
+  }, [expandedCardId, nearbyHosts.length, userLat, userLng, router, centerMapOnHost]);
 
   return (
     <View style={styles.container}>
@@ -569,36 +806,34 @@ export default function MapHome() {
         <Ionicons name="locate" size={20} color={colors.amber} />
       </TouchableOpacity>
 
-      {/* Next Free Bed */}
-      {nearestFree && (
-        <TouchableOpacity
-          style={styles.nextFreeCard}
-          onPress={() => router.push(`/(tabs)/map/host/${nearestFree.id}`)}
-          activeOpacity={0.9}
-        >
-          <View style={styles.nextFreeHeader}>
-            <View style={styles.goldDot} />
-            <Text style={styles.nextFreeLabel}>NEXT FREE BED</Text>
-          </View>
-          <Text style={styles.nextFreeName} numberOfLines={1}>{nearestFree.name}</Text>
-          <View style={styles.nextFreeRow}>
-            <Text style={styles.nextFreeDistance}>
-              {nearestFree.route_km ? `${nearestFree.route_km} km` : 'Nearby'}
-            </Text>
-            <View style={[
-              styles.nextFreeBadge,
-              { backgroundColor: hostTypeConfig[nearestFree.host_type]?.bg ?? colors.amberBg }
-            ]}>
-              <Text style={[
-                styles.nextFreeBadgeText,
-                { color: hostTypeConfig[nearestFree.host_type]?.color ?? colors.amber }
-              ]}>
-                {hostTypeConfig[nearestFree.host_type]?.label ?? 'HOST'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={14} color={colors.amber} />
-          </View>
-        </TouchableOpacity>
+      {/* Swipeable Host Cards */}
+      {nearbyHosts.length > 0 && (
+        <View style={styles.hostCarousel}>
+          <FlatList
+            ref={hostListRef}
+            data={nearbyHosts.slice(0, 50)}
+            renderItem={renderHostCard}
+            keyExtractor={item => item.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={HOST_CARD_WIDTH + 12}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            getItemLayout={(_, index) => ({
+              length: HOST_CARD_WIDTH + 12,
+              offset: (HOST_CARD_WIDTH + 12) * index,
+              index,
+            })}
+            initialNumToRender={3}
+            maxToRenderPerBatch={5}
+            windowSize={5}
+          />
+        </View>
       )}
     </View>
   );
@@ -746,7 +981,7 @@ const styles = StyleSheet.create({
   locationButton: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: 180,
+    bottom: 220,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -756,67 +991,123 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
+    zIndex: 20,
   },
-  nextFreeCard: {
+  // Host card carousel
+  hostCarousel: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 16 : 16,
+    left: 0,
+    right: 0,
+    bottom: Platform.OS === 'ios' ? 16 : Platform.OS === 'web' ? 8 : 8,
+    zIndex: 10,
+  },
+  hostCard: {
+    width: HOST_CARD_WIDTH,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
     borderColor: colors.goldBorder,
     ...shadows.lg,
   },
-  nextFreeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  goldDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.gold,
-    shadowColor: colors.gold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-  },
-  nextFreeLabel: {
-    fontFamily: 'Courier New',
-    fontSize: 9,
-    letterSpacing: 2,
-    color: colors.gold,
-    fontWeight: '600',
-  },
-  nextFreeName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.ink,
-    marginBottom: 6,
-  },
-  nextFreeRow: {
+  hostCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginBottom: 6,
   },
-  nextFreeDistance: {
-    ...typography.bodySm,
-    color: colors.ink2,
-    flex: 1,
-  },
-  nextFreeBadge: {
+  hostTypeBadge: {
     paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: 10,
   },
-  nextFreeBadgeText: {
+  hostTypeBadgeText: {
     fontFamily: 'Courier New',
     fontSize: 8,
     letterSpacing: 1,
+    fontWeight: '700',
+  },
+  hostCardDistance: {
+    fontSize: 12,
     fontWeight: '600',
+    color: colors.amber,
+    flex: 1,
+  },
+  hostCardIndex: {
+    fontSize: 10,
+    color: colors.ink3,
+    fontFamily: 'Courier New',
+    letterSpacing: 0.5,
+  },
+  hostCardName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.ink,
+    marginBottom: 6,
+  },
+  hostCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  hostCardDetail: {
+    fontSize: 12,
+    color: colors.ink2,
+    flex: 1,
+  },
+  hostContactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  contactBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  contactBtnPrimary: {
+    backgroundColor: colors.amber,
+    borderColor: colors.amber,
+  },
+  contactBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.ink2,
+  },
+  expandHint: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  expandedSection: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLt,
+  },
+  expandedDesc: {
+    fontSize: 13,
+    color: colors.ink2,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  expandedMeta: {
+    gap: 4,
+  },
+  expandedMetaItem: {
+    fontSize: 12,
+    color: colors.ink2,
+  },
+  expandedMetaLabel: {
+    fontWeight: '700',
+    color: colors.ink,
   },
 });
