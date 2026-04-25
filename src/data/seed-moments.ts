@@ -28,6 +28,7 @@ function m(
 
 export const SEED_MOMENTS = [
   m('m-001', 'p-001', 'Day 47. Feet still angry but my heart is singing. The Meseta just keeps giving.', {
+    photo_url: 'https://images.unsplash.com/photo-1551234014-f4f5029f97ba?w=800&q=80',
     location_name: 'El Burgo Ranero, Spain',
     lat: 42.437, lng: -5.227,
     created_at: '2026-04-25T09:23:00Z',
@@ -45,6 +46,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-24T14:12:00Z',
   }),
   m('m-004', 'p-004', 'At 67, everyone told me I was crazy. Two months in, they can be quiet now. Every day is a miracle.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Via Francigena, Switzerland',
     lat: 46.520, lng: 6.634,
     created_at: '2026-04-24T11:03:00Z',
@@ -56,6 +58,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-24T08:30:00Z',
   }),
   m('m-006', 'p-006', 'Year 2 on the road. The blisters are smaller now but the conversations are deeper.', {
+    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80',
     location_name: 'Camino Portugues, Spain',
     lat: 42.234, lng: -8.724,
     created_at: '2026-04-23T18:45:00Z',
@@ -73,6 +76,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-23T12:08:00Z',
   }),
   m('m-009', 'p-009', '1100 nights later and I still wake up wondering what the road will bring. Never gets old.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Finisterre, Spain',
     lat: 42.906, lng: -9.263,
     created_at: '2026-04-23T09:44:00Z',
@@ -84,6 +88,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-22T16:30:00Z',
   }),
   m('m-011', 'p-011', 'Teaching my students about Via Francigena while walking it. They\'re jealous. I don\'t blame them.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Rome, Italy',
     lat: 41.902, lng: 12.496,
     created_at: '2026-04-22T14:17:00Z',
@@ -101,6 +106,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-21T17:45:00Z',
   }),
   m('m-014', 'p-014', 'Tercera vez es la vencida. The Camino keeps teaching me something different each time.', {
+    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80',
     location_name: 'Logrono, Spain',
     lat: 42.462, lng: -2.451,
     created_at: '2026-04-21T15:20:00Z',
@@ -112,6 +118,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-21T13:05:00Z',
   }),
   m('m-016', 'p-016', 'Took sabbatical from code. Writing on paper now. Mind is clearer. Life is slower. Perfection.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Geneva, Switzerland',
     lat: 46.204, lng: 6.143,
     created_at: '2026-04-21T10:30:00Z',
@@ -123,6 +130,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-20T16:12:00Z',
   }),
   m('m-018', 'p-018', 'Former fisherman here. The rhythms are the same. Just different currents now.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Copenhagen, Denmark',
     lat: 55.676, lng: 12.568,
     created_at: '2026-04-20T14:48:00Z',
@@ -134,6 +142,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-20T11:35:00Z',
   }),
   m('m-020', 'p-020', 'Luna and I just hiked through rain for 8 hours. She didn\'t complain once. Better friend than most humans.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Prague, Czech Republic',
     lat: 50.075, lng: 14.438,
     created_at: '2026-04-20T09:22:00Z',
@@ -145,6 +154,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-19T17:50:00Z',
   }),
   m('m-022', 'p-022', 'Finding my yoga mat replaced by walking sticks. Finding my practice anyway. The trail teaches.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Stockholm, Sweden',
     lat: 59.329, lng: 18.069,
     created_at: '2026-04-19T15:14:00Z',
@@ -156,6 +166,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-19T13:40:00Z',
   }),
   m('m-024', 'p-024', 'Hosted 6 pilgrims today. Served them my olive oil. It\'s an honor to feed wanderers.', {
+    photo_url: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80',
     location_name: 'Siena, Italy',
     lat: 43.318, lng: 11.332,
     created_at: '2026-04-19T11:25:00Z',
@@ -167,6 +178,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-18T16:58:00Z',
   }),
   m('m-026', 'p-026', 'Mountain guide leading pilgrims now. Different peaks. Same sense of awe every single day.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Koenigsweg, Austria',
     lat: 47.270, lng: 11.395,
     created_at: '2026-04-18T14:33:00Z',
@@ -178,6 +190,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-18T12:10:00Z',
   }),
   m('m-028', 'p-028', 'Carpenter here. Fixing broken things on the trail, one person at a time. Purpose found.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Helsinki, Finland',
     lat: 60.170, lng: 24.941,
     created_at: '2026-04-18T09:47:00Z',
@@ -189,6 +202,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-17T18:22:00Z',
   }),
   m('m-030', 'p-030', 'Firefighter on leave. Trading 24-hour shifts for infinite sunrises. This is what I needed.', {
+    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&q=80',
     location_name: 'Vancouver, Canada',
     lat: 49.283, lng: -123.121,
     created_at: '2026-04-17T15:58:00Z',
@@ -200,6 +214,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-17T13:35:00Z',
   }),
   m('m-032', 'p-002', 'Found fresh morels today. Made a butter sauce. The pilgrims wept. This is my religion now.', {
+    photo_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
     location_name: 'Conques, France',
     lat: 44.600, lng: 2.400,
     created_at: '2026-04-17T11:09:00Z',
@@ -211,6 +226,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-16T17:44:00Z',
   }),
   m('m-034', 'p-004', 'Met a 72-year-old today walking her third route. Comparison is a thief of joy but inspiration is free.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Interlaken, Switzerland',
     lat: 46.686, lng: 7.863,
     created_at: '2026-04-16T15:21:00Z',
@@ -222,6 +238,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-16T13:08:00Z',
   }),
   m('m-036', 'p-006', 'Nights 452-458. Still finding people worth staying up late to talk to. Trail magic is real.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Santiago de Compostela, Spain',
     lat: 42.878, lng: -8.544,
     created_at: '2026-04-16T10:45:00Z',
@@ -233,6 +250,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-15T17:32:00Z',
   }),
   m('m-038', 'p-008', 'Filled 73 pages in my sketchbook. Every single town gets a drawing. Art is my trail journal.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Florence, Italy',
     lat: 43.770, lng: 11.249,
     created_at: '2026-04-15T15:09:00Z',
@@ -244,6 +262,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-15T12:46:00Z',
   }),
   m('m-040', 'p-010', 'Woman at the cafe asked why I don\'t wear shoes. Said my feet look happier. She gets it.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Strasbourg, France',
     lat: 48.573, lng: 7.752,
     created_at: '2026-04-15T10:23:00Z',
@@ -255,6 +274,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-14T17:50:00Z',
   }),
   m('m-042', 'p-012', 'Youngest walked 18km today. Oldest walked 14km. Everyone slept immediately after. Perfect family day.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Nuremberg, Germany',
     lat: 49.452, lng: 11.077,
     created_at: '2026-04-14T15:27:00Z',
@@ -266,6 +286,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-14T13:04:00Z',
   }),
   m('m-044', 'p-014', 'First time I was running from something. Second time searching for something. Third time: just walking.', {
+    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80',
     location_name: 'Pamplona, Spain',
     lat: 42.812, lng: -1.645,
     created_at: '2026-04-14T10:41:00Z',
@@ -277,6 +298,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-13T16:58:00Z',
   }),
   m('m-046', 'p-016', 'Watched sunrise from a peak after 4-hour climb. No notifications. No distractions. Just me and the horizon.', {
+    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&q=80',
     location_name: 'Zurich, Switzerland',
     lat: 47.377, lng: 8.541,
     created_at: '2026-04-13T14:35:00Z',
@@ -288,6 +310,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-13T12:12:00Z',
   }),
   m('m-048', 'p-018', 'Taught young pilgrims how to read clouds. They actually listened. Sea wisdom still matters.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Aalborg, Denmark',
     lat: 57.048, lng: 9.922,
     created_at: '2026-04-13T09:49:00Z',
@@ -299,6 +322,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-12T17:26:00Z',
   }),
   m('m-050', 'p-020', 'Luna caught a rabbit. Let it go. So did I. We both got the lesson.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Brno, Czech Republic',
     lat: 49.195, lng: 16.608,
     created_at: '2026-04-12T15:03:00Z',
@@ -310,6 +334,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-12T12:40:00Z',
   }),
   m('m-052', 'p-022', 'Morning meditation with 47 pilgrims. The trail is the teacher. The road is the studio. Perfect alignment.', {
+    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&q=80',
     location_name: 'Gothenburg, Sweden',
     lat: 57.709, lng: 11.975,
     created_at: '2026-04-12T10:17:00Z',
@@ -321,6 +346,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-11T17:54:00Z',
   }),
   m('m-054', 'p-024', 'Olive harvest was good. Pressing will be good. Feeding pilgrims will be good. Life cycle beautiful.', {
+    photo_url: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80',
     location_name: 'Val d\'Orcia, Italy',
     lat: 43.076, lng: 11.553,
     created_at: '2026-04-11T15:31:00Z',
@@ -332,6 +358,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-11T13:08:00Z',
   }),
   m('m-056', 'p-026', 'Led a group up Koenigsweg in fog. Couldn\'t see 10 feet. Still the best view of the day.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Salzburg, Austria',
     lat: 47.810, lng: 13.055,
     created_at: '2026-04-11T10:45:00Z',
@@ -343,6 +370,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-10T17:22:00Z',
   }),
   m('m-058', 'p-028', 'Fixed a broken stove at the albergue. Fixed a broken heart with coffee after. Carpenter\'s hands. Healing.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Turku, Finland',
     lat: 60.452, lng: 22.267,
     created_at: '2026-04-10T14:59:00Z',
@@ -354,11 +382,13 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-10T12:36:00Z',
   }),
   m('m-060', 'p-030', 'Training people to fight fires was routine. This is raw. This is real. This is alive.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Calgary, Canada',
     lat: 51.045, lng: -114.072,
     created_at: '2026-04-10T10:13:00Z',
   }),
   m('m-061', 'p-002', 'Breakfast shift: croissants, pain complet, and benedictions. Some pilgrims cry. I understand why now.', {
+    photo_url: 'https://images.unsplash.com/photo-1555939594-58d7cb561280?w=800&q=80',
     location_name: 'Alencon, France',
     lat: 48.432, lng: 0.092,
     created_at: '2026-04-09T17:50:00Z',
@@ -370,6 +400,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-09T15:27:00Z',
   }),
   m('m-063', 'p-006', 'Year 2. Everything hurts less. Everything matters more. Perfect equation.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Caldas de Reis, Spain',
     lat: 42.604, lng: -8.642,
     created_at: '2026-04-09T13:04:00Z',
@@ -381,6 +412,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-09T10:41:00Z',
   }),
   m('m-065', 'p-010', 'Feet as leather. Soul as silk. Walking without shoes is walking without armor. Love it.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Colmar, France',
     lat: 48.080, lng: 7.359,
     created_at: '2026-04-08T17:58:00Z',
@@ -392,6 +424,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-08T15:35:00Z',
   }),
   m('m-067', 'p-014', 'Met someone on their first Camino who said they felt lost. Walked with them 6 km. Found each other.', {
+    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80',
     location_name: 'Estella, Spain',
     lat: 42.671, lng: -2.032,
     created_at: '2026-04-08T13:12:00Z',
@@ -403,6 +436,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-08T10:49:00Z',
   }),
   m('m-069', 'p-018', 'Organized a sunrise walk for pilgrims. They all showed up. We watched light paint the sky. No words needed.', {
+    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&q=80',
     location_name: 'Randers, Denmark',
     lat: 56.461, lng: 10.036,
     created_at: '2026-04-07T17:26:00Z',
@@ -414,6 +448,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-07T15:03:00Z',
   }),
   m('m-071', 'p-023', 'Completed route 5. Already planning route 6. Life has direction again.', {
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     location_name: 'Konstanz, Germany',
     lat: 47.660, lng: 9.176,
     created_at: '2026-04-07T12:40:00Z',
@@ -425,6 +460,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-07T10:17:00Z',
   }),
   m('m-073', 'p-029', 'Seventeen years running this place. Every pilgrim writes themselves into the walls. I\'m just the witness.', {
+    photo_url: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&q=80',
     location_name: 'Najera, Spain',
     lat: 42.417, lng: -2.733,
     created_at: '2026-04-06T17:54:00Z',

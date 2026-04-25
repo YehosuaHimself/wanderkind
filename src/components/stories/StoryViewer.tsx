@@ -8,6 +8,8 @@ import {
   Dimensions,
   Animated,
   StyleSheet,
+  PanResponder,
+  GestureResponderEvent,
 } from 'react-native';
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -23,6 +25,8 @@ type StoryViewerProps = {
   initialIndex?: number;
   visible: boolean;
   onClose: () => void;
+  onPreviousGroup?: () => void;
+  onNextGroup?: () => void;
 };
 
 const STORY_DURATION_MS = 11 * 60 * 1000 + 11 * 1000; // 11 minutes 11 seconds
@@ -37,6 +41,8 @@ export const StoryViewer = ({
   initialIndex = 0,
   visible,
   onClose,
+  onPreviousGroup,
+  onNextGroup,
 }: StoryViewerProps) => {
   const router = useRouter();
   const handleProfilePress = useCallback(() => {
@@ -54,6 +60,7 @@ export const StoryViewer = ({
   const [paused, setPaused] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const swipeStartX = useRef(0);
 
   const currentStory = stories[currentIndex];
 
@@ -98,37 +105,76 @@ export const StoryViewer = ({
     };
   }, [currentIndex, visible, paused, stories.length, progressAnim, onClose]);
 
-  // Handle next story
+  // Handle next story - auto-advance to next group when at end
   const handleNext = useCallback(() => {
     if (currentIndex < stories.length - 1) {
       setCurrentIndex(currentIndex + 1);
-    } else {
-      onClose();
+    } else if (currentIndex === stories.length - 1) {
+      // At end of current group - jump to next group
+      if (onNextGroup) {
+        onNextGroup();
+      } else {
+        onClose();
+      }
     }
-  }, [currentIndex, stories.length, onClose]);
+  }, [currentIndex, stories.length, onClose, onNextGroup]);
 
-  // Handle previous story
+  // Handle previous story - jump to previous group when at start
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+    } else if (currentIndex === 0 && onPreviousGroup) {
+      // At start of current group - jump to previous group
+      onPreviousGroup();
     }
-  }, [currentIndex]);
+  }, [currentIndex, onPreviousGroup]);
 
-  // Handle screen tap
+  // Handle screen tap - left/right zones for story navigation
   const handleScreenTap = useCallback(
-    (event: any) => {
+    (event: GestureResponderEvent) => {
       const { locationX } = event.nativeEvent;
       const tapZone = locationX / SCREEN_WIDTH;
 
       if (tapZone < 0.3) {
-        // Left 30%
+        // Left 30% - previous story
         handlePrevious();
-      } else {
-        // Right 70%
+      } else if (tapZone > 0.7) {
+        // Right 30% - next story
         handleNext();
       }
+      // Middle 40% - do nothing (allows pausing if needed)
     },
     [handleNext, handlePrevious]
+  );
+
+  // Handle swipe gestures - left/right swipes navigate between groups
+  const handleSwipeStart = useCallback((event: GestureResponderEvent) => {
+    swipeStartX.current = event.nativeEvent.pageX;
+  }, []);
+
+  const handleSwipeEnd = useCallback(
+    (event: GestureResponderEvent) => {
+      const swipeEndX = event.nativeEvent.pageX;
+      const swipeDistance = swipeStartX.current - swipeEndX;
+      const minSwipeDistance = 50; // Minimum distance to register as swipe
+
+      if (Math.abs(swipeDistance) < minSwipeDistance) {
+        return; // Not a significant swipe
+      }
+
+      if (swipeDistance > 0) {
+        // Swiped left - go to next group
+        if (onNextGroup) {
+          onNextGroup();
+        }
+      } else {
+        // Swiped right - go to previous group
+        if (onPreviousGroup) {
+          onPreviousGroup();
+        }
+      }
+    },
+    [onNextGroup, onPreviousGroup]
   );
 
   if (!visible || stories.length === 0 || !currentStory) {
@@ -187,10 +233,12 @@ export const StoryViewer = ({
         {/* Progress bar */}
         <ProgressBar />
 
-        {/* Story image */}
+        {/* Story image - tap for navigation, swipe for group navigation */}
         <TouchableOpacity
           activeOpacity={1}
           onPress={handleScreenTap}
+          onPressIn={handleSwipeStart}
+          onPressOut={handleSwipeEnd}
           style={styles.imageContainer}
         >
           <Image

@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as Camera from 'expo-camera';
 let FileSystem: any = null;
 if (Platform.OS !== 'web') {
   try { FileSystem = require('expo-file-system'); } catch {}
@@ -37,16 +38,47 @@ export default function CreateStory() {
   const [locationName, setLocationName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const pickPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+  // Open camera to capture photo
+  const takeCameraPhoto = async () => {
+    try {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert('Camera Permission', 'We need camera access to take a photo.');
+        return;
+      }
 
-    if (!result.canceled) {
-      setPhotoUrl(result.assets[0].uri);
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setPhotoUrl(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      showAlert('Camera Error', 'Unable to access the camera.');
+    }
+  };
+
+  // Open image library to pick existing photo
+  const pickPhotoFromLibrary = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setPhotoUrl(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Image picker error:', err);
+      showAlert('Error', 'Unable to access your photo library.');
     }
   };
 
@@ -259,21 +291,37 @@ export default function CreateStory() {
         {photoUrl ? (
           <View style={styles.photoContainer}>
             <Image source={{ uri: photoUrl }} style={styles.selectedPhoto} />
-            <WKButton
-              title="Change Photo"
-              onPress={pickPhoto}
-              variant="secondary"
-              size="sm"
-              style={styles.changePhotoBtn}
-            />
+            <View style={styles.buttonRow}>
+              <WKButton
+                title="Retake Photo"
+                onPress={takeCameraPhoto}
+                variant="secondary"
+                size="sm"
+                style={styles.changePhotoBtn}
+              />
+              <WKButton
+                title="Choose From Library"
+                onPress={pickPhotoFromLibrary}
+                variant="secondary"
+                size="sm"
+                style={styles.changePhotoBtn}
+              />
+            </View>
           </View>
         ) : (
           <View style={styles.photoPlaceholder}>
-            <Text style={styles.placeholderText}>Select a photo to start your story</Text>
+            <Text style={styles.placeholderText}>Capture or choose a photo for your story</Text>
             <WKButton
-              title="Pick Photo"
-              onPress={pickPhoto}
+              title="Take a Photo"
+              onPress={takeCameraPhoto}
               variant="primary"
+              size="md"
+              style={styles.pickPhotoBtn}
+            />
+            <WKButton
+              title="Choose From Library"
+              onPress={pickPhotoFromLibrary}
+              variant="secondary"
               size="md"
               style={styles.pickPhotoBtn}
             />
@@ -374,9 +422,14 @@ const styles = StyleSheet.create({
   pickPhotoBtn: {
     marginTop: spacing.md,
   },
+  buttonRow: {
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
   changePhotoBtn: {
-    marginTop: spacing.md,
-    marginHorizontal: spacing.lg,
+    flex: 1,
   },
 
   // Input Sections
