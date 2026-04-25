@@ -29,6 +29,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 // ── Ride log entry ──────────────────────────────────────────────────
 interface RideEntry {
   id: string;
+  user_id?: string;
   started_at: string;
   ended_at: string | null;
   driver_note: string;
@@ -77,6 +78,33 @@ export default function TrampMode() {
     }
   }, [signalActive]);
 
+  // Load historical rides on mount
+  useEffect(() => {
+    const loadRides = async () => {
+      if (!user?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Failed to load rides:', error);
+          return;
+        }
+
+        if (data) {
+          setRideLog(data as RideEntry[]);
+        }
+      } catch (err) {
+        console.error('Error loading rides:', err);
+      }
+    };
+
+    loadRides();
+  }, [user?.id]);
+
   // Wait timer
   useEffect(() => {
     if (!waitStarted) return;
@@ -118,16 +146,41 @@ export default function TrampMode() {
     toast.success('Ride started. Stay safe out there.');
   }, []);
 
-  const endRide = useCallback(() => {
-    if (!currentRide) return;
+  const endRide = useCallback(async () => {
+    if (!currentRide || !user?.id) return;
     const finished: RideEntry = {
       ...currentRide,
       ended_at: new Date().toISOString(),
     };
+
+    // Always add to local state first (fallback)
     setRideLog(prev => [finished, ...prev]);
     setCurrentRide(null);
-    toast.success('Ride logged.');
-  }, [currentRide]);
+
+    // Try to save to Supabase
+    try {
+      const { error } = await supabase
+        .from('rides')
+        .insert({
+          id: finished.id,
+          user_id: user.id,
+          started_at: finished.started_at,
+          ended_at: finished.ended_at,
+          driver_note: finished.driver_note,
+          distance_km: finished.distance_km,
+        });
+
+      if (error) {
+        console.error('Failed to save ride:', error);
+        toast.error('Ride saved locally (network error)');
+      } else {
+        toast.success('Ride saved');
+      }
+    } catch (err) {
+      console.error('Error saving ride:', err);
+      toast.error('Ride saved locally (network error)');
+    }
+  }, [currentRide, user?.id]);
 
   // ── Full-screen signal (the core feature) ──────────────────────────
   if (showSignalScreen && signalActive) {

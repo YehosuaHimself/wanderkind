@@ -10,6 +10,7 @@ import { Host } from '../../../src/types/database';
 import { SEED_HOSTS } from '../../../src/data/seed-hosts';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useFavoritesStore } from '../../../src/stores/favorites';
 
 const { width, height } = Dimensions.get('window');
 
@@ -687,6 +688,25 @@ export default function MapHome() {
     return 'Nearby';
   };
 
+  // Favorite Button Component
+  const FavoriteButton = useCallback(({ hostId }: { hostId: string }) => {
+    const { toggleFavorite, isFavorite } = useFavoritesStore();
+    const isFav = isFavorite(hostId);
+
+    return (
+      <TouchableOpacity
+        onPress={() => toggleFavorite(hostId)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons
+          name={isFav ? 'heart' : 'heart-outline'}
+          size={20}
+          color={isFav ? colors.red : colors.ink3}
+        />
+      </TouchableOpacity>
+    );
+  }, []);
+
   // Render a single host card
   const renderHostCard = useCallback(({ item, index }: { item: Host; index: number }) => {
     const config = hostTypeConfig[item.host_type as keyof typeof hostTypeConfig];
@@ -710,8 +730,11 @@ export default function MapHome() {
           <Text style={styles.hostCardIndex}>{index + 1}/{nearbyHosts.length}</Text>
         </View>
 
-        {/* Name */}
-        <Text style={styles.hostCardName} numberOfLines={isExpanded ? 3 : 1}>{item.name}</Text>
+        {/* Name + Favorite Button */}
+        <View style={styles.nameRow}>
+          <Text style={styles.hostCardName} numberOfLines={isExpanded ? 3 : 1}>{item.name}</Text>
+          <FavoriteButton hostId={item.id} />
+        </View>
 
         {/* Address / Region */}
         <View style={styles.hostCardRow}>
@@ -1151,11 +1174,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Courier New',
     letterSpacing: 0.5,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   hostCardName: {
     fontSize: 15,
     fontWeight: '700',
     color: colors.ink,
-    marginBottom: 6,
+    flex: 1,
   },
   hostCardRow: {
     flexDirection: 'row',

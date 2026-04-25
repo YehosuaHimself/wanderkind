@@ -17,8 +17,9 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, HostType } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useFavoritesStore } from '../../../src/stores/favorites';
 
-type FilterMode = HostType | 'all';
+type FilterMode = HostType | 'all' | 'saved';
 
 export default function HostList() {
   const { user, isLoading } = useAuthGuard();
@@ -28,10 +29,14 @@ export default function HostList() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('all');
   const [loading, setLoading] = useState(true);
+  const { favoriteHostIds, loadFavorites } = useFavoritesStore();
 
   useEffect(() => {
     fetchHosts();
-  }, []);
+    if (user) {
+      loadFavorites(user.id);
+    }
+  }, [user]);
 
   const fetchHosts = async () => {
     try {
@@ -48,12 +53,22 @@ export default function HostList() {
     }
   };
 
-  const filteredHosts = hosts.filter(h => filter === 'all' || h.host_type === filter);
+  const filteredHosts = hosts.filter(h => {
+    if (filter === 'saved') {
+      return favoriteHostIds.has(h.id);
+    }
+    if (filter === 'all') {
+      return true;
+    }
+    return h.host_type === filter;
+  });
 
   const renderHostCard = useCallback(
     ({ item: host }: { item: Host }) => {
       const config = hostTypeConfig[host.host_type];
       const distance = host.route_km ? `${host.route_km} km` : 'Nearby';
+      const { toggleFavorite, isFavorite } = useFavoritesStore();
+      const isFav = isFavorite(host.id);
 
       return (
         <TouchableOpacity
@@ -63,7 +78,19 @@ export default function HostList() {
         >
           <View style={styles.cardContent}>
             <View style={styles.hostInfo}>
-              <Text style={styles.hostName} numberOfLines={1}>{host.name}</Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.hostName} numberOfLines={1}>{host.name}</Text>
+                <TouchableOpacity
+                  onPress={() => toggleFavorite(host.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons
+                    name={isFav ? 'heart' : 'heart-outline'}
+                    size={18}
+                    color={isFav ? colors.red : colors.ink3}
+                  />
+                </TouchableOpacity>
+              </View>
               <Text style={styles.location} numberOfLines={1}>
                 <Ionicons name="location" size={12} color={colors.ink3} />
                 {' '}{host.address || 'Location'}
@@ -138,7 +165,16 @@ export default function HostList() {
           </Text>
         </TouchableOpacity>
 
-        {(['free', 'donativo', 'budget', 'paid'] as FilterMode[]).map(f => (
+        <TouchableOpacity
+          style={[styles.chip, filter === 'saved' && styles.chipActive]}
+          onPress={() => setFilter('saved')}
+        >
+          <Text style={[styles.chipText, filter === 'saved' && styles.chipTextActive]}>
+            Saved
+          </Text>
+        </TouchableOpacity>
+
+        {(['free', 'donativo', 'budget', 'paid'] as const).map(f => (
           <TouchableOpacity
             key={f}
             style={[styles.chip, filter === f && styles.chipActive]}
@@ -243,10 +279,16 @@ const styles = StyleSheet.create({
   hostInfo: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
   hostName: {
     ...typography.h3,
     color: colors.ink,
-    marginBottom: spacing.xs,
+    flex: 1,
   },
   location: {
     ...typography.bodySm,

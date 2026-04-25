@@ -361,6 +361,23 @@ export interface BlockedUserRow {
   created_at: string;
 }
 
+export interface RideRow {
+  id: string;
+  user_id: string;
+  started_at: string;
+  ended_at: string | null;
+  driver_note: string;
+  distance_km: number | null;
+  created_at: string;
+}
+
+export interface FavoriteHostRow {
+  id: string;
+  user_id: string;
+  host_id: string;
+  created_at: string;
+}
+
 // ════════════════════════════════════════════
 // DATABASE TYPE (references standalone Row types)
 // ════════════════════════════════════════════
@@ -482,6 +499,18 @@ export type Database = {
       };
       blocked_users: {
         Row: BlockedUserRow;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      rides: {
+        Row: RideRow;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      favorite_hosts: {
+        Row: FavoriteHostRow;
         Insert: Record<string, any>;
         Update: Record<string, any>;
         Relationships: [];
