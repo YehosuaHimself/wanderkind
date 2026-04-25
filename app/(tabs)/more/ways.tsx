@@ -17,7 +17,7 @@ import { Route } from '../../../src/types/database';
 import { SEED_ROUTES } from '../../../src/data/seed-routes';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
-export default function WaysList() {
+export default function WaysList({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
 
@@ -126,9 +126,31 @@ export default function WaysList() {
     </View>
   );
 
+  const Wrapper = embedded ? View : SafeAreaView;
+  const wrapperProps = embedded ? { style: styles.container } : { style: styles.container, edges: ['top'] as const };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <Wrapper {...(wrapperProps as any)}>
+        {!embedded && (
+          <View style={styles.header}>
+            <View style={styles.headerLabel}>
+              <View style={styles.headerDot} />
+              <Text style={styles.headerLabelText}>WAYS</Text>
+            </View>
+            <Text style={styles.headerTitle}>Walking Routes</Text>
+          </View>
+        )}
+        <View style={styles.centerLoading}>
+          <ActivityIndicator size="large" color={colors.amber} />
+        </View>
+      </Wrapper>
+    );
+  }
+
+  return (
+    <Wrapper {...(wrapperProps as any)}>
+      {!embedded && (
         <View style={styles.header}>
           <View style={styles.headerLabel}>
             <View style={styles.headerDot} />
@@ -136,23 +158,7 @@ export default function WaysList() {
           </View>
           <Text style={styles.headerTitle}>Walking Routes</Text>
         </View>
-        <View style={styles.centerLoading}>
-          <ActivityIndicator size="large" color={colors.amber} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLabel}>
-          <View style={styles.headerDot} />
-          <Text style={styles.headerLabelText}>WAYS</Text>
-        </View>
-        <Text style={styles.headerTitle}>Walking Routes</Text>
-      </View>
+      )}
 
       <FlatList
         data={ways}
@@ -162,7 +168,7 @@ export default function WaysList() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+    </Wrapper>
   );
 }
 

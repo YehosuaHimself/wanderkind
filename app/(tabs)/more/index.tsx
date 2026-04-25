@@ -23,12 +23,6 @@ const menuItems: MenuItem[] = [
     accent: colors.amber,
   },
   {
-    icon: 'trail-sign-outline',
-    title: 'Ways',
-    subtitle: 'Discover walking routes across Europe',
-    route: '/(tabs)/more/ways',
-  },
-  {
     icon: 'ribbon-outline',
     title: 'The Wanderkind Way',
     subtitle: 'Your journey, tiers & progression',
@@ -52,12 +46,6 @@ const menuItems: MenuItem[] = [
     subtitle: 'Your credentials and passes',
     route: '/(tabs)/me/passes',
     accent: colors.amber,
-  },
-  {
-    icon: 'grid-outline',
-    title: 'Stamps',
-    subtitle: 'Your artisanal stamp collection',
-    route: '/(tabs)/more/stamps',
   },
   {
     icon: 'journal-outline',

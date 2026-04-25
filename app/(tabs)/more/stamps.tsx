@@ -20,7 +20,7 @@ import { Stamp } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { toast } from '../../../src/lib/toast';
 
-export default function StampsCollection() {
+export default function StampsCollection({ embedded = false }: { embedded?: boolean }) {
   useAuthGuard();
 
   const router = useRouter();
@@ -91,38 +91,44 @@ export default function StampsCollection() {
     </View>
   );
 
+  const Wrapper = embedded ? View : SafeAreaView;
+  const wrapperProps = embedded ? { style: styles.container } : { style: styles.container, edges: ['top'] as const };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <Wrapper {...(wrapperProps as any)}>
+        {!embedded && (
+          <View style={styles.header}>
+            <View style={styles.headerLabel}>
+              <View style={styles.headerDot} />
+              <Text style={styles.headerLabelText}>STAMPS</Text>
+            </View>
+            <Text style={styles.headerTitle}>Your Collection</Text>
+          </View>
+        )}
+        <View style={styles.centerLoading}>
+          <ActivityIndicator size="large" color={colors.amber} />
+        </View>
+      </Wrapper>
+    );
+  }
+
+  return (
+    <Wrapper {...(wrapperProps as any)}>
+      {!embedded && (
         <View style={styles.header}>
           <View style={styles.headerLabel}>
             <View style={styles.headerDot} />
             <Text style={styles.headerLabelText}>STAMPS</Text>
           </View>
-          <Text style={styles.headerTitle}>Your Collection</Text>
-        </View>
-        <View style={styles.centerLoading}>
-          <ActivityIndicator size="large" color={colors.amber} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLabel}>
-          <View style={styles.headerDot} />
-          <Text style={styles.headerLabelText}>STAMPS</Text>
-        </View>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Your Collection</Text>
-          <View style={styles.stampCount}>
-            <Text style={styles.stampCountText}>{stamps.length}</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>Your Collection</Text>
+            <View style={styles.stampCount}>
+              <Text style={styles.stampCountText}>{stamps.length}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       <FlatList
         data={stamps}
@@ -194,7 +200,7 @@ export default function StampsCollection() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </Wrapper>
   );
 }
 

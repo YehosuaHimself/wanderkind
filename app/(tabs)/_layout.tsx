@@ -32,20 +32,20 @@ export default function TabLayout() {
       initialRouteName="map"
     >
       <Tabs.Screen
-        name="moments"
+        name="myway"
         options={{
-          title: 'Moments',
+          title: 'My Way',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="star-outline" size={size} color={color} />
+            <Ionicons name="compass-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="messages"
+        name="moments"
         options={{
-          title: 'Msg',
+          title: 'Moments',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-outline" size={size} color={color} />
+            <Ionicons name="flame-outline" size={size} color={color} />
           ),
         }}
       />
@@ -54,7 +54,16 @@ export default function TabLayout() {
         options={{
           title: 'Map',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
+            <Ionicons name="navigate-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Msg',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="paper-plane-outline" size={size} color={color} />
           ),
         }}
       />
@@ -63,7 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Me',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-circle-outline" size={size} color={color} />
+            <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
@@ -72,7 +81,7 @@ export default function TabLayout() {
         options={{
           title: 'More',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+            <Ionicons name="grid-outline" size={size} color={color} />
           ),
         }}
       />
