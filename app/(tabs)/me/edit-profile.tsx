@@ -13,7 +13,7 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const LANGUAGES = ['English', 'German', 'French', 'Spanish', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
-const EXPERIENCE_LEVELS = ['First Time', 'Casual Walker', 'Experienced', 'Seasoned Pilgrim', 'Guide'];
+const EXPERIENCE_LEVELS = ['First Time', 'Casual Walker', 'Experienced', 'Seasoned', 'Guide'];
 
 export default function EditProfileScreen() {
   useAuthGuard();

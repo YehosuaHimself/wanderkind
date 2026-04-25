@@ -7,6 +7,7 @@ import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../s
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
 import { SEED_HOSTS } from '../../../src/data/seed-hosts';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const { width, height } = Dimensions.get('window');
@@ -32,7 +33,10 @@ if (Platform.OS !== 'web') {
 }
 
 // Web-only map component using Leaflet
-function WebMapComponent({ hosts, filter, onHostPress }: { hosts: Host[]; filter: FilterMode; onHostPress: (id: string) => void }) {
+// Get walking seed profiles for map markers
+const walkingSeedProfiles = SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng);
+
+function WebMapComponent({ hosts, filter, onHostPress, walkers, onWalkerPress }: { hosts: Host[]; filter: FilterMode; onHostPress: (id: string) => void; walkers: typeof walkingSeedProfiles; onWalkerPress: (id: string) => void }) {
   const iframeRef = useRef<any>(null);
 
   // Build filtered hosts list
@@ -112,6 +116,29 @@ function WebMapComponent({ hosts, filter, onHostPress }: { hosts: Host[]; filter
       .addTo(map);
     });
 
+    // Walker data (injected from React)
+    const walkers = ${JSON.stringify(walkers)};
+
+    // Add walker markers (blue person icons)
+    walkers.forEach(function(walker) {
+      var walkerIcon = L.divIcon({
+        className: '',
+        html: '<div style="width:28px;height:28px;border-radius:50%;background:#3B82F6;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><svg width=\\'14\\' height=\\'14\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'white\\' stroke-width=\\'2.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><path d=\\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\\'/><circle cx=\\'12\\' cy=\\'7\\' r=\\'4\\'/></svg></div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+
+      L.marker([walker.lat, walker.lng], { icon: walkerIcon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + walker.trail_name + '</strong><br/><span style="color:#666;font-size:10px;">Currently wandering</span></div>')
+        .on('click', function() {
+          window.parent.postMessage({
+            type: 'walker-click',
+            profileId: walker.id
+          }, '*');
+        })
+        .addTo(map);
+    });
+
     // Handle location request from parent
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'center-on-location') {
@@ -129,11 +156,14 @@ function WebMapComponent({ hosts, filter, onHostPress }: { hosts: Host[]; filter
       if (event.data?.type === 'host-click') {
         onHostPress(event.data.hostId);
       }
+      if (event.data?.type === 'walker-click') {
+        onWalkerPress(event.data.profileId);
+      }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onHostPress]);
+  }, [onHostPress, onWalkerPress]);
 
   return (
     <View style={styles.map}>
@@ -254,6 +284,8 @@ export default function MapHome() {
           hosts={hosts}
           filter={filter}
           onHostPress={handleHostPress}
+          walkers={walkingSeedProfiles}
+          onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
         />
       ) : (
         <MapView

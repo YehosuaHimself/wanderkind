@@ -16,12 +16,21 @@ export default function MeScreen() {
   const { profile, user, fetchProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isWalking, setIsWalking] = useState(false);
-  const [isHosting, setIsHosting] = useState(true);
+  const [isSnoozed, setIsSnoozed] = useState(false);
+  const [snoozeUntil, setSnoozeUntil] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
       setIsWalking(profile.is_walking ?? false);
-      setIsHosting(profile.is_available ?? true);
+      // Check if hosting is snoozed
+      const snoozedUntil = (profile as any).snoozed_until;
+      if (snoozedUntil && new Date(snoozedUntil) > new Date()) {
+        setIsSnoozed(true);
+        setSnoozeUntil(snoozedUntil);
+      } else {
+        setIsSnoozed(false);
+        setSnoozeUntil(null);
+      }
     }
   }, [profile]);
 
@@ -43,15 +52,24 @@ export default function MeScreen() {
     }
   };
 
-  const toggleHosting = async (value: boolean) => {
-    const previousValue = isHosting;
-    setIsHosting(value);
-    if (user) {
-      const { error } = await supabase.from('profiles').update({ is_available: value }).eq('id', user.id);
-      if (error) {
-        setIsHosting(previousValue);
-        showAlert('Error', error.message);
+  const snoozeHosting = async () => {
+    if (isSnoozed) {
+      // Cancel snooze — you're hosting again
+      setIsSnoozed(false);
+      setSnoozeUntil(null);
+      if (user) {
+        await supabase.from('profiles').update({ is_available: true, snoozed_until: null }).eq('id', user.id);
       }
+      showAlert('Welcome back!', 'You are hosting again.');
+    } else {
+      // Snooze for 24 hours
+      const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      setIsSnoozed(true);
+      setSnoozeUntil(until);
+      if (user) {
+        await supabase.from('profiles').update({ is_available: false, snoozed_until: until }).eq('id', user.id);
+      }
+      showAlert('Hosting snoozed', 'You won\'t appear as a host for the next 24 hours.');
     }
   };
 
@@ -130,12 +148,12 @@ export default function MeScreen() {
           )}
         </View>
 
-        {/* Walking / Hosting toggles */}
+        {/* Walking toggle + Snooze hosting */}
         <View style={styles.togglesSection}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
               <Ionicons name="walk-outline" size={18} color={colors.amber} />
-              <Text style={styles.toggleLabel}>Currently Walking</Text>
+              <Text style={styles.toggleLabel}>Currently Wandering</Text>
             </View>
             <Switch
               value={isWalking}
@@ -144,18 +162,20 @@ export default function MeScreen() {
               thumbColor={isWalking ? colors.amber : colors.ink3}
             />
           </View>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleInfo}>
-              <Ionicons name="home-outline" size={18} color={colors.green} />
-              <Text style={styles.toggleLabel}>Open to Guests</Text>
-            </View>
-            <Switch
-              value={isHosting}
-              onValueChange={toggleHosting}
-              trackColor={{ false: colors.border, true: colors.greenBg }}
-              thumbColor={isHosting ? colors.green : colors.ink3}
+          <TouchableOpacity
+            style={[styles.snoozeButton, isSnoozed && styles.snoozeButtonActive]}
+            onPress={snoozeHosting}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isSnoozed ? 'moon' : 'moon-outline'}
+              size={18}
+              color={isSnoozed ? '#fff' : colors.ink2}
             />
-          </View>
+            <Text style={[styles.snoozeText, isSnoozed && styles.snoozeTextActive]}>
+              {isSnoozed ? 'Hosting snoozed — tap to resume' : 'Snooze hosting for 24h'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Quick actions */}
@@ -360,6 +380,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink,
+  },
+  snoozeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
+  },
+  snoozeButtonActive: {
+    backgroundColor: colors.ink2,
+  },
+  snoozeText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink2,
+  },
+  snoozeTextActive: {
+    color: '#fff',
   },
   quickActions: {
     flexDirection: 'row',

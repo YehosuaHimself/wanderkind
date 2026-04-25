@@ -71,7 +71,7 @@ export default function PrivacyScreen() {
     {
       key: 'show_walking_status' as const,
       title: 'Show Walking Status',
-      description: 'Let others know if you\'re currently walking',
+      description: 'Let others know if you\'re currently wandering',
       icon: 'walk',
     },
     {
