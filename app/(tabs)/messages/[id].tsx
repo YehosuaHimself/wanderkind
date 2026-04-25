@@ -16,10 +16,13 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Message, Profile, Thread } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type MessageWithAuthor = Message & { sender?: Profile };
 
 export default function ChatThread() {
+  useAuthGuard();
+
   const router = useRouter();
   const { id: threadId } = useLocalSearchParams();
   const { user } = useAuth();

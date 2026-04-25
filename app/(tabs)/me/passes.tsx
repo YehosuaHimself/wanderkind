@@ -7,6 +7,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const PASSES = [
   {
@@ -44,6 +45,8 @@ const PASSES = [
 ];
 
 export default function PassesScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { profile } = useAuth();
 

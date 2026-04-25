@@ -15,8 +15,12 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKInput } from '../../../src/components/ui/WKInput';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookingRequest() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const params = useLocalSearchParams();
   const hostId = params.hostId as string;

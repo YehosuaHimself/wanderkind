@@ -3,8 +3,12 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function TermsScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Terms of Service" showBack />

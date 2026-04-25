@@ -18,8 +18,12 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function NextFreeBed() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [host, setHost] = useState<Host | null>(null);
   const [loading, setLoading] = useState(true);

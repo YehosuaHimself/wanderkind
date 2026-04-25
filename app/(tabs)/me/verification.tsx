@@ -7,6 +7,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const VERIFICATION_STEPS = [
   {
@@ -44,6 +45,8 @@ const VERIFICATION_STEPS = [
 ];
 
 export default function VerificationScreen() {
+  useAuthGuard();
+
   const { profile } = useAuth();
   const currentLevel = profile?.verification_level || 'self';
 

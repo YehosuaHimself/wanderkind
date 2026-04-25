@@ -6,10 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Moment, Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type MomentWithAuthor = Moment & { author?: Profile };
 
 export default function MomentsFeed() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [moments, setMoments] = useState<MomentWithAuthor[]>([]);
   const [refreshing, setRefreshing] = useState(false);

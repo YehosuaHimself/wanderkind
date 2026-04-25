@@ -13,6 +13,7 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKInput } from '../../../../src/components/ui/WKInput';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const PRICING_TYPES = [
   {
@@ -46,6 +47,9 @@ const PRICING_TYPES = [
 ];
 
 export default function PricingScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [hostType, setHostType] = useState('donativo');
   const [pricePerNight, setPricePerNight] = useState('25');
   const [donativoSuggestion, setDonativoSuggestion] = useState('15-25');

@@ -16,6 +16,7 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 import { Message, Profile } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 type MessageWithAuthor = Message & { sender?: Profile };
 type GroupThread = {
@@ -26,6 +27,8 @@ type GroupThread = {
 };
 
 export default function GroupChat() {
+  useAuthGuard();
+
   const router = useRouter();
   const { id: threadId } = useLocalSearchParams();
   const { user } = useAuth();

@@ -16,6 +16,7 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface NearbyWanderer extends Profile {
   distance_km?: number;
@@ -23,6 +24,9 @@ interface NearbyWanderer extends Profile {
 }
 
 export default function Wanderkinder() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [wanderers, setWanderers] = useState<NearbyWanderer[]>([]);
   const [loading, setLoading] = useState(true);

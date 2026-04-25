@@ -6,10 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
 import { Stamp, Profile } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 type StampWithHost = Stamp & { host?: Profile };
 
 export default function StampDetail() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [stamp, setStamp] = useState<StampWithHost | null>(null);

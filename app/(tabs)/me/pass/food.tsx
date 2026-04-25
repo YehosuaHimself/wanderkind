@@ -15,11 +15,14 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passFood; // #27864A — deep green
 
 export default function FoodPassScreen() {
+  useAuthGuard();
+
   const { profile } = useAuth();
   const textTrackAnimation = useRef(new Animated.Value(0)).current;
   const [activeRoute, setActiveRoute] = React.useState<string | null>(null);

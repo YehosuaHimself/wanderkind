@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 // expo-camera doesn't work on web — conditionally import
 let CameraView: any = null;
@@ -45,6 +46,9 @@ function WebScanFallback() {
 }
 
 export default function ScanScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   // On web, show fallback immediately
   if (Platform.OS === 'web') {
     return <WebScanFallback />;

@@ -15,6 +15,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const DARK_BG = '#0B0705';
 const DARK_INK = '#1A120A';
@@ -46,6 +47,8 @@ const getInitials = (trailName?: string): string => {
 };
 
 export default function WanderkindPassScreen() {
+  useAuthGuard();
+
   const { profile } = useAuth();
   const scrollX = useRef(new Animated.Value(0)).current;
   const textTrackAnimation = useRef(new Animated.Value(0)).current;

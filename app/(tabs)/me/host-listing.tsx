@@ -9,6 +9,7 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, hostTypeConfig } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface HostListing {
   id: string;
@@ -24,6 +25,8 @@ interface HostListing {
 }
 
 export default function HostListingScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { profile, user } = useAuth();
   const [listing, setListing] = useState<HostListing | null>(null);

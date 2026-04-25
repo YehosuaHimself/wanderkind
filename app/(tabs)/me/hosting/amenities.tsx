@@ -12,6 +12,7 @@ import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const AMENITIES = [
   { id: 'wifi', label: 'WiFi', icon: 'wifi' as const },
@@ -28,6 +29,9 @@ const AMENITIES = [
 ];
 
 export default function AmenitiesScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [amenities, setAmenities] = useState<Record<string, boolean>>({
     wifi: true,
     kitchen: true,

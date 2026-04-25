@@ -7,6 +7,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface StampDetail {
   id: string;
@@ -39,6 +40,9 @@ const truncateHash = (hash?: string): string => {
 };
 
 export default function StampDetailScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const { id } = useLocalSearchParams();
   const [stamp, setStamp] = useState<StampDetail | null>(null);
   const [loading, setLoading] = useState(true);

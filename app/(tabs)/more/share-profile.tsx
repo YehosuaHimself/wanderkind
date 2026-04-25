@@ -7,8 +7,12 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function ShareProfileScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const profileLink = 'https://wanderkind.com/profile/john-trail-walker';

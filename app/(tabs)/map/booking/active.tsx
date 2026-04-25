@@ -13,8 +13,12 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookingActive() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
 
   const handleContactHost = () => {

@@ -8,6 +8,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface PublicProfile {
   id: string;
@@ -23,6 +24,9 @@ interface PublicProfile {
 }
 
 export default function PublicProfileScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [profile, setProfile] = useState<PublicProfile | null>(null);

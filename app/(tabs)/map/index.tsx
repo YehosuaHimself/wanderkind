@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const { width, height } = Dimensions.get('window');
 
@@ -155,6 +156,8 @@ function WebMapComponent({ hosts, filter, onHostPress }: { hosts: Host[]; filter
 }
 
 export default function MapHome() {
+  const { isLoading } = useAuthGuard();
+  if (isLoading) return null;
   const router = useRouter();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);

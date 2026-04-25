@@ -18,6 +18,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const reportOptions = [
   { id: 'closed', label: 'Closed permanently' },
@@ -27,6 +28,8 @@ const reportOptions = [
 ];
 
 export default function ReportIssueScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { host_id } = useLocalSearchParams<{ host_id: string }>();
   const { user } = useAuth();

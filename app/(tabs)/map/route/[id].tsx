@@ -18,8 +18,12 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Route, Host } from '../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function RouteDetail() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [route, setRoute] = useState<Route | null>(null);

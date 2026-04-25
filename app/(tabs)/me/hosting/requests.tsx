@@ -13,6 +13,7 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface Request {
   id: string;
@@ -45,6 +46,9 @@ const MOCK_REQUESTS: Request[] = [
 ];
 
 export default function HostingRequests() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
 
   const renderRequest = ({ item }: { item: Request }) => (

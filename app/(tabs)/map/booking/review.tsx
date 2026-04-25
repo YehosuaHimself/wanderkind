@@ -15,8 +15,12 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKInput } from '../../../src/components/ui/WKInput';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookingReview() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');

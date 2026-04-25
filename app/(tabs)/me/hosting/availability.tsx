@@ -13,8 +13,12 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKInput } from '../../../../src/components/ui/WKInput';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function AvailabilityScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [isAvailable, setIsAvailable] = useState(true);
   const [notes, setNotes] = useState('Open for walkers May-September');
 

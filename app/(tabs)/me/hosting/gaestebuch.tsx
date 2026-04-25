@@ -12,6 +12,7 @@ import { colors, typography, spacing, radii, shadows } from '../../../../src/lib
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../../src/components/ui/WKEmpty';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const MOCK_ENTRIES = [
   {
@@ -80,6 +81,9 @@ function GuestbookEntry({ entry }: { entry: typeof MOCK_ENTRIES[0] }) {
 }
 
 export default function GaestebuchScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const averageRating =
     MOCK_ENTRIES.reduce((sum, e) => sum + e.rating, 0) / MOCK_ENTRIES.length;
 

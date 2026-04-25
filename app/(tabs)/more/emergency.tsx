@@ -13,6 +13,8 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useAuth } from '../../../src/stores/auth';
 
 type Contact = {
   name: string;
@@ -21,11 +23,22 @@ type Contact = {
 };
 
 export default function EmergencyScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [location, setLocation] = useState<string | null>(null);
-  const [emergencyContacts, setEmergencyContacts] = useState<Contact[]>([
-    { name: 'Mom', phone: '+1-555-1234', relation: 'Family' },
-    { name: 'Local Hiking Club', phone: '+34-555-1234', relation: 'Emergency Support' },
-  ]);
+  const { profile } = useAuth();
+  const [emergencyContacts, setEmergencyContacts] = useState<Contact[]>([]);
+
+  // Load emergency contacts from profile
+  useEffect(() => {
+    if (profile?.emergency_contacts && Array.isArray(profile.emergency_contacts) && profile.emergency_contacts.length > 0) {
+      setEmergencyContacts(profile.emergency_contacts as Contact[]);
+    } else {
+      // Show placeholder prompting user to add contacts
+      setEmergencyContacts([]);
+    }
+  }, [profile]);
 
   useEffect(() => {
     getLocation();
@@ -143,21 +156,30 @@ export default function EmergencyScreen() {
         <View style={styles.section}>
           <Text style={[typography.label, styles.sectionLabel]}>Emergency Contacts</Text>
           <View style={styles.contactsList}>
-            {emergencyContacts.map((contact, idx) => (
-              <View key={idx} style={styles.contactCard}>
+            {emergencyContacts.length === 0 ? (
+              <View style={styles.contactCard}>
                 <View style={styles.contactInfo}>
-                  <Text style={styles.contactName}>{contact.name}</Text>
-                  <Text style={styles.contactRelation}>{contact.relation}</Text>
+                  <Text style={[styles.contactName, { color: colors.ink3 }]}>No emergency contacts set</Text>
+                  <Text style={styles.contactRelation}>Add contacts in ME → Emergency Contacts</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.callButton}
-                  onPress={() => callEmergency(contact.phone)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="call-outline" size={18} color={colors.amber} />
-                </TouchableOpacity>
               </View>
-            ))}
+            ) : (
+              emergencyContacts.map((contact, idx) => (
+                <View key={idx} style={styles.contactCard}>
+                  <View style={styles.contactInfo}>
+                    <Text style={styles.contactName}>{contact.name}</Text>
+                    <Text style={styles.contactRelation}>{contact.relation}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.callButton}
+                    onPress={() => callEmergency(contact.phone)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="call-outline" size={18} color={colors.amber} />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
           </View>
         </View>
 

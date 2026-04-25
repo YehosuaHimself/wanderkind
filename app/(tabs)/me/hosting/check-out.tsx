@@ -18,6 +18,7 @@ import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface CheckOutScreenProps {}
 
@@ -99,6 +100,8 @@ function ConfirmationScreen({ onBack }: ConfirmationScreenProps) {
 }
 
 export default function CheckOutScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { booking_id, guest_name, check_in_date, duration } =
     useLocalSearchParams<{

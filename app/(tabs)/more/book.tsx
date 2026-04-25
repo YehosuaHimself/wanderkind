@@ -7,8 +7,11 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { BlogPost } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function WalkingBook() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [entries, setEntries] = useState<BlogPost[]>([]);

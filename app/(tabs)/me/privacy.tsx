@@ -8,6 +8,7 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface PrivacySettings {
   show_location: boolean;
@@ -17,6 +18,8 @@ interface PrivacySettings {
 }
 
 export default function PrivacyScreen() {
+  useAuthGuard();
+
   const { profile, user, fetchProfile } = useAuth();
   const [settings, setSettings] = useState<PrivacySettings>({
     show_location: true,

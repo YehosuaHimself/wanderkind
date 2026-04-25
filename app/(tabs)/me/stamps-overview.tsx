@@ -7,6 +7,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface Stamp {
   id: string;
@@ -18,6 +19,8 @@ interface Stamp {
 }
 
 export default function StampsOverviewScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { profile, user } = useAuth();
   const [stamps, setStamps] = useState<Stamp[]>([]);

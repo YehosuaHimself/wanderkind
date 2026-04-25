@@ -5,8 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function StampCeremony() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { hostName, stampId } = useLocalSearchParams();
   const [stampScale] = useState(new Animated.Value(0));
@@ -119,7 +123,7 @@ export default function StampCeremony() {
               value={reflection}
               onChangeText={setReflection}
               multiline
-              maxLength={280}
+              maxLength={1000}
               textAlignVertical="top"
             />
             {/* Share with hosts toggle */}

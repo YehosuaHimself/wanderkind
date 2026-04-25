@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const DAYS_IN_MONTHS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -84,6 +85,9 @@ function CalendarMonth({ monthIndex }: { monthIndex: number }) {
 }
 
 export default function CalendarScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [selectedMonth, setSelectedMonth] = useState(4); // May
 
   return (

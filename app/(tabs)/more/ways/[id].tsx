@@ -15,8 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
 import { Route, Host } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function WayDetail() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [way, setWay] = useState<Route | null>(null);

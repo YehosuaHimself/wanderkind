@@ -16,6 +16,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface CampingSpot {
   id: string;
@@ -55,6 +56,9 @@ const MOCK_CAMPING: Record<string, CampingSpot> = {
 };
 
 export default function CampingDetail() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const [spot, setSpot] = useState<CampingSpot | null>(null);
   const [loading, setLoading] = useState(true);

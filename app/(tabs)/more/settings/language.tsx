@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -26,6 +27,9 @@ const languages = [
 ];
 
 export default function LanguageScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [selected, setSelected] = useState('en');
 

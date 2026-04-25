@@ -7,8 +7,11 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function QRCodeScreen() {
+  useAuthGuard();
+
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
 

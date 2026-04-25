@@ -16,6 +16,7 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Moment, Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type MomentWithAuthor = Moment & { author?: Profile };
 type CommentWithAuthor = {
@@ -28,6 +29,8 @@ type CommentWithAuthor = {
 };
 
 export default function MomentDetail() {
+  useAuthGuard();
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
@@ -73,22 +76,61 @@ export default function MomentDetail() {
     }
   }, [id]);
 
+  // Check if user already liked this moment
+  useEffect(() => {
+    if (!user || !id) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('moment_likes')
+          .select('id')
+          .eq('moment_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setLiked(!!data);
+      } catch {
+        // Table may not exist yet — ignore
+      }
+    })();
+  }, [user, id]);
+
   const handleLike = async () => {
     if (!user) return;
-    try {
-      setLiked(!liked);
-      const newCount = liked ? likeCount - 1 : likeCount + 1;
-      setLikeCount(newCount);
+    const wasLiked = liked;
+    const prevCount = likeCount;
 
-      // TODO: Store like in database
+    // Optimistic UI
+    setLiked(!wasLiked);
+    setLikeCount(wasLiked ? prevCount - 1 : prevCount + 1);
+
+    try {
+      if (wasLiked) {
+        // Remove like
+        const { error: delError } = await supabase
+          .from('moment_likes')
+          .delete()
+          .eq('moment_id', id)
+          .eq('user_id', user.id);
+        if (delError) throw delError;
+      } else {
+        // Add like
+        const { error: insError } = await supabase
+          .from('moment_likes')
+          .insert({ moment_id: id, user_id: user.id });
+        if (insError) throw insError;
+      }
+
+      // Update the count on the moments table
+      const newCount = wasLiked ? prevCount - 1 : prevCount + 1;
       await supabase
         .from('moments')
-        .update({ likes_count: newCount })
+        .update({ likes_count: Math.max(0, newCount) })
         .eq('id', id);
     } catch (err) {
       console.error('Like failed:', err);
-      setLiked(!liked);
-      setLikeCount(liked ? likeCount + 1 : likeCount - 1);
+      // Revert optimistic update
+      setLiked(wasLiked);
+      setLikeCount(prevCount);
     }
   };
 
@@ -268,6 +310,7 @@ export default function MomentDetail() {
           onChangeText={setReplyText}
           multiline
           numberOfLines={1}
+          maxLength={2000}
         />
         <TouchableOpacity
           style={[styles.sendBtn, !replyText.trim() && styles.sendBtnDisabled]}

@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const STATS = [
   {
@@ -65,6 +66,9 @@ function StatCard({
 }
 
 export default function StatsScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Hosting Statistics" showBack={true} />

@@ -14,8 +14,12 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { hostTypeConfig } from '../../../src/lib/theme';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function Filters() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [hostType, setHostType] = useState<string[]>(['free', 'donativo']);
   const [minBeds, setMinBeds] = useState(1);

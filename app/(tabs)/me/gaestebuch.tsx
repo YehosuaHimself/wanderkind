@@ -7,6 +7,7 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface GaestebuchEntry {
   id: string;
@@ -19,6 +20,8 @@ interface GaestebuchEntry {
 }
 
 export default function GaestebuchScreen() {
+  useAuthGuard();
+
   const { user } = useAuth();
   const [entries, setEntries] = useState<GaestebuchEntry[]>([]);
   const [loading, setLoading] = useState(true);

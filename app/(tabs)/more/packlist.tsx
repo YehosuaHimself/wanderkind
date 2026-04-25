@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type PackItem = {
   id: string;
@@ -20,6 +21,9 @@ type PackCategory = {
 };
 
 export default function PacklistScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [categories, setCategories] = useState<PackCategory[]>([
     {
       title: 'Essentials',

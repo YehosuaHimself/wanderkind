@@ -9,8 +9,11 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function EditCoverScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { profile, user, fetchProfile } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);

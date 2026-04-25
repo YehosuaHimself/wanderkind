@@ -9,8 +9,12 @@ import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKInput } from '../../../../src/components/ui/WKInput';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function CreateGroupWalkScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [name, setName] = useState('');
   const [route, setRoute] = useState('');
@@ -51,6 +55,7 @@ export default function CreateGroupWalkScreen() {
             placeholderTextColor={colors.ink3}
             value={name}
             onChangeText={setName}
+            maxLength={100}
           />
         </View>
 
@@ -98,6 +103,7 @@ export default function CreateGroupWalkScreen() {
             numberOfLines={4}
             value={description}
             onChangeText={setDescription}
+            maxLength={1000}
           />
         </View>
 

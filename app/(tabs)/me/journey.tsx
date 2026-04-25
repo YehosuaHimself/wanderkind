@@ -6,6 +6,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const TIERS = [
   { name: 'Wanderkind', threshold: 0 },
@@ -22,6 +23,8 @@ const TIERS = [
 ];
 
 export default function JourneyScreen() {
+  useAuthGuard();
+
   const { profile } = useAuth();
   const currentNights = profile?.nights_walked ?? 0;
   const currentTierIdx = TIERS.findIndex(t => profile?.tier === t.name.toLowerCase()) ?? 0;

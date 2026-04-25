@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,8 +17,16 @@ import { showAlert } from '../../../src/lib/alert';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+
+// Helper function to escape SQL wildcards in ILIKE queries
+function escapeIlike(input: string): string {
+  return input.replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
 
 export default function NewMessage() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,30 +35,39 @@ export default function NewMessage() {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
     if (query.trim().length < 2) {
       setSearchResults([]);
       return;
     }
 
-    setSearching(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .ilike('trail_name', `%${query}%`)
-        .neq('id', user?.id || '')
-        .limit(10);
+    // Debounce search by 300ms
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const escapedQuery = escapeIlike(query);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('trail_name', `%${escapedQuery}%`)
+          .neq('id', user?.id || '')
+          .limit(10);
 
-      if (error) throw error;
-      setSearchResults((data || []) as Profile[]);
-    } catch (err) {
-      console.error('Search failed:', err);
-    } finally {
-      setSearching(false);
-    }
+        if (error) throw error;
+        setSearchResults((data || []) as Profile[]);
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
   };
 
   const handleSendMessage = async () => {
@@ -61,7 +78,7 @@ export default function NewMessage() {
 
     setSending(true);
     try {
-      // Create or get thread
+      // Create or get thread (with race condition protection)
       const participantIds = [user.id, selectedUser.id].sort();
       const { data: existingThread } = await supabase
         .from('threads')
@@ -72,14 +89,46 @@ export default function NewMessage() {
       let threadId = existingThread?.id;
 
       if (!threadId) {
-        const { data: newThread, error: threadError } = await supabase
-          .from('threads')
-          .insert({ participant_ids: participantIds })
-          .select('id')
-          .single();
+        try {
+          const { data: newThread, error: threadError } = await supabase
+            .from('threads')
+            .insert({ participant_ids: participantIds })
+            .select('id')
+            .single();
 
-        if (threadError) throw threadError;
-        threadId = newThread?.id;
+          if (threadError) {
+            // Check if it's a unique constraint violation
+            if (threadError.code === '23505') {
+              // Thread was created by concurrent request, fetch it
+              const { data: retryThread, error: retryError } = await supabase
+                .from('threads')
+                .select('id')
+                .contains('participant_ids', participantIds)
+                .single();
+
+              if (retryError) throw retryError;
+              threadId = retryThread?.id;
+            } else {
+              throw threadError;
+            }
+          } else {
+            threadId = newThread?.id;
+          }
+        } catch (insertError: any) {
+          // Handle unexpected insert errors gracefully
+          if (insertError?.code === '23505') {
+            const { data: retryThread, error: retryError } = await supabase
+              .from('threads')
+              .select('id')
+              .contains('participant_ids', participantIds)
+              .single();
+
+            if (retryError) throw retryError;
+            threadId = retryThread?.id;
+          } else {
+            throw insertError;
+          }
+        }
       }
 
       // Send message
@@ -195,10 +244,10 @@ export default function NewMessage() {
               onChangeText={setMessageText}
               multiline
               numberOfLines={4}
-              maxLength={500}
+              maxLength={2000}
             />
             <Text style={styles.charCount}>
-              {messageText.length} / 500
+              {messageText.length} / 2000
             </Text>
           </View>
         )}

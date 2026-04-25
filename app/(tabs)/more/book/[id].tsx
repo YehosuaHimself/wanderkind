@@ -6,8 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
 import { BlogPost } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookEntry() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [entry, setEntry] = useState<BlogPost | null>(null);

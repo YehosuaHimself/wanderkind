@@ -15,8 +15,11 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Stamp } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function StampsCollection() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [stamps, setStamps] = useState<Stamp[]>([]);

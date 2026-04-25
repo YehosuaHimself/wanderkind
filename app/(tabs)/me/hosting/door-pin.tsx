@@ -13,8 +13,12 @@ import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function DoorPinScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [doorPin, setDoorPin] = useState('4729');
   const [showPin, setShowPin] = useState(false);
   const [copiedPin, setCopiedPin] = useState<string | null>(null);

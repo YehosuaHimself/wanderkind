@@ -13,6 +13,7 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface Booking {
   id: string;
@@ -55,6 +56,9 @@ const MOCK_BOOKINGS: Booking[] = [
 ];
 
 export default function BookingHistory() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
 
   const renderBooking = ({ item }: { item: Booking }) => (

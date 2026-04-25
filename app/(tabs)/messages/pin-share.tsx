@@ -17,10 +17,13 @@ import { showAlert } from '../../../src/lib/alert';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Booking, Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type BookingWithDetails = Booking & { host?: { name: string } };
 
 export default function PINShare() {
+  useAuthGuard();
+
   const router = useRouter();
   const { threadId } = useLocalSearchParams();
   const { user } = useAuth();

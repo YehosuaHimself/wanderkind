@@ -16,6 +16,7 @@ import { colors, typography, spacing, radii, shadows } from '../../../../src/lib
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const MOCK_PHOTOS = [
   { id: '1', uri: 'https://via.placeholder.com/300x300?text=Living+Room' },
@@ -24,6 +25,9 @@ const MOCK_PHOTOS = [
 ];
 
 export default function PhotosScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [photos, setPhotos] = useState(MOCK_PHOTOS);
   const [loading, setLoading] = useState(false);
 

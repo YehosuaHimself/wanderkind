@@ -12,6 +12,7 @@ import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const VERIFICATION_LEVELS = [
   {
@@ -88,6 +89,9 @@ function VerificationBadge({
 }
 
 export default function VerificationScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const currentLevel = 2; // Community verified
 
   return (

@@ -7,6 +7,7 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 type Member = {
   id: string;
@@ -16,6 +17,9 @@ type Member = {
 };
 
 export default function GroupWalkDetailScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
 

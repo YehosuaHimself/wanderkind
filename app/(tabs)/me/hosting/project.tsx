@@ -12,6 +12,7 @@ import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const DEFAULT_TEXT = `Our home is a sanctuary for pilgrims and wanderers. Nestled in the quiet countryside, we've created a space where travelers can rest, reflect, and recharge before continuing their journey.
 
@@ -20,6 +21,9 @@ We believe in authentic hospitality - sharing meals, stories, and the warmth of 
 What makes us special is our commitment to the pilgrim way. We understand the physical and spiritual journey pilgrims undertake, and we're honored to be a stopping point on that sacred path.`;
 
 export default function ProjectScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [text, setText] = useState(DEFAULT_TEXT);
   const [savedText, setSavedText] = useState(DEFAULT_TEXT);
   const [loading, setLoading] = useState(false);

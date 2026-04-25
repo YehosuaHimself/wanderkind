@@ -6,8 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows, tierColors } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { showAlert } from '../../../src/lib/alert';
 
 export default function MeScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { profile, user, fetchProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -28,16 +32,26 @@ export default function MeScreen() {
   };
 
   const toggleWalking = async (value: boolean) => {
+    const previousValue = isWalking;
     setIsWalking(value);
     if (user) {
-      await supabase.from('profiles').update({ is_walking: value }).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ is_walking: value }).eq('id', user.id);
+      if (error) {
+        setIsWalking(previousValue);
+        showAlert('Error', error.message);
+      }
     }
   };
 
   const toggleHosting = async (value: boolean) => {
+    const previousValue = isHosting;
     setIsHosting(value);
     if (user) {
-      await supabase.from('profiles').update({ is_available: value }).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ is_available: value }).eq('id', user.id);
+      if (error) {
+        setIsHosting(previousValue);
+        showAlert('Error', error.message);
+      }
     }
   };
 

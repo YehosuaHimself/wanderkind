@@ -10,11 +10,14 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const LANGUAGES = ['English', 'German', 'French', 'Spanish', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
 const EXPERIENCE_LEVELS = ['First Time', 'Casual Walker', 'Experienced', 'Seasoned Pilgrim', 'Guide'];
 
 export default function EditProfileScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { profile, user, fetchProfile } = useAuth();
   const [trailName, setTrailName] = useState('');
@@ -119,6 +122,13 @@ export default function EditProfileScreen() {
           maxLength={500}
           multiline
           numberOfLines={3}
+        />
+
+        <WKInput
+          label="Home Country"
+          value={homeCountry}
+          onChangeText={setHomeCountry}
+          placeholder="Where are you from?"
         />
 
         <WKInput

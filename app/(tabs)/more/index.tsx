@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type MenuItem = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -60,6 +61,9 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function MoreScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
 
   return (

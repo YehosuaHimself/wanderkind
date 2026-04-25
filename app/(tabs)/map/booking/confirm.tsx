@@ -12,10 +12,14 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 type BookingStatus = 'pending' | 'confirmed' | 'declined';
 
 export default function BookingConfirm() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [status, setStatus] = useState<BookingStatus>('pending');
 

@@ -15,6 +15,7 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKInput } from '../../../../src/components/ui/WKInput';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const HOST_TYPES = [
   { id: 'free', label: 'Free', color: colors.green },
@@ -26,6 +27,9 @@ const HOST_TYPES = [
 const AMENITIES = ['WiFi', 'Kitchen', 'Laundry', 'Shower', 'Towels', 'Parking', 'Garden'];
 
 export default function ListingEdit() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [name, setName] = useState('Casa Tranquilo');
   const [description, setDescription] = useState('Warm welcome for pilgrims.');
   const [beds, setBeds] = useState('2');

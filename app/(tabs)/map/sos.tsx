@@ -14,6 +14,7 @@ import { showAlert } from '../../../src/lib/alert';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface Emergency {
   type: string;
@@ -52,6 +53,9 @@ const EMERGENCIES: Record<string, Emergency> = {
 };
 
 export default function SOS() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [userCountry, setUserCountry] = useState('ES'); // Default to Spain
 
   const handleCall = (number: string) => {

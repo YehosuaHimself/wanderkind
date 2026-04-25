@@ -13,13 +13,17 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { showAlert } from '../../../src/lib/alert';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function CreateMoment() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -52,6 +56,42 @@ export default function CreateMoment() {
     }
   };
 
+  const validatePhotoFile = async (uri: string): Promise<boolean> => {
+    try {
+      // Get file info
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+
+      if (!fileInfo.exists) {
+        showAlert('Invalid File', 'The selected file does not exist.');
+        return false;
+      }
+
+      const fileSizeInMB = (fileInfo.size || 0) / (1024 * 1024);
+      const maxSizeInMB = 10;
+
+      // Check file size
+      if (fileSizeInMB > maxSizeInMB) {
+        showAlert('File Too Large', `Please choose a photo smaller than ${maxSizeInMB}MB. Current size: ${fileSizeInMB.toFixed(2)}MB`);
+        return false;
+      }
+
+      // Check MIME type by file extension
+      const extension = uri.split('.').pop()?.toLowerCase();
+      const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+      if (!extension || !validExtensions.includes(extension)) {
+        showAlert('Invalid Format', 'Please choose a JPEG, PNG, or WebP image.');
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('File validation failed:', err);
+      showAlert('Error', 'Unable to validate the selected file.');
+      return false;
+    }
+  };
+
   const uploadPhoto = async (uri: string): Promise<string | null> => {
     if (!user) return null;
     try {
@@ -77,6 +117,17 @@ export default function CreateMoment() {
     }
   };
 
+  const deleteUploadedPhoto = async (filename: string): Promise<void> => {
+    if (!user) return;
+    try {
+      await supabase.storage
+        .from('moments')
+        .remove([`${user.id}/${filename}`]);
+    } catch (err) {
+      console.error('Failed to clean up uploaded photo:', err);
+    }
+  };
+
   const handlePost = async () => {
     if (!user || !content.trim()) {
       showAlert('Missing content', 'Please write something for your moment.');
@@ -84,10 +135,27 @@ export default function CreateMoment() {
     }
 
     setLoading(true);
+    let uploadedPhotoUrl = null;
+    let uploadedFileName: string | null = null;
+
     try {
-      let uploadedPhotoUrl = null;
       if (photoUrl) {
+        // Validate photo before upload
+        const isValid = await validatePhotoFile(photoUrl);
+        if (!isValid) {
+          setLoading(false);
+          return;
+        }
+
         uploadedPhotoUrl = await uploadPhoto(photoUrl);
+        if (!uploadedPhotoUrl) {
+          showAlert('Upload Failed', 'Failed to upload the photo.');
+          setLoading(false);
+          return;
+        }
+
+        // Extract filename from photoUrl for cleanup if needed
+        uploadedFileName = `moment-${Date.now()}.jpg`;
       }
 
       const { error } = await supabase.from('moments').insert({
@@ -99,7 +167,13 @@ export default function CreateMoment() {
         replies_count: 0,
       });
 
-      if (error) throw error;
+      if (error) {
+        // If DB insert fails and we uploaded a photo, delete the orphaned file
+        if (uploadedFileName) {
+          await deleteUploadedPhoto(uploadedFileName);
+        }
+        throw error;
+      }
 
       router.back();
     } catch (err) {
@@ -165,10 +239,10 @@ export default function CreateMoment() {
             numberOfLines={4}
             value={content}
             onChangeText={setContent}
-            maxLength={500}
+            maxLength={2000}
           />
           <Text style={styles.charCount}>
-            {content.length} / 500
+            {content.length} / 2000
           </Text>
         </View>
 

@@ -15,10 +15,14 @@ import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../s
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, HostType } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type FilterMode = HostType | 'all';
 
 export default function HostList() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('all');

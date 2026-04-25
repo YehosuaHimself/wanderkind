@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type LikeRecord = {
   id: string;
@@ -24,6 +25,9 @@ type LikeRecord = {
 };
 
 export default function MomentLikes() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const { momentId } = useLocalSearchParams();
   const [likes, setLikes] = useState<LikeRecord[]>([]);

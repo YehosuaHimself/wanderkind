@@ -8,8 +8,11 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function SettingsScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { signOut, profile } = useAuth();
   const [notifications, setNotifications] = useState(true);

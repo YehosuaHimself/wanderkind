@@ -14,6 +14,7 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKInput } from '../../../../src/components/ui/WKInput';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const MOCK_GUESTS = [
   { id: '1', name: 'Jean Dupont', checked: true, date: 'Today, 2:30 PM' },
@@ -66,6 +67,9 @@ function GuestCheckInItem({
 }
 
 export default function CheckInScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [guests, setGuests] = useState(MOCK_GUESTS);
   const [searchName, setSearchName] = useState('');
   const [showQRScanner, setShowQRScanner] = useState(false);

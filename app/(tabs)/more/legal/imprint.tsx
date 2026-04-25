@@ -4,8 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function ImprintScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Legal Imprint" showBack />

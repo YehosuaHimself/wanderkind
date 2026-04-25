@@ -8,6 +8,7 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const categories = [
   { id: 'bug', label: 'Bug Report', icon: 'warning-outline' as const },
@@ -17,6 +18,9 @@ const categories = [
 ];
 
 export default function FeedbackScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [category, setCategory] = useState('feedback');
   const [message, setMessage] = useState('');
@@ -90,6 +94,7 @@ export default function FeedbackScreen() {
             numberOfLines={6}
             value={message}
             onChangeText={setMessage}
+            maxLength={2000}
           />
         </View>
 

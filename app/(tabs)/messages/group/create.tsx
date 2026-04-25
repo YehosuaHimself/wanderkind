@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,16 @@ import { showAlert } from '../../../../src/lib/alert';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 import { Profile } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+
+// Helper function to escape SQL wildcards in ILIKE queries
+function escapeIlike(input: string): string {
+  return input.replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
 
 export default function CreateGroupChat() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [groupName, setGroupName] = useState('');
@@ -28,30 +36,39 @@ export default function CreateGroupChat() {
   const [selectedMembers, setSelectedMembers] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
     if (query.trim().length < 2) {
       setSearchResults([]);
       return;
     }
 
-    setSearching(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .ilike('trail_name', `%${query}%`)
-        .neq('id', user?.id || '')
-        .limit(10);
+    // Debounce search by 300ms
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const escapedQuery = escapeIlike(query);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('trail_name', `%${escapedQuery}%`)
+          .neq('id', user?.id || '')
+          .limit(10);
 
-      if (error) throw error;
-      setSearchResults((data || []) as Profile[]);
-    } catch (err) {
-      console.error('Search failed:', err);
-    } finally {
-      setSearching(false);
-    }
+        if (error) throw error;
+        setSearchResults((data || []) as Profile[]);
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
   };
 
   const toggleMember = (profile: Profile) => {

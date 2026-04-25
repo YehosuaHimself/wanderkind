@@ -17,8 +17,11 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { showAlert } from '../../../../src/lib/alert';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function CreateBookEntry() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [title, setTitle] = useState('');
@@ -192,6 +195,7 @@ export default function CreateBookEntry() {
             multiline
             numberOfLines={8}
             textAlignVertical="top"
+            maxLength={5000}
           />
           <View style={styles.contentFooter}>
             <Text style={styles.wordCount}>

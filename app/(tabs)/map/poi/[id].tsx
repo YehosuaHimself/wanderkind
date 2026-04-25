@@ -16,6 +16,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface POI {
   id: string;
@@ -47,6 +48,9 @@ const MOCK_POI: Record<string, POI> = {
 };
 
 export default function POIDetail() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const [poi, setPoi] = useState<POI | null>(null);
   const [loading, setLoading] = useState(true);

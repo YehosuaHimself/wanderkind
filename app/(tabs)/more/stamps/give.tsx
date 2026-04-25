@@ -18,6 +18,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const stampCategories = [
   { id: 'hospitality', label: 'Hospitality', icon: 'home-outline' as const },
@@ -74,6 +75,8 @@ function SuccessScreen({ onBack }: SuccessScreenProps) {
 }
 
 export default function GiveStampScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user, profile } = useAuth();
   const [scanMethod, setScanMethod] = useState<'qr' | 'trail' | null>(null);
@@ -226,6 +229,7 @@ export default function GiveStampScreen() {
             value={note}
             onChangeText={setNote}
             editable={!loading}
+            maxLength={500}
           />
         </View>
 

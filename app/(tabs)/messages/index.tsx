@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type Thread = {
   id: string;
@@ -20,6 +21,8 @@ type Thread = {
 };
 
 export default function MessagesScreen() {
+  useAuthGuard();
+
   const router = useRouter();
   const { user } = useAuth();
   const [threads, setThreads] = useState<Thread[]>([]);

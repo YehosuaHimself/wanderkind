@@ -13,6 +13,7 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKInput } from '../../../../src/components/ui/WKInput';
 import { WKButton } from '../../../../src/components/ui/WKButton';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const RULES = [
   { id: 'shoes', label: 'Shoes off indoors', icon: 'shoe' as const },
@@ -23,6 +24,9 @@ const RULES = [
 ];
 
 export default function HouseRulesScreen() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const [rules, setRules] = useState<Record<string, boolean>>({
     shoes: true,
     quiet: true,

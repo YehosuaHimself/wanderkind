@@ -9,6 +9,7 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface EmergencyContact {
   id: number;
@@ -18,6 +19,8 @@ interface EmergencyContact {
 }
 
 export default function EmergencyContactsScreen() {
+  useAuthGuard();
+
   const { profile, user, fetchProfile } = useAuth();
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [loading, setLoading] = useState(false);

@@ -14,6 +14,7 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKInput } from '../../../src/components/ui/WKInput';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type SearchTab = 'hosts' | 'wanderkinder' | 'routes';
 
@@ -33,6 +34,9 @@ const MOCK_ROUTES = [
 ];
 
 export default function Search() {
+  const { user, isLoading } = useAuthGuard();
+  if (isLoading) return null;
+
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('hosts');

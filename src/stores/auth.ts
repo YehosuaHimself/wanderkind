@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
+import { Platform, AppState } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types/database';
 
@@ -16,6 +17,7 @@ type AuthState = {
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   fetchProfile: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
+  refreshSession: () => Promise<void>;
   setOnboarded: () => void;
 };
 
@@ -28,6 +30,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initialize: async () => {
     try {
+      // Clean up existing subscription before creating a new one
+      const existingSub = (globalThis as any).__wanderkind_auth_sub;
+      if (existingSub) {
+        existingSub.unsubscribe();
+        (globalThis as any).__wanderkind_auth_sub = null;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       set({ session, user: session?.user ?? null });
 
@@ -47,6 +56,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Store subscription for potential cleanup
       (globalThis as any).__wanderkind_auth_sub = subscription;
+
+      // TM-06: Session freshness on web — refresh when tab becomes visible
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const handler = () => {
+          if (document.visibilityState === 'visible') {
+            get().refreshSession();
+          }
+        };
+        // Remove previous listener if exists
+        if ((globalThis as any).__wanderkind_visibility_handler) {
+          document.removeEventListener('visibilitychange', (globalThis as any).__wanderkind_visibility_handler);
+        }
+        document.addEventListener('visibilitychange', handler);
+        (globalThis as any).__wanderkind_visibility_handler = handler;
+      } else {
+        // Native: refresh on app foreground
+        const appStateHandler = (nextState: string) => {
+          if (nextState === 'active') {
+            get().refreshSession();
+          }
+        };
+        const sub = AppState.addEventListener('change', appStateHandler);
+        (globalThis as any).__wanderkind_appstate_sub = sub;
+      }
     } catch (err) {
       console.error('Auth initialization failed:', err);
     } finally {
@@ -144,6 +177,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     return { error };
+  },
+
+  refreshSession: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        set({ session: null, user: null, profile: null, isOnboarded: false });
+      } else {
+        set({ session, user: session.user });
+      }
+    } catch (err) {
+      console.error('Session refresh failed:', err);
+    }
   },
 
   setOnboarded: () => set({ isOnboarded: true }),

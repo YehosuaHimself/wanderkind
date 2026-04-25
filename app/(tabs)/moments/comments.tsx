@@ -16,6 +16,7 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Profile } from '../../../src/types/database';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type CommentWithAuthor = {
   id: string;
@@ -27,6 +28,8 @@ type CommentWithAuthor = {
 };
 
 export default function CommentsList() {
+  useAuthGuard();
+
   const router = useRouter();
   const { momentId } = useLocalSearchParams();
   const { user } = useAuth();
