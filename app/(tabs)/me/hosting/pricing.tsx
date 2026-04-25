@@ -20,7 +20,7 @@ const PRICING_TYPES = [
     id: 'free',
     label: 'Free',
     color: colors.green,
-    description: 'Pilgrims stay at no cost',
+    description: 'Wanderkinder stay at no cost',
     needsPrice: false,
   },
   {
@@ -121,7 +121,7 @@ export default function PricingScreen() {
                 <Ionicons name="heart" size={24} color={colors.green} />
                 <Text style={styles.freeTitle}>Pure Hospitality</Text>
                 <Text style={styles.freeText}>
-                  Your generosity offers pilgrims the gift of genuine welcome
+                  Your generosity offers wanderkinder the gift of genuine welcome
                 </Text>
               </View>
             </WKCard>

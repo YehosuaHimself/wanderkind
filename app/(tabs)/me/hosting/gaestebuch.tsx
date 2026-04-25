@@ -40,7 +40,7 @@ const MOCK_ENTRIES = [
     id: '4',
     name: 'Sofia Rossi',
     date: 'March 22, 2024',
-    message: 'Lovely hosts. The kitchen facilities are great for pilgrims.',
+    message: 'Lovely hosts. The kitchen facilities are great for walkers.',
     rating: 5,
   },
 ];

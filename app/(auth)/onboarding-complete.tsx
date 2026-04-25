@@ -114,7 +114,7 @@ export default function OnboardingCompleteScreen() {
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.title}>You Are Now a Wanderkind</Text>
           <Text style={styles.subtitle}>
-            Welcome to a community of pilgrims and hosts who believe in the power of connection and generosity.
+            Welcome to a community of wanderkinder and hosts who believe in the power of connection and generosity.
           </Text>
 
           <View style={styles.highlightSection}>
@@ -133,7 +133,7 @@ export default function OnboardingCompleteScreen() {
               <View>
                 <Text style={styles.highlightTitle}>Open Your Door</Text>
                 <Text style={styles.highlightText}>
-                  Welcome pilgrims into your home and stories.
+                  Welcome wanderkinder into your home and stories.
                 </Text>
               </View>
             </View>

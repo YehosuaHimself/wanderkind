@@ -28,7 +28,7 @@ const VERIFICATION_STEPS = [
   },
   {
     level: 'Association Verified',
-    description: 'Verified by pilgrim association',
+    description: 'Verified by walker association',
     icon: 'shield-checkmark',
     color: colors.verAssociation,
     completed: false,

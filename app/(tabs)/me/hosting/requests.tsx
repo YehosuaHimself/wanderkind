@@ -32,7 +32,7 @@ const MOCK_REQUESTS: Request[] = [
     checkInDate: '2024-05-20',
     checkOutDate: '2024-05-23',
     guests: 2,
-    message: 'We are two pilgrims walking the Camino. Very excited to stay at your place!',
+    message: 'We are two wanderkinder walking the Camino. Very excited to stay at your place!',
     rating: 4.8,
   },
   {

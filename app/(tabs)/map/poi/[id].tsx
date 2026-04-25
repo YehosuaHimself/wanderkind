@@ -37,7 +37,7 @@ const MOCK_POI: Record<string, POI> = {
     id: '1',
     name: 'Cathedral of Santiago de Compostela',
     category: 'Religious Site',
-    description: 'The magnificent final destination of the Camino de Santiago pilgrimage. A stunning Romanesque and Baroque cathedral.',
+    description: 'The magnificent final destination of the Camino de Santiago journey. A stunning Romanesque and Baroque cathedral.',
     distance_km: 0.2,
     lat: 42.88044,
     lng: -8.54569,

@@ -31,7 +31,7 @@ export default function ListingEdit() {
   if (isLoading) return null;
 
   const [name, setName] = useState('Casa Tranquilo');
-  const [description, setDescription] = useState('Warm welcome for pilgrims.');
+  const [description, setDescription] = useState('Warm welcome for wanderkinder.');
   const [beds, setBeds] = useState('2');
   const [selectedType, setSelectedType] = useState('donativo');
   const [amenities, setAmenities] = useState<string[]>(['WiFi', 'Kitchen', 'Shower']);

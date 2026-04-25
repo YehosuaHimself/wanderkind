@@ -151,7 +151,7 @@ export default function HomePhotoScreen() {
         </View>
 
         <Text style={styles.helperText}>
-          A good photo helps pilgrims feel welcome and safe.
+          A good photo helps wanderkinder feel welcome and safe.
         </Text>
       </View>
 

@@ -22,7 +22,7 @@ const WAYS = [
     name: 'Via Francigena',
     country: 'Italy',
     distance: '1,700 km',
-    description: 'Historic pilgrimage route to Rome',
+    description: 'Historic walking route to Rome',
     icon: 'map',
   },
   {

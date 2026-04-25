@@ -64,13 +64,13 @@ export default function HostSetupScreen() {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.subtitle}>
-          Every Wanderkind is a host. Tell other pilgrims about your space.
+          Every Wanderkind is a host. Tell other wanderkinder about your space.
         </Text>
 
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color={colors.amber} />
           <Text style={styles.infoText}>
-            Your hosting information helps walkers find safe places to rest.
+            Your hosting information helps wanderkinder find safe places to rest.
           </Text>
         </View>
 
@@ -99,7 +99,7 @@ export default function HostSetupScreen() {
 
         <WKInput
           label="About Your Place (Optional)"
-          placeholder="Tell pilgrims about your home, meals, experiences..."
+          placeholder="Tell wanderkinder about your home, meals, experiences..."
           value={description}
           onChangeText={setDescription}
           multiline

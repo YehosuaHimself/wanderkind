@@ -66,7 +66,7 @@ export default function RoleSelectScreen() {
           </View>
           <Text style={styles.cardTitle}>I Host</Text>
           <Text style={styles.cardDescription}>
-            Open your door to pilgrims. Share your home and stories.
+            Open your door to wanderkinder. Share your home and stories.
           </Text>
           {selectedRole === 'host' && (
             <View style={styles.checkmark}>

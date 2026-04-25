@@ -125,7 +125,7 @@ export default function WanderkindPassScreen() {
     try {
       const trailName = profile?.trail_name || 'Wanderkind';
       await Share.share({
-        message: `I'm a verified Wanderkind! Join me on the pilgrimage.`,
+        message: `I'm a verified Wanderkind! Join me on the journey.`,
         title: `${trailName}'s Wanderkind Pass`,
       });
     } catch (err) {
@@ -351,7 +351,7 @@ export default function WanderkindPassScreen() {
             <View style={styles.charterGrid}>
               <View style={styles.charterCell}>
                 <Text style={styles.charterLabel}>BASIS</Text>
-                <Text style={styles.charterValue}>Pilgrimage</Text>
+                <Text style={styles.charterValue}>Journey</Text>
               </View>
               <View style={styles.charterCell}>
                 <Text style={styles.charterLabel}>MOVEMENT</Text>

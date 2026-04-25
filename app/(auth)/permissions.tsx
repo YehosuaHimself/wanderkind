@@ -165,7 +165,7 @@ export default function PermissionsScreen() {
             </View>
           </View>
           <Text style={styles.permissionDescription}>
-            Get notified when pilgrims message you or nearby hosts become available.
+            Get notified when wanderkinder message you or nearby hosts become available.
           </Text>
           <WKButton
             title={notificationsGranted ? 'Granted' : 'Request Permission'}

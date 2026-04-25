@@ -121,7 +121,7 @@ export default function HouseRulesScreen() {
                 Consistent rules help walkers know if your place is right for them
               </Text>
               <Text style={styles.guidelineItem}>
-                Consider flexibility during festivals and peak pilgrimage seasons
+                Consider flexibility during festivals and peak walking seasons
               </Text>
             </View>
           </WKCard>

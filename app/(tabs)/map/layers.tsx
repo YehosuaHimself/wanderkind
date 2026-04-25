@@ -48,7 +48,7 @@ export default function Layers() {
   const layerDescriptions = {
     hosts: 'Accommodation hosts along the way',
     wanderkinder: 'Other walkers currently on the road',
-    routes: 'European pilgrimage ways and trails',
+    routes: 'European walking ways and trails',
     pois: 'Points of interest: churches, monuments, restaurants',
     camping: 'Camping spots and wild camping areas',
   };

@@ -12,7 +12,7 @@ const TIERS = [
   { key: 'wunderkind', label: 'Wunderkind', nights: 5, desc: 'Your first nights on the road — curiosity is becoming commitment.' },
   { key: 'wandersmann', label: 'Wandersmann', nights: 15, desc: 'A true walker. You know the rhythm of the road.' },
   { key: 'ehrenmann', label: 'Ehrenmann', nights: 30, desc: 'Honored among walkers. Your presence uplifts every host.' },
-  { key: 'pilger', label: 'Pilger', nights: 50, desc: 'A pilgrim at heart. The path has become part of who you are.' },
+  { key: 'pilger', label: 'Pilger', nights: 50, desc: 'A wanderkind at heart. The path has become part of who you are.' },
   { key: 'apostel', label: 'Apostel', nights: 80, desc: 'You carry the spirit of walking and share it with others.' },
   { key: 'lehrer', label: 'Lehrer', nights: 120, desc: 'A teacher of the way. Newcomers look to you for guidance.' },
   { key: 'meister', label: 'Meister', nights: 180, desc: 'A master of the wandering way. 180 nights of walking wisdom.' },

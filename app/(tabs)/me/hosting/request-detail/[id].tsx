@@ -88,7 +88,7 @@ export default function RequestDetail() {
           <WKCard>
             <Text style={styles.sectionTitle}>Walker's Message</Text>
             <Text style={styles.messageText}>
-              "We are two pilgrims walking the Camino. Very excited to stay at your place! We'd love to hear about your experience hosting and learn more about the local area."
+              "We are two wanderkinder walking the Camino. Very excited to stay at your place! We'd love to hear about your experience hosting and learn more about the local area."
             </Text>
           </WKCard>
 

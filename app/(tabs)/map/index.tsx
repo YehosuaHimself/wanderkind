@@ -703,7 +703,7 @@ export default function MapHome() {
             <View style={styles.expandedMeta}>
               <Text style={styles.expandedMetaItem}>
                 <Text style={styles.expandedMetaLabel}>Hosted: </Text>
-                {item.total_hosted?.toLocaleString() ?? '—'} pilgrims
+                {item.total_hosted?.toLocaleString() ?? '—'} wanderkinder
               </Text>
               {(item as any).country && (
                 <Text style={styles.expandedMetaItem}>
