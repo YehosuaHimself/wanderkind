@@ -6,19 +6,23 @@ import {
   ScrollView,
   Image,
   FlatList,
+  TouchableOpacity,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../src/lib/supabase';
-import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../src/lib/theme';
+import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, GuestbookEntry } from '../../../src/types/database';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useFavoritesStore } from '../../../../src/stores/favorites';
 
 export default function HostDetail() {
   const { user, isLoading } = useAuthGuard();
@@ -28,14 +32,19 @@ export default function HostDetail() {
   const router = useRouter();
   const [host, setHost] = useState<Host | null>(null);
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
+  const [nearbyHosts, setNearbyHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toggleFavorite, isFavorite, loadFavorites } = useFavoritesStore();
 
   useEffect(() => {
     if (id) {
       fetchHost();
     }
-  }, [id]);
+    if (user) {
+      loadFavorites(user.id);
+    }
+  }, [id, user]);
 
   const fetchHost = async () => {
     try {
@@ -59,11 +68,52 @@ export default function HostDetail() {
 
       setHost(hostData as Host);
       setEntries(entriesData as GuestbookEntry[] || []);
+
+      // Fetch nearby hosts for "Next Roof" carousel
+      if (hostData) {
+        const h = hostData as Host;
+        const { data: nearby } = await supabase
+          .from('hosts')
+          .select('*')
+          .eq('is_available', true)
+          .neq('id', id)
+          .gte('lat', h.lat - 0.5)
+          .lte('lat', h.lat + 0.5)
+          .gte('lng', h.lng - 0.5)
+          .lte('lng', h.lng + 0.5)
+          .order('rating', { ascending: false })
+          .limit(5);
+        setNearbyHosts((nearby as Host[]) || []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load host');
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDirections = () => {
+    if (!host) return;
+    const { lat, lng, name } = host;
+    const label = encodeURIComponent(name);
+    if (Platform.OS === 'ios') {
+      Linking.openURL(`maps:?daddr=${lat},${lng}&dirflg=w`);
+    } else if (Platform.OS === 'android') {
+      Linking.openURL(`google.navigation:q=${lat},${lng}&mode=w`);
+    } else {
+      // Web — open Google Maps walking directions
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`);
+    }
+  };
+
+  const getDistanceKm = (h1: Host, h2: Host): number => {
+    const R = 6371;
+    const dLat = (h2.lat - h1.lat) * Math.PI / 180;
+    const dLng = (h2.lng - h1.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(h1.lat * Math.PI / 180) * Math.cos(h2.lat * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   };
 
   if (loading) {
@@ -95,6 +145,9 @@ export default function HostDetail() {
     : host.verification_level === 'association' ? colors.gold
     : host.verification_level === 'community' ? colors.amber
     : colors.ink3;
+  const isFav = isFavorite(host.id);
+  const freshness = getFreshnessBadge((host as any).last_confirmed);
+  const dataSource = dataSourceConfig[(host as any).data_source] || dataSourceConfig.community_report;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -113,7 +166,19 @@ export default function HostDetail() {
           <WKCard variant="gold">
             <View style={styles.header}>
               <View style={styles.titleSection}>
-                <Text style={styles.hostName}>{host.name}</Text>
+                <View style={styles.nameWithFav}>
+                  <Text style={styles.hostName}>{host.name}</Text>
+                  <TouchableOpacity
+                    onPress={() => toggleFavorite(host.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={isFav ? 'heart' : 'heart-outline'}
+                      size={22}
+                      color={isFav ? colors.red : colors.ink3}
+                    />
+                  </TouchableOpacity>
+                </View>
                 <Text style={styles.location}>
                   <Ionicons name="location" size={13} color={colors.ink2} />
                   {' '}{host.address || 'Location not specified'}
@@ -128,49 +193,115 @@ export default function HostDetail() {
               )}
             </View>
 
-            {/* Verification Badge */}
-            {host.verification_level !== 'none' && (
-              <View style={styles.verificationRow}>
-                <Ionicons name="shield-checkmark" size={14} color={verificationColor} />
-                <Text style={[styles.verificationText, { color: verificationColor }]}>
-                  {host.verification_level.toUpperCase()} VERIFIED
-                </Text>
+            {/* Trust Badges */}
+            <View style={styles.trustRow}>
+              <View style={[styles.trustBadge, { backgroundColor: freshness.bg }]}>
+                <Ionicons name={freshness.icon as any} size={11} color={freshness.color} />
+                <Text style={[styles.trustLabel, { color: freshness.color }]}>{freshness.label}</Text>
+              </View>
+              <View style={[styles.trustBadge, { backgroundColor: 'rgba(155,142,126,0.06)' }]}>
+                <Ionicons name="shield-checkmark-outline" size={11} color={dataSource.color} />
+                <Text style={[styles.trustLabel, { color: dataSource.color }]}>{dataSource.label}</Text>
+              </View>
+              {host.verification_level !== 'none' && (
+                <View style={[styles.trustBadge, { backgroundColor: 'rgba(39,134,74,0.06)' }]}>
+                  <Ionicons name="shield-checkmark" size={11} color={verificationColor} />
+                  <Text style={[styles.trustLabel, { color: verificationColor }]}>
+                    {host.verification_level.toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Price Range */}
+            {(host as any).price_range && (
+              <View style={styles.priceRow}>
+                <Ionicons name="wallet-outline" size={14} color={colors.ink2} />
+                <Text style={styles.priceText}>{(host as any).price_range}</Text>
               </View>
             )}
 
             {/* Key Stats */}
             <View style={styles.statsRow}>
-              <StatItem
-                icon="home"
-                label="Beds"
-                value={host.capacity.toString()}
-              />
-              <StatItem
-                icon="star"
-                label="Rating"
-                value={host.rating ? `${host.rating.toFixed(1)}/5` : 'New'}
-              />
-              <StatItem
-                icon="people"
-                label="Hosted"
-                value={host.total_hosted.toString()}
-              />
+              <StatItem icon="home" label="Beds" value={host.capacity.toString()} />
+              <StatItem icon="star" label="Rating" value={host.rating ? `${host.rating.toFixed(1)}/5` : 'New'} />
+              <StatItem icon="people" label="Hosted" value={host.total_hosted.toString()} />
             </View>
-
-            {/* Amenities */}
-            {host.amenities && host.amenities.length > 0 && (
-              <View style={styles.amenitiesSection}>
-                <Text style={styles.sectionTitle}>Amenities</Text>
-                <View style={styles.amenitiesGrid}>
-                  {host.amenities.slice(0, 4).map((amenity, i) => (
-                    <View key={i} style={styles.amenityTag}>
-                      <Text style={styles.amenityText}>{amenity}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
           </WKCard>
+
+          {/* === ACTION LAYER === */}
+          <View style={styles.actionBar}>
+            {(host as any).phone ? (
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => Linking.openURL(`tel:${(host as any).phone}`)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(90,122,43,0.1)' }]}>
+                  <Ionicons name="call" size={18} color={colors.green} />
+                </View>
+                <Text style={styles.actionLabel}>Call</Text>
+              </TouchableOpacity>
+            ) : null}
+            {(host as any).email ? (
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => Linking.openURL(`mailto:${(host as any).email}`)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: colors.amberBg }]}>
+                  <Ionicons name="mail" size={18} color={colors.amber} />
+                </View>
+                <Text style={styles.actionLabel}>Email</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={openDirections}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.blueBg }]}>
+                <Ionicons name="navigate" size={18} color={colors.blue} />
+              </View>
+              <Text style={styles.actionLabel}>Directions</Text>
+            </TouchableOpacity>
+            {(host as any).website ? (
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => Linking.openURL((host as any).website)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(155,142,126,0.08)' }]}>
+                  <Ionicons name="globe-outline" size={18} color={colors.ink2} />
+                </View>
+                <Text style={styles.actionLabel}>Website</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => router.push(`/(tabs)/messages?hostId=${host.id}`)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.amberBg }]}>
+                <Ionicons name="paper-plane" size={18} color={colors.amber} />
+              </View>
+              <Text style={styles.actionLabel}>Message</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Amenities — show all */}
+          {host.amenities && host.amenities.length > 0 && (
+            <WKCard>
+              <Text style={styles.sectionTitle}>Amenities</Text>
+              <View style={styles.amenitiesGrid}>
+                {host.amenities.map((amenity, i) => (
+                  <View key={i} style={styles.amenityTag}>
+                    <Text style={styles.amenityText}>{amenity}</Text>
+                  </View>
+                ))}
+              </View>
+            </WKCard>
+          )}
 
           {/* Description */}
           {host.description && (
@@ -223,7 +354,61 @@ export default function HostDetail() {
             </WKCard>
           )}
 
-          {/* Request Stay Button */}
+          {/* === NEXT ROOF CAROUSEL === */}
+          {nearbyHosts.length > 0 && (
+            <View style={styles.nextRoofSection}>
+              <Text style={styles.nextRoofTitle}>Next Roof Ahead</Text>
+              <Text style={styles.nextRoofSubtitle}>Nearby places to stay</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.nextRoofScroll}
+              >
+                {nearbyHosts.map((nearby) => {
+                  const nConfig = hostTypeConfig[nearby.host_type as keyof typeof hostTypeConfig];
+                  const distKm = getDistanceKm(host, nearby);
+                  return (
+                    <TouchableOpacity
+                      key={nearby.id}
+                      style={styles.nextRoofCard}
+                      activeOpacity={0.7}
+                      onPress={() => router.push(`/(tabs)/map/host/${nearby.id}`)}
+                    >
+                      <View style={[styles.nrBadge, { backgroundColor: nConfig?.bg ?? colors.amberBg }]}>
+                        <Text style={[styles.nrBadgeText, { color: nConfig?.color ?? colors.amber }]}>
+                          {nConfig?.label ?? 'HOST'}
+                        </Text>
+                      </View>
+                      <Text style={styles.nrName} numberOfLines={2}>{nearby.name}</Text>
+                      <Text style={styles.nrLocation} numberOfLines={1}>
+                        {(nearby as any).region || nearby.address || 'Along the Way'}
+                      </Text>
+                      <View style={styles.nrFooter}>
+                        <View style={styles.nrStat}>
+                          <Ionicons name="walk-outline" size={12} color={colors.amber} />
+                          <Text style={styles.nrStatText}>
+                            {distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(1)}km`}
+                          </Text>
+                        </View>
+                        {nearby.rating ? (
+                          <View style={styles.nrStat}>
+                            <Ionicons name="star" size={12} color={colors.gold} />
+                            <Text style={styles.nrStatText}>{nearby.rating.toFixed(1)}</Text>
+                          </View>
+                        ) : null}
+                        <View style={styles.nrStat}>
+                          <Ionicons name="bed-outline" size={12} color={colors.ink3} />
+                          <Text style={styles.nrStatText}>{nearby.capacity}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Primary CTA */}
           <WKButton
             title="Request Stay"
             onPress={() => router.push(`/(tabs)/messages?hostId=${host.id}`)}
@@ -287,6 +472,12 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.ink2,
   },
+  nameWithFav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   badge: {
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -298,18 +489,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1,
   },
-  verificationRow: {
+  trustRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    flexWrap: 'wrap',
+    gap: 6,
     marginBottom: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: 'rgba(200,118,42,0.1)',
   },
-  verificationText: {
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  trustLabel: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  priceText: {
     ...typography.bodySm,
-    fontWeight: '600',
+    color: colors.ink2,
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
@@ -404,6 +616,107 @@ const styles = StyleSheet.create({
   entryMessage: {
     ...typography.bodySm,
     color: colors.ink2,
+  },
+  // Action Layer
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    ...shadows.sm,
+  },
+  actionBtn: {
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 56,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionLabel: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    color: colors.ink2,
+  },
+  // Next Roof carousel
+  nextRoofSection: {
+    marginTop: spacing.sm,
+  },
+  nextRoofTitle: {
+    ...typography.h3,
+    color: colors.ink,
+    marginBottom: 2,
+  },
+  nextRoofSubtitle: {
+    ...typography.bodySm,
+    color: colors.ink3,
+    marginBottom: spacing.md,
+  },
+  nextRoofScroll: {
+    gap: spacing.md,
+    paddingRight: spacing.lg,
+  },
+  nextRoofCard: {
+    width: 160,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    ...shadows.sm,
+  },
+  nrBadge: {
+    alignSelf: 'flex-start',
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    marginBottom: spacing.sm,
+  },
+  nrBadgeText: {
+    fontFamily: 'Courier New',
+    fontSize: 7,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  nrName: {
+    ...typography.bodySm,
+    fontWeight: '600',
+    color: colors.ink,
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  nrLocation: {
+    ...typography.caption,
+    color: colors.ink3,
+    marginBottom: spacing.sm,
+  },
+  nrFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLt,
+    paddingTop: spacing.sm,
+  },
+  nrStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  nrStatText: {
+    ...typography.caption,
+    color: colors.ink2,
+    fontWeight: '500',
   },
   requestButton: {
     marginVertical: spacing.lg,
