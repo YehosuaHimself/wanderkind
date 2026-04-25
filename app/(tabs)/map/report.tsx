@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -35,7 +36,7 @@ export default function ReportIssueScreen() {
 
   const handleSubmit = async () => {
     if (!selectedOption) {
-      alert('Please select an issue type');
+      Alert.alert('Missing Information', 'Please select an issue type');
       return;
     }
 
@@ -55,11 +56,11 @@ export default function ReportIssueScreen() {
       if (error) throw error;
 
       // Show success and go back
-      alert('Thank you for reporting. We will investigate this.');
+      Alert.alert('Success', 'Thank you for reporting. We will investigate this.');
       router.back();
     } catch (err) {
       console.error('Report submission error:', err);
-      alert('Error submitting report. Please try again.');
+      Alert.alert('Error', 'Error submitting report. Please try again.');
     } finally {
       setLoading(false);
     }

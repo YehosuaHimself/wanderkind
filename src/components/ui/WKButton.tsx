@@ -1,7 +1,13 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
 import { colors, radii, typography } from '../../lib/theme';
+
+// expo-haptics doesn't work on web
+let Haptics: any = null;
+if (Platform.OS !== 'web') {
+  try { Haptics = require('expo-haptics'); } catch {}
+}
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 
@@ -31,7 +37,9 @@ export function WKButton({
   icon,
 }: Props) {
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Haptics) {
+      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+    }
     onPress();
   };
 

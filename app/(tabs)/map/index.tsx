@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,13 +19,149 @@ const INITIAL_REGION = {
 
 type FilterMode = 'free' | 'donativo' | 'all';
 
+// Dynamically import native-only modules (these crash on web)
+let MapView: any, Marker: any, PROVIDER_GOOGLE: any, Location: any;
+if (Platform.OS !== 'web') {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+  Location = require('expo-location');
+}
+
+// Web-only map component using Leaflet
+function WebMapComponent({ hosts, filter, onHostPress }: { hosts: Host[]; filter: FilterMode; onHostPress: (id: string) => void }) {
+  const iframeRef = useRef<any>(null);
+
+  // Build filtered hosts list
+  const filteredHosts = hosts.filter(h => {
+    if (filter === 'free') return h.host_type === 'free';
+    if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
+    return true;
+  });
+
+  // Map host type to marker color
+  const getMarkerColor = (type: string): string => {
+    const config = hostTypeConfig[type as keyof typeof hostTypeConfig];
+    if (!config) return colors.ink3;
+    return config.color;
+  };
+
+  // Pre-compute marker colors for all filtered hosts
+  const markerColorMap: Record<string, string> = {};
+  filteredHosts.forEach(h => {
+    markerColorMap[h.id] = getMarkerColor(h.host_type);
+  });
+
+  // Build HTML with Leaflet map
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #map { width: 100%; height: 100vh; }
+    .leaflet-container { background: #f5f5f0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    // Initialize map centered on central Europe
+    const map = L.map('map').setView([47.5, 7.5], 6);
+
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    // Hosts data (injected from React)
+    const hosts = ${JSON.stringify(filteredHosts)};
+    const markerColorMap = ${JSON.stringify(markerColorMap)};
+
+    // Add markers for each host
+    hosts.forEach(function(host) {
+      const markerColor = markerColorMap[host.id] || '#999999';
+
+      // Create circle marker (more visible than default pins)
+      L.circleMarker([host.lat, host.lng], {
+        radius: 8,
+        fillColor: markerColor,
+        color: '#ffffff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.85
+      })
+      .bindPopup(function() {
+        return '<div style="font-size: 12px; text-align: center;"><strong>' + host.name + '</strong></div>';
+      })
+      .on('click', function(e) {
+        // Send message to parent about host click
+        window.parent.postMessage({
+          type: 'host-click',
+          hostId: host.id
+        }, '*');
+      })
+      .addTo(map);
+    });
+
+    // Handle location request from parent
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'center-on-location') {
+        const { lat, lng } = event.data;
+        map.setView([lat, lng], 10, { animate: true, duration: 1 });
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  // Handle iframe messages for marker clicks
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'host-click') {
+        onHostPress(event.data.hostId);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onHostPress]);
+
+  return (
+    <View style={styles.map}>
+      {/* Web: render iframe with Leaflet map */}
+      {Platform.OS === 'web' && (
+        // @ts-ignore - iframe is supported on web via react-native-web
+        <iframe
+          ref={iframeRef}
+          srcDoc={html}
+          style={{
+            flex: 1,
+            border: 'none',
+            width: '100%',
+            height: '100%'
+          }}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      )}
+    </View>
+  );
+}
+
 export default function MapHome() {
   const router = useRouter();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('free');
   const [isListView, setIsListView] = useState(false);
   const [nearestFree, setNearestFree] = useState<Host | null>(null);
+  const iframeRef = useRef<any>(null);
 
   useEffect(() => {
     fetchHosts();
@@ -58,27 +192,74 @@ export default function MapHome() {
     return config?.color ?? colors.ink3;
   };
 
+  const handleHostPress = (hostId: string) => {
+    router.push(`/(tabs)/map/host/${hostId}`);
+  };
+
+  const handleLocationPress = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        // Use browser geolocation API on web
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition((position) => {
+            const { latitude, longitude } = position.coords;
+            // Send message to iframe to center on location
+            const iframe = document.querySelector('iframe');
+            iframe?.contentWindow?.postMessage({
+              type: 'center-on-location',
+              lat: latitude,
+              lng: longitude
+            }, '*');
+          }, () => {
+            // Permission denied or error — silently fail
+          });
+        }
+      } else {
+        // Use expo-location on native
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        mapRef.current?.animateToRegion({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.5,
+          longitudeDelta: 0.5,
+        }, 800);
+      }
+    } catch {
+      // Location unavailable — silently fail
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Map */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={INITIAL_REGION}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        showsUserLocation
-        showsMyLocationButton={false}
-        mapType="standard"
-      >
-        {filteredHosts.map(host => (
-          <Marker
-            key={host.id}
-            coordinate={{ latitude: host.lat, longitude: host.lng }}
-            pinColor={getMarkerColor(host.host_type)}
-            onPress={() => router.push(`/(tabs)/map/host/${host.id}`)}
-          />
-        ))}
-      </MapView>
+      {/* Map: native or web */}
+      {Platform.OS === 'web' ? (
+        <WebMapComponent
+          hosts={hosts}
+          filter={filter}
+          onHostPress={handleHostPress}
+        />
+      ) : (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={INITIAL_REGION}
+          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          showsUserLocation
+          showsMyLocationButton={false}
+          mapType="standard"
+        >
+          {filteredHosts.map(host => (
+            <Marker
+              key={host.id}
+              coordinate={{ latitude: host.lat, longitude: host.lng }}
+              pinColor={getMarkerColor(host.host_type)}
+              onPress={() => handleHostPress(host.id)}
+            />
+          ))}
+        </MapView>
+      )}
 
       {/* Top controls overlay */}
       <SafeAreaView style={styles.topOverlay} edges={['top']}>
@@ -116,21 +297,7 @@ export default function MapHome() {
         style={styles.locationButton}
         accessibilityLabel="Center on my location"
         accessibilityRole="button"
-        onPress={async () => {
-          try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') return;
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            mapRef.current?.animateToRegion({
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-              latitudeDelta: 0.5,
-              longitudeDelta: 0.5,
-            }, 800);
-          } catch {
-            // Location unavailable — silently fail
-          }
-        }}
+        onPress={handleLocationPress}
       >
         <Ionicons name="locate" size={20} color={colors.amber} />
       </TouchableOpacity>
@@ -244,7 +411,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: Platform.OS === 'ios' ? 24 : 16,
+    bottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 16 : 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,

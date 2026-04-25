@@ -162,7 +162,7 @@ export default function StampCeremony() {
                   .update({
                     reflection: reflection.trim(),
                     reflection_public: reflectionPublic,
-                  } as any)
+                  })
                   .eq('id', stampId as string);
                 setSaving(false);
               }

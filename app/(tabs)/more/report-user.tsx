@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -84,11 +85,11 @@ export default function ReportUserScreen() {
 
   const handleSubmit = async () => {
     if (!selectedReason) {
-      alert('Please select a reason');
+      Alert.alert('Missing Information', 'Please select a reason');
       return;
     }
     if (descriptionLength < 20) {
-      alert('Description must be at least 20 characters');
+      Alert.alert('Missing Information', 'Description must be at least 20 characters');
       return;
     }
 
@@ -111,7 +112,7 @@ export default function ReportUserScreen() {
       setConfirmed(true);
     } catch (err) {
       console.error('Report submission error:', err);
-      alert('Error submitting report. Please try again.');
+      Alert.alert('Error', 'Error submitting report. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,10 @@ import { colors, typography, spacing } from '../../lib/theme';
 const useIsDesktop = () => {
   if (Platform.OS !== 'web') return false;
   const { width } = Dimensions.get('window');
-  return width > 768;
+  // Only gate true desktop browsers (not tablets/iPads which may be > 768px)
+  // Check for mouse-based interaction (no touch) to identify real desktops
+  if (typeof window !== 'undefined' && 'ontouchstart' in window) return false;
+  return width > 1024;
 };
 
 // Inject CSS keyframes for 3D Y-axis rotation (web only)

@@ -1,21 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { WKHeader } from '../../../src/components/ui/WKHeader';
+import { WKButton } from '../../../src/components/ui/WKButton';
+
+// expo-camera doesn't work on web — conditionally import
+let CameraView: any = null;
+let useCameraPermissions: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    const cam = require('expo-camera');
+    CameraView = cam.CameraView;
+    useCameraPermissions = cam.useCameraPermissions;
+  } catch {}
+}
+
+// Web fallback: show a message that scanning requires the native app
+function WebScanFallback() {
+  const router = useRouter();
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <WKHeader title="Scan QR Code" showBack />
+      <View style={styles.permissionContent}>
+        <Ionicons name="qr-code-outline" size={64} color={colors.amber} />
+        <Text style={[typography.h2, { color: colors.ink, marginTop: spacing.lg, textAlign: 'center' }]}>
+          QR Scanning
+        </Text>
+        <Text style={[typography.body, { color: colors.ink2, marginTop: spacing.md, textAlign: 'center' }]}>
+          QR code scanning requires camera access which is available on the mobile app. You can still enter trail names manually to find walkers.
+        </Text>
+        <WKButton
+          title="Go Back"
+          onPress={() => router.back()}
+          variant="primary"
+          style={{ marginTop: spacing.xl }}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
 
 export default function ScanScreen() {
+  // On web, show fallback immediately
+  if (Platform.OS === 'web') {
+    return <WebScanFallback />;
+  }
+
+  return <NativeScanScreen />;
+}
+
+function NativeScanScreen() {
   const router = useRouter();
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, setPermission] = useState<any>(null);
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
-    if (!permission?.granted && permission !== null) {
-      requestPermission();
+    if (useCameraPermissions) {
+      // Request permissions on mount
+      const requestPerm = async () => {
+        try {
+          const cam = require('expo-camera');
+          const result = await cam.Camera?.requestCameraPermissionsAsync?.();
+          setPermission(result);
+        } catch {}
+      };
+      requestPerm();
     }
-  }, [permission]);
+  }, []);
 
   if (!permission) {
     return (
@@ -25,7 +79,7 @@ export default function ScanScreen() {
     );
   }
 
-  if (!permission.granted) {
+  if (!permission?.granted) {
     return (
       <SafeAreaView style={styles.permissionContainer}>
         <View style={styles.permissionContent}>
@@ -38,7 +92,13 @@ export default function ScanScreen() {
           </Text>
           <TouchableOpacity
             style={styles.permissionButton}
-            onPress={requestPermission}
+            onPress={async () => {
+              try {
+                const cam = require('expo-camera');
+                const result = await cam.Camera?.requestCameraPermissionsAsync?.();
+                setPermission(result);
+              } catch {}
+            }}
             activeOpacity={0.7}
           >
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
@@ -67,12 +127,9 @@ export default function ScanScreen() {
           text: 'OK',
           onPress: () => {
             setScanned(false);
-            // Navigate based on QR type
             if (scannedData.type === 'check-in') {
-              // Handle check-in
               router.back();
             } else if (scannedData.type === 'profile') {
-              // View profile
               router.push(`/(tabs)/profile/${scannedData.id}` as any);
             }
           },
@@ -102,20 +159,22 @@ export default function ScanScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <CameraView
-        style={styles.camera}
-        onBarcodeScanned={handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],
-        }}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.scanFrame} />
-          <Text style={styles.instructionText}>
-            Point camera at QR code
-          </Text>
-        </View>
-      </CameraView>
+      {CameraView && (
+        <CameraView
+          style={styles.camera}
+          onBarcodeScanned={handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],
+          }}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.scanFrame} />
+            <Text style={styles.instructionText}>
+              Point camera at QR code
+            </Text>
+          </View>
+        </CameraView>
+      )}
 
       <View style={styles.footer}>
         <TouchableOpacity

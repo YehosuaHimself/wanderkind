@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -74,7 +75,7 @@ function SuccessScreen({ onBack }: SuccessScreenProps) {
 
 export default function GiveStampScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [scanMethod, setScanMethod] = useState<'qr' | 'trail' | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [note, setNote] = useState('');
@@ -84,7 +85,7 @@ export default function GiveStampScreen() {
 
   const handleConfirm = async () => {
     if (!selectedCategory) {
-      alert('Please select a stamp category');
+      Alert.alert('Missing Category', 'Please select a stamp category');
       return;
     }
 
@@ -95,11 +96,21 @@ export default function GiveStampScreen() {
         .from('stamps')
         .insert({
           host_id: user?.id,
+          walker_id: '', // set by the receiving walker
+          host_name: profile?.trail_name || 'Host',
           category: selectedCategory,
           note: note.trim() || null,
           trail_name: trailName.trim() || null,
+          night_number: 0,
+          reflection: null,
+          reflection_public: false,
+          verification_hash: '',
+          previous_hash: null,
+          photo_url: null,
+          route_id: null,
+          route_km: null,
           created_at: new Date().toISOString(),
-        });
+        } as any);
 
       if (error) throw error;
 
@@ -107,7 +118,7 @@ export default function GiveStampScreen() {
       setSuccess(true);
     } catch (err) {
       console.error('Stamp creation error:', err);
-      alert('Error creating stamp. Please try again.');
+      Alert.alert('Error', 'Error creating stamp. Please try again.');
     } finally {
       setLoading(false);
     }

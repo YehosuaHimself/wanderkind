@@ -3,12 +3,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, typography } from '../../lib/theme';
 
 // Web fallback for react-native-maps
+// Note: This is a fallback stub. The main map/index.tsx handles web maps directly with Leaflet.
 export default function MapView({ children, style, ...props }: any) {
   return (
     <View style={[styles.container, style]}>
       <View style={styles.placeholder}>
-        <Text style={styles.text}>Map</Text>
-        <Text style={styles.subtext}>Available on mobile app</Text>
+        <Text style={styles.text}>Loading Map</Text>
+        <Text style={styles.subtext}>Interactive map with Leaflet</Text>
       </View>
       {children}
     </View>
@@ -19,7 +20,7 @@ export const Marker = ({ children }: any) => null;
 export const PROVIDER_GOOGLE = 'google';
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#E8E0D0' },
+  container: { flex: 1, backgroundColor: colors.bg },
   placeholder: {
     flex: 1,
     justifyContent: 'center',

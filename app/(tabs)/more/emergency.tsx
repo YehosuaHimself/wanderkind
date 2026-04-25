@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+
+// expo-location may not work on web — conditionally import
+let Location: any = null;
+if (Platform.OS !== 'web') {
+  try { Location = require('expo-location'); } catch {}
+}
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
@@ -27,6 +32,25 @@ export default function EmergencyScreen() {
 
   const getLocation = async () => {
     try {
+      if (Platform.OS === 'web') {
+        // Use browser geolocation API on web
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            },
+            () => setLocation('Location permission denied')
+          );
+        } else {
+          setLocation('Geolocation not available');
+        }
+        return;
+      }
+      if (!Location) {
+        setLocation('Location not available on this platform');
+        return;
+      }
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setLocation('Location permission denied');

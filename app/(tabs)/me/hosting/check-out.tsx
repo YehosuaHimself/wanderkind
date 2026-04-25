@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -142,7 +143,7 @@ export default function CheckOutScreen() {
       setConfirmed(true);
     } catch (err) {
       console.error('Check-out error:', err);
-      alert('Error processing check-out. Please try again.');
+      Alert.alert('Error', 'Error processing check-out. Please try again.');
     } finally {
       setLoading(false);
     }

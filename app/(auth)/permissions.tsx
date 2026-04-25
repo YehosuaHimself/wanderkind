@@ -2,8 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
+// These modules may not work on web — conditionally import
+let Location: any = null;
+let Notifications: any = null;
+if (Platform.OS !== 'web') {
+  try { Location = require('expo-location'); } catch {}
+  try { Notifications = require('expo-notifications'); } catch {}
+}
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../src/components/ui/WKHeader';
 import { WKButton } from '../../src/components/ui/WKButton';
@@ -18,6 +25,19 @@ export default function PermissionsScreen() {
 
   const requestLocationPermission = async () => {
     try {
+      if (Platform.OS === 'web') {
+        // Use browser geolocation on web
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            () => { setLocationGranted(true); setDeniedMessage(''); },
+            () => { setDeniedMessage('Location permission denied. You can enable it later in settings.'); }
+          );
+        } else {
+          setDeniedMessage('Geolocation not available in this browser.');
+        }
+        return;
+      }
+      if (!Location) return;
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         setLocationGranted(true);
@@ -32,6 +52,22 @@ export default function PermissionsScreen() {
 
   const requestNotificationPermission = async () => {
     try {
+      if (Platform.OS === 'web') {
+        // Use browser Notification API on web
+        if ('Notification' in window) {
+          const permission = await window.Notification.requestPermission();
+          if (permission === 'granted') {
+            setNotificationsGranted(true);
+            setDeniedMessage('');
+          } else {
+            setDeniedMessage('Notification permission denied. You can enable it later in settings.');
+          }
+        } else {
+          setNotificationsGranted(true); // Skip on web if not supported
+        }
+        return;
+      }
+      if (!Notifications) return;
       const { status } = await Notifications.requestPermissionsAsync();
       if (status === 'granted') {
         setNotificationsGranted(true);
