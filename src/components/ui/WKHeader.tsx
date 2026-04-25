@@ -22,7 +22,7 @@ export function WKHeader({ title, showBack = true, rightAction }: Props) {
       ) : (
         <View style={styles.spacer} />
       )}
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+      <Text style={styles.title} numberOfLines={1}>{title.toUpperCase()}</Text>
       {rightAction ?? <View style={styles.spacer} />}
     </View>
   );
@@ -47,8 +47,9 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 2,
     color: colors.ink,
   },
   spacer: { width: 36 },
