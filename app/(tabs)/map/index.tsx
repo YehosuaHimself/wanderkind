@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch,
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../src/lib/theme';
+import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { toast } from '../../../src/lib/toast';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
@@ -246,8 +246,8 @@ function WebMapComponent({
       maxZoom: 19
     }).addTo(map);
 
-    // === HOSTS ===
-    var hosts = ${JSON.stringify(filteredHosts)};
+    // === HOSTS (slim payload for map markers) ===
+    var hosts = ${JSON.stringify(filteredHosts.map(h => ({ id: h.id, name: h.name, lat: h.lat, lng: h.lng, host_type: h.host_type })))};
     var markerColorMap = ${JSON.stringify(markerColorMap)};
     hosts.forEach(function(host) {
       var mc = markerColorMap[host.id] || '#999';
@@ -262,7 +262,7 @@ function WebMapComponent({
     });
 
     // === WANDERKINDER (orange circle with rotating W in Helvetica Neue) ===
-    var walkers = ${JSON.stringify(visibleWalkers)};
+    var walkers = ${JSON.stringify(visibleWalkers.map(w => ({ id: w.id, trail_name: w.trail_name, lat: (w as any).lat, lng: (w as any).lng, is_walking: w.is_walking })))};
     walkers.forEach(function(w) {
       var isWalking = w.is_walking;
       var walkClass = isWalking ? ' wk-walking' : '';
@@ -729,6 +729,34 @@ export default function MapHome() {
           </Text>
         </View>
 
+        {/* Trust badges — freshness + data source */}
+        <View style={styles.trustBadgeRow}>
+          {(() => {
+            const fresh = getFreshnessBadge((item as any).last_confirmed);
+            return (
+              <View style={[styles.trustBadge, { backgroundColor: fresh.bg }]}>
+                <Ionicons name={fresh.icon as any} size={10} color={fresh.color} />
+                <Text style={[styles.trustBadgeText, { color: fresh.color }]}>{fresh.label}</Text>
+              </View>
+            );
+          })()}
+          {(() => {
+            const src = dataSourceConfig[(item as any).data_source] || dataSourceConfig.community_report;
+            return (
+              <View style={[styles.trustBadge, { backgroundColor: 'rgba(155,142,126,0.06)' }]}>
+                <Ionicons name="shield-checkmark-outline" size={10} color={src.color} />
+                <Text style={[styles.trustBadgeText, { color: src.color }]}>{src.label}</Text>
+              </View>
+            );
+          })()}
+          {(item as any).amenities && (item as any).amenities.length > 0 && (
+            <View style={[styles.trustBadge, { backgroundColor: colors.amberBg }]}>
+              <Ionicons name="pricetag-outline" size={10} color={colors.amber} />
+              <Text style={[styles.trustBadgeText, { color: colors.amber }]}>{(item as any).amenities.length} amenities</Text>
+            </View>
+          )}
+        </View>
+
         {/* Contact row — phone & email */}
         <View style={styles.hostContactRow}>
           {(item as any).phone ? (
@@ -790,7 +818,23 @@ export default function MapHome() {
                   {item.route_km}
                 </Text>
               )}
+              {(item as any).price_range && (
+                <Text style={styles.expandedMetaItem}>
+                  <Text style={styles.expandedMetaLabel}>Price: </Text>
+                  {(item as any).price_range}
+                </Text>
+              )}
             </View>
+            {/* Amenities */}
+            {(item as any).amenities && (item as any).amenities.length > 0 && (
+              <View style={styles.amenitiesRow}>
+                {(item as any).amenities.map((a: string, i: number) => (
+                  <View key={i} style={styles.amenityPill}>
+                    <Text style={styles.amenityText}>{a}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -1124,6 +1168,27 @@ const styles = StyleSheet.create({
     color: colors.ink2,
     flex: 1,
   },
+  trustBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+  },
+  trustBadgeText: {
+    fontFamily: 'Courier New',
+    fontSize: 7,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   hostContactRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1177,5 +1242,24 @@ const styles = StyleSheet.create({
   expandedMetaLabel: {
     fontWeight: '700',
     color: colors.ink,
+  },
+  amenitiesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 8,
+  },
+  amenityPill: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  amenityText: {
+    fontSize: 10,
+    color: colors.ink2,
+    fontWeight: '500',
   },
 });

@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../src/lib/supabase';
-import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../src/lib/theme';
+import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, HostType } from '../../../src/types/database';
@@ -78,6 +78,28 @@ export default function HostList() {
               </View>
               <Text style={styles.distance}>{distance}</Text>
             </View>
+          </View>
+
+          {/* Trust badges */}
+          <View style={styles.trustRow}>
+            {(() => {
+              const fresh = getFreshnessBadge((host as any).last_confirmed);
+              return (
+                <View style={[styles.trustBadge, { backgroundColor: fresh.bg }]}>
+                  <Ionicons name={fresh.icon as any} size={10} color={fresh.color} />
+                  <Text style={[styles.trustText, { color: fresh.color }]}>{fresh.label}</Text>
+                </View>
+              );
+            })()}
+            {(() => {
+              const src = dataSourceConfig[(host as any).data_source] || dataSourceConfig.community_report;
+              return (
+                <View style={[styles.trustBadge, { backgroundColor: 'rgba(155,142,126,0.06)' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={10} color={src.color} />
+                  <Text style={[styles.trustText, { color: src.color }]}>{src.label}</Text>
+                </View>
+              );
+            })()}
           </View>
 
           <View style={styles.cardFooter}>
@@ -277,5 +299,27 @@ const styles = StyleSheet.create({
   capacity: {
     ...typography.bodySm,
     color: colors.ink2,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingBottom: 8,
+    flexWrap: 'wrap',
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  trustText: {
+    fontFamily: 'Courier New',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
