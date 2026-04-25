@@ -29,6 +29,7 @@ interface LayerState {
   ways: boolean;
   wifi: boolean;
   churches: boolean;
+  parishes: boolean;
   mountains: boolean;
 }
 
@@ -61,8 +62,36 @@ const HOST_CARD_WIDTH = width - 48;
 // Get walking seed profiles for map markers
 const walkingSeedProfiles = SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng);
 
-// Sample POI data — churches, wifi hotspots, mountains along major routes
+// Sample POI data — churches, parishes, wifi hotspots, mountains along major routes
 const POI_DATA = {
+  parishes: [
+    // Catholic parishes (Pfarreien) along major walking routes — offering pilgrim blessing, community meals, or rest
+    { id: 'pf-01', name: 'Pfarrei St. Jakob, Zürich', lat: 47.3711, lng: 8.5389 },
+    { id: 'pf-02', name: 'Pfarrei Maria Himmelfahrt, Berchtesgaden', lat: 47.6316, lng: 13.0011 },
+    { id: 'pf-03', name: 'Pfarrei St. Nikolaus, Innsbruck', lat: 47.2620, lng: 11.3960 },
+    { id: 'pf-04', name: 'Pfarrei Unsere Liebe Frau, Salzburg', lat: 47.7990, lng: 13.0440 },
+    { id: 'pf-05', name: 'Pfarrei St. Martin, Freiburg', lat: 47.9959, lng: 7.8529 },
+    { id: 'pf-06', name: 'Pfarrei St. Peter, München', lat: 48.1363, lng: 11.5761 },
+    { id: 'pf-07', name: 'Pfarrei Maria Geburt, Aschaffenburg', lat: 49.9769, lng: 9.1510 },
+    { id: 'pf-08', name: 'Parroquia de Santiago, Pamplona', lat: 42.8188, lng: -1.6432 },
+    { id: 'pf-09', name: 'Parroquia San Nicolás, Burgos', lat: 42.3430, lng: -3.6960 },
+    { id: 'pf-10', name: 'Parrocchia San Pietro, Lucca', lat: 43.8440, lng: 10.5050 },
+    { id: 'pf-11', name: 'Parrocchia Santa Maria, Siena', lat: 43.3190, lng: 11.3310 },
+    { id: 'pf-12', name: 'Paroisse Saint-Jacques, Le Puy-en-Velay', lat: 45.0430, lng: 3.8850 },
+    { id: 'pf-13', name: 'Paroisse Notre-Dame, Vézelay', lat: 47.4650, lng: 3.7470 },
+    { id: 'pf-14', name: 'Pfarrei St. Jakobus, Köln', lat: 50.9370, lng: 6.9600 },
+    { id: 'pf-15', name: 'Pfarrei Heilig Kreuz, Einsiedeln', lat: 47.1270, lng: 8.7520 },
+    { id: 'pf-16', name: 'Pfarrei St. Johannes, Konstanz', lat: 47.6588, lng: 9.1753 },
+    { id: 'pf-17', name: 'Parroquia San Martín, León', lat: 42.5990, lng: -5.5690 },
+    { id: 'pf-18', name: 'Parroquia Santa María, Astorga', lat: 42.4570, lng: -6.0540 },
+    { id: 'pf-19', name: 'Pfarrei St. Stephanus, Wien', lat: 48.2082, lng: 16.3738 },
+    { id: 'pf-20', name: 'Parrocchia San Francesco, Assisi', lat: 43.0707, lng: 12.6166 },
+    { id: 'pf-21', name: 'Pfarrei Maria Himmelfahrt, Garmisch', lat: 47.4917, lng: 11.0958 },
+    { id: 'pf-22', name: 'Parroquia Santiago, Compostela', lat: 42.8810, lng: -8.5450 },
+    { id: 'pf-23', name: 'Pfarrei St. Peter und Paul, Bern', lat: 46.9480, lng: 7.4474 },
+    { id: 'pf-24', name: 'Paroisse Saint-Jean, Genève', lat: 46.2044, lng: 6.1432 },
+    { id: 'pf-25', name: 'Pfarrei Heiliger Geist, Heidelberg', lat: 49.4094, lng: 8.7100 },
+  ],
   churches: [
     { id: 'ch-01', name: 'Cathedral of Santiago', lat: 42.8805, lng: -8.5449 },
     { id: 'ch-02', name: 'Burgos Cathedral', lat: 42.3408, lng: -3.7044 },
@@ -275,6 +304,19 @@ function WebMapComponent({
       }
     });
 
+    // === POI: PARISHES (Pfarreien) ===
+    var parishes = ${layers.parishes ? JSON.stringify(POI_DATA.parishes) : '[]'};
+    parishes.forEach(function(p) {
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="poi-icon" style="background:#6B21A8;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></div>',
+        iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      L.marker([p.lat, p.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + p.name + '</strong><br/><span style="color:#6B21A8;font-size:10px;">Parish (Pfarrei)</span></div>')
+        .addTo(map);
+    });
+
     // === POI: CHURCHES ===
     var churches = ${layers.churches ? JSON.stringify(POI_DATA.churches) : '[]'};
     churches.forEach(function(c) {
@@ -352,9 +394,10 @@ function WebMapComponent({
   return (
     <View style={styles.map}>
       {Platform.OS === 'web' && (
-        // @ts-ignore
+        // @ts-ignore — key forces re-mount when layers change
         <iframe
           ref={iframeRef}
+          key={`map-${layers.hosts}-${layers.wanderkinder}-${layers.ways}-${layers.wifi}-${layers.churches}-${layers.parishes}-${layers.mountains}-${filter}`}
           srcDoc={html}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: 'none', width: '100%', height: '100%' }}
           sandbox="allow-scripts allow-same-origin"
@@ -376,6 +419,7 @@ function LayersPanel({ layers, onToggle, onClose }: {
     { key: 'ways', label: 'The Ways', icon: 'map', color: colors.green },
     { key: 'wifi', label: 'Public WiFi', icon: 'wifi', color: '#0ea5e9' },
     { key: 'churches', label: 'Churches', icon: 'business', color: '#8B4513' },
+    { key: 'parishes', label: 'Parishes', icon: 'home', color: '#6B21A8' },
     { key: 'mountains', label: 'Mountains', icon: 'triangle', color: '#6B7280' },
   ];
 
@@ -424,8 +468,7 @@ function LayersPanel({ layers, onToggle, onClose }: {
 }
 
 export default function MapHome() {
-  const { isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  useAuthGuard(); // Track auth but don't block map rendering
   const router = useRouter();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
@@ -436,6 +479,7 @@ export default function MapHome() {
   const [showLayers, setShowLayers] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
+  const [liveWalkers, setLiveWalkers] = useState<typeof walkingSeedProfiles>([]);
   const hostListRef = useRef<FlatList>(null);
   const [layers, setLayers] = useState<LayerState>({
     hosts: true,
@@ -443,6 +487,7 @@ export default function MapHome() {
     ways: true,
     wifi: false,
     churches: false,
+    parishes: false,
     mountains: false,
   });
 
@@ -471,7 +516,35 @@ export default function MapHome() {
 
   useEffect(() => {
     fetchHosts();
+    fetchLiveWalkers();
   }, []);
+
+  // Fetch real profiles from Supabase and merge with seed data
+  const fetchLiveWalkers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, trail_name, avatar_url, is_walking, lat, lng, tier, searchable, show_on_map')
+        .or('is_walking.eq.true,searchable.eq.true');
+
+      if (!error && data && data.length > 0) {
+        const liveProfiles = data
+          .filter((p: any) => p.lat != null && p.lng != null && p.show_on_map !== false)
+          .map((p: any) => ({
+            id: p.id,
+            trail_name: p.trail_name || 'Wanderkind',
+            avatar_url: p.avatar_url,
+            is_walking: p.is_walking ?? false,
+            lat: p.lat,
+            lng: p.lng,
+            tier: p.tier || 'wanderkind',
+          }));
+        setLiveWalkers(liveProfiles as any);
+      }
+    } catch (err) {
+      console.error('Failed to fetch live walkers:', err);
+    }
+  };
 
   // Sort hosts by distance whenever hosts or user location changes
   useEffect(() => {
@@ -741,7 +814,7 @@ export default function MapHome() {
           hosts={hosts}
           filter={filter}
           onHostPress={handleHostPress}
-          walkers={walkingSeedProfiles}
+          walkers={[...walkingSeedProfiles, ...liveWalkers.filter(lw => !walkingSeedProfiles.some(sp => sp.id === lw.id))]}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
           layers={layers}
         />
@@ -776,7 +849,7 @@ export default function MapHome() {
               onPress={() => setFilter(f)}
             >
               <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-                {f === 'free' ? 'FREE' : f === 'donativo' ? 'FREE + DONATIVO' : 'ALL'}
+                {f === 'free' ? 'FREE STAYS' : f === 'donativo' ? 'PAY WHAT YOU CAN' : 'ALL HOSTS'}
               </Text>
             </TouchableOpacity>
           ))}

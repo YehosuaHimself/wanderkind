@@ -18,7 +18,7 @@ import { SEED_MOMENTS } from '../../../src/data/seed-moments';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GALLERY_SIZE = (SCREEN_WIDTH - 48 - 36) / 7; // 7 items with 6 gaps of 6px
 
-type ContentTab = 'posts' | 'stamps';
+type ContentTab = 'posts';
 
 export default function MeScreen() {
   useAuthGuard();
@@ -27,11 +27,9 @@ export default function MeScreen() {
   const { profile, user, fetchProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isWalking, setIsWalking] = useState(false);
-  const [activeTab, setActiveTab] = useState<ContentTab>('posts');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [moments, setMoments] = useState<any[]>([]);
-  const [stamps, setStamps] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile) {
@@ -55,14 +53,7 @@ export default function MeScreen() {
         .limit(20);
       setMoments(momentsData || []);
 
-      // Fetch user's stamps
-      const { data: stampsData } = await supabase
-        .from('stamps')
-        .select('*')
-        .eq('walker_id', user.id)
-        .order('date', { ascending: false })
-        .limit(20);
-      setStamps(stampsData || []);
+      // Stamps moved to MyWay tab
     } catch (err) {
       console.error('Failed to fetch content:', err);
       toast.error('Could not load your content');
@@ -86,6 +77,36 @@ export default function MeScreen() {
   };
 
   // === PHOTO UPLOAD HANDLERS ===
+  const uploadToStorage = async (uri: string, filename: string): Promise<string> => {
+    // Fetch the image as a blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    // On web, wrap in File for proper content-type handling
+    const file = Platform.OS === 'web'
+      ? new File([blob], filename, { type: 'image/jpeg' })
+      : blob;
+
+    // Try upload — if bucket doesn't exist or RLS blocks, fall back to base64 data URL
+    const { error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError.message);
+      // If storage fails (bucket missing, RLS, etc.), store the URI directly
+      // This lets the user see their photo locally even without storage working
+      if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+        console.warn('Storage bucket not configured — saving image URI directly');
+        return uri;
+      }
+      throw uploadError;
+    }
+
+    const { data: publicData } = supabase.storage.from('profiles').getPublicUrl(filename);
+    return publicData.publicUrl;
+  };
+
   const pickAndUploadAvatar = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -97,28 +118,19 @@ export default function MeScreen() {
       if (result.canceled || !result.assets[0] || !user) return;
 
       setUploadingAvatar(true);
-      let blob;
-      try {
-        const response = await fetch(result.assets[0].uri);
-        blob = await response.blob();
-      } catch (err) {
-        console.error('Failed to fetch photo:', err);
-        throw err;
-      }
+      const imageUri = result.assets[0].uri;
       const filename = `avatar_${user.id}_${Date.now()}.jpg`;
-      const file = Platform.OS === 'web'
-        ? new File([blob], filename, { type: 'image/jpeg' })
-        : blob;
+      const publicUrl = await uploadToStorage(imageUri, filename);
 
-      const { error: uploadError } = await supabase.storage
+      const { error: dbError } = await supabase
         .from('profiles')
-        .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
+        .update({ avatar_url: publicUrl } as any)
+        .eq('id', user.id);
+      if (dbError) console.error('Failed to save avatar URL:', dbError.message);
 
-      const { data: publicData } = supabase.storage.from('profiles').getPublicUrl(filename);
-      await supabase.from('profiles').update({ avatar_url: publicData.publicUrl } as any).eq('id', user.id);
       await fetchProfile();
     } catch (err) {
+      console.error('Avatar upload failed:', err);
       showAlert('Upload failed', err instanceof Error ? err.message : 'Could not upload photo');
     } finally {
       setUploadingAvatar(false);
@@ -136,22 +148,19 @@ export default function MeScreen() {
       if (result.canceled || !result.assets[0] || !user) return;
 
       setUploadingCover(true);
-      const response = await fetch(result.assets[0].uri);
-      const blob = await response.blob();
+      const imageUri = result.assets[0].uri;
       const filename = `cover_${user.id}_${Date.now()}.jpg`;
-      const file = Platform.OS === 'web'
-        ? new File([blob], filename, { type: 'image/jpeg' })
-        : blob;
+      const publicUrl = await uploadToStorage(imageUri, filename);
 
-      const { error: uploadError } = await supabase.storage
+      const { error: dbError } = await supabase
         .from('profiles')
-        .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
+        .update({ cover_url: publicUrl } as any)
+        .eq('id', user.id);
+      if (dbError) console.error('Failed to save cover URL:', dbError.message);
 
-      const { data: publicData } = supabase.storage.from('profiles').getPublicUrl(filename);
-      await supabase.from('profiles').update({ cover_url: publicData.publicUrl } as any).eq('id', user.id);
       await fetchProfile();
     } catch (err) {
+      console.error('Cover upload failed:', err);
       showAlert('Upload failed', err instanceof Error ? err.message : 'Could not upload photo');
     } finally {
       setUploadingCover(false);
@@ -285,15 +294,10 @@ export default function MeScreen() {
         {/* ===== STATS ROW ===== */}
         {!isQuietMode && (
           <View style={styles.statsRow}>
-            <TouchableOpacity style={styles.stat} onPress={() => setActiveTab('posts')}>
+            <View style={styles.stat}>
               <Text style={styles.statValue}>{moments.length || profile?.nights_walked || 0}</Text>
               <Text style={styles.statLabel}>NIGHTS</Text>
-            </TouchableOpacity>
-            <View style={styles.statDivider} />
-            <TouchableOpacity style={styles.stat} onPress={() => setActiveTab('stamps')}>
-              <Text style={styles.statValue}>{stamps.length || profile?.stamps_count || 0}</Text>
-              <Text style={styles.statLabel}>STAMPS</Text>
-            </TouchableOpacity>
+            </View>
             <View style={styles.statDivider} />
             <TouchableOpacity style={styles.stat}>
               <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
@@ -374,96 +378,40 @@ export default function MeScreen() {
           <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
         </TouchableOpacity>
 
-        {/* ===== CONTENT TABS ===== */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'posts' && styles.tabActive]}
-            onPress={() => setActiveTab('posts')}
-          >
-            <Ionicons
-              name="grid-outline"
-              size={20}
-              color={activeTab === 'posts' ? colors.amber : colors.ink3}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'stamps' && styles.tabActive]}
-            onPress={() => setActiveTab('stamps')}
-          >
-            <Ionicons
-              name="star-outline"
-              size={20}
-              color={activeTab === 'stamps' ? colors.amber : colors.ink3}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== TAB CONTENT ===== */}
-        {activeTab === 'posts' && (
-          <View style={styles.contentGrid}>
-            {moments.length > 0 ? (
-              <View style={styles.photoGrid}>
-                {moments.map((m, idx) => (
-                  <TouchableOpacity
-                    key={m.id || idx}
-                    style={styles.gridItem}
-                    onPress={() => router.push(`/(tabs)/moments` as any)}
-                  >
-                    {m.photo_url ? (
-                      <Image source={{ uri: m.photo_url }} style={styles.gridImage} />
-                    ) : (
-                      <View style={styles.gridTextItem}>
-                        <Text style={styles.gridText} numberOfLines={4}>{m.content}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyTab}>
-                <Ionicons name="camera-outline" size={36} color={colors.ink3} />
-                <Text style={styles.emptyTabTitle}>No posts yet</Text>
-                <Text style={styles.emptyTabText}>Share your first moment from the road.</Text>
+        {/* ===== POSTS GRID ===== */}
+        <View style={styles.contentGrid}>
+          {moments.length > 0 ? (
+            <View style={styles.photoGrid}>
+              {moments.map((m, idx) => (
                 <TouchableOpacity
-                  style={styles.emptyTabAction}
-                  onPress={() => router.push('/(tabs)/moments/create' as any)}
+                  key={m.id || idx}
+                  style={styles.gridItem}
+                  onPress={() => router.push(`/(tabs)/moments` as any)}
                 >
-                  <Text style={styles.emptyTabActionText}>Create Post</Text>
+                  {m.photo_url ? (
+                    <Image source={{ uri: m.photo_url }} style={styles.gridImage} />
+                  ) : (
+                    <View style={styles.gridTextItem}>
+                      <Text style={styles.gridText} numberOfLines={4}>{m.content}</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-
-        {activeTab === 'stamps' && (
-          <View style={styles.contentGrid}>
-            {stamps.length > 0 ? (
-              <View style={styles.stampsList}>
-                {stamps.map((s, idx) => (
-                  <TouchableOpacity
-                    key={s.id || idx}
-                    style={styles.stampItem}
-                    onPress={() => router.push(`/(tabs)/me/stamp/${s.id}` as any)}
-                  >
-                    <View style={styles.stampCircle}>
-                      <Ionicons name="star" size={16} color={colors.amber} />
-                    </View>
-                    <View style={styles.stampInfo}>
-                      <Text style={styles.stampName}>{s.host_name || s.location || 'Stamp'}</Text>
-                      <Text style={styles.stampDate}>{s.date || ''}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyTab}>
-                <Ionicons name="star-outline" size={36} color={colors.ink3} />
-                <Text style={styles.emptyTabTitle}>No stamps yet</Text>
-                <Text style={styles.emptyTabText}>Collect stamps at hosts along the way.</Text>
-              </View>
-            )}
-          </View>
-        )}
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyTab}>
+              <Ionicons name="camera-outline" size={36} color={colors.ink3} />
+              <Text style={styles.emptyTabTitle}>No posts yet</Text>
+              <Text style={styles.emptyTabText}>Share your first moment from the road.</Text>
+              <TouchableOpacity
+                style={styles.emptyTabAction}
+                onPress={() => router.push('/(tabs)/moments/create' as any)}
+              >
+                <Text style={styles.emptyTabActionText}>Create Post</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
 
         <View style={{ height: 40 }} />
@@ -560,7 +508,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.amber,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     justifyContent: 'center',

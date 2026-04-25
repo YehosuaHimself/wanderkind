@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 
-// Lazy-load the actual content screens
-const WaysContent = React.lazy(() => import('../more/ways'));
-const StampsContent = React.lazy(() => import('../more/stamps'));
+// Direct imports instead of React.lazy — fixes rendering issues
+import WaysContent from '../more/ways';
+import StampsContent from '../more/stamps';
 
 type TabMode = 'ways' | 'stamps';
 
@@ -58,11 +58,9 @@ export default function MyWayScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Content — direct rendering, no lazy load */}
       <View style={styles.content}>
-        <React.Suspense fallback={<View style={styles.loading} />}>
-          {activeTab === 'ways' ? <WaysContent embedded /> : <StampsContent embedded />}
-        </React.Suspense>
+        {activeTab === 'ways' ? <WaysContent embedded /> : <StampsContent embedded />}
       </View>
     </SafeAreaView>
   );
@@ -132,5 +130,4 @@ const styles = StyleSheet.create({
     color: colors.amber,
   },
   content: { flex: 1 },
-  loading: { flex: 1 },
 });

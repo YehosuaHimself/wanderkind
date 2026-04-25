@@ -19,7 +19,8 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function WaysList({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Don't block rendering when embedded — parent handles auth
+  if (isLoading && !embedded) return null;
 
   const router = useRouter();
   const [ways, setWays] = useState<Route[]>([]);

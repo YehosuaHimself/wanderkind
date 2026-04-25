@@ -131,8 +131,8 @@ export const tierColors: Record<string, string> = {
 
 // Host type label + color
 export const hostTypeConfig = {
-  free: { label: 'FREE', color: '#27864A', bg: 'rgba(39,134,74,0.08)' },
-  donativo: { label: 'DONATIVO', color: '#D4A017', bg: 'rgba(212,160,23,0.1)' },
-  budget: { label: 'BUDGET', color: '#2E6DA4', bg: 'rgba(46,109,164,0.08)' },
+  free: { label: 'FREE STAY', color: '#27864A', bg: 'rgba(39,134,74,0.08)' },
+  donativo: { label: 'PAY WHAT YOU CAN', color: '#D4A017', bg: 'rgba(212,160,23,0.1)' },
+  budget: { label: 'LOW COST', color: '#2E6DA4', bg: 'rgba(46,109,164,0.08)' },
   paid: { label: 'PAID', color: '#9B8E7E', bg: 'rgba(155,142,126,0.08)' },
 } as const;

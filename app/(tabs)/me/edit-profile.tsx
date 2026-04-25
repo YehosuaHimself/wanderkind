@@ -64,18 +64,28 @@ export default function EditProfileScreen() {
     try {
       if (!user) throw new Error('No user');
 
-      const { error: updateError } = await supabase.from('profiles').update({
+      // Build update object — only include fields that have values
+      const updates: Record<string, any> = {
         trail_name: trailName,
-        bio,
-        home_country: homeCountry,
+        bio: bio || null,
         languages,
-        walking_experience: experience,
         skills: skills ? skills.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
         quiet_mode: quietMode,
         searchable: !privateProfile,
-      }).eq('id', user.id);
+      };
+      // Only include optional fields if they have values (avoids column-not-found errors)
+      if (homeCountry) updates.home_country = homeCountry;
+      if (experience) updates.walking_experience = experience;
 
-      if (updateError) throw updateError;
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Profile update error:', JSON.stringify(updateError));
+        throw new Error(updateError.message || 'Update failed');
+      }
 
       await fetchProfile();
       setSaved(true);
