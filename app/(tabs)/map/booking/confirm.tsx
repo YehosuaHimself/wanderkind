@@ -116,7 +116,7 @@ export default function BookingConfirm() {
             <View style={styles.buttonGroup}>
               <WKButton
                 title="View Check-In Info"
-                onPress={() => router.push('/booking/active')}
+                onPress={() => router.push('/(tabs)/map/booking/active')}
                 fullWidth
               />
             </View>

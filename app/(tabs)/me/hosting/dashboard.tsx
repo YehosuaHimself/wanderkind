@@ -24,10 +24,10 @@ export default function HostingDashboard() {
   ];
 
   const quickActions = [
-    { label: 'Requests', icon: 'mail-unread' as const, route: '/hosting/requests' },
-    { label: 'Edit Listing', icon: 'pencil' as const, route: '/hosting/listing-edit' },
-    { label: 'Calendar', icon: 'calendar' as const, route: '/hosting/calendar' },
-    { label: 'Statistics', icon: 'bar-chart' as const, route: '/hosting/stats' },
+    { label: 'Requests', icon: 'mail-unread' as const, route: '/(tabs)/me/hosting/requests' },
+    { label: 'Edit Listing', icon: 'pencil' as const, route: '/(tabs)/me/hosting/listing-edit' },
+    { label: 'Calendar', icon: 'calendar' as const, route: '/(tabs)/me/hosting/calendar' },
+    { label: 'Statistics', icon: 'bar-chart' as const, route: '/(tabs)/me/hosting/stats' },
   ];
 
   return (
@@ -53,7 +53,7 @@ export default function HostingDashboard() {
           <WKCard>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Current Guests</Text>
-              <TouchableOpacity onPress={() => router.push('/hosting/guests')}>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/me/hosting/guests')}>
                 <Text style={styles.seeAllLink}>See All</Text>
               </TouchableOpacity>
             </View>
@@ -78,7 +78,7 @@ export default function HostingDashboard() {
             <Text style={styles.hint}>You have 3 new booking requests</Text>
             <WKButton
               title="Review Requests"
-              onPress={() => router.push('/hosting/requests')}
+              onPress={() => router.push('/(tabs)/me/hosting/requests')}
               variant="primary"
               fullWidth
               style={{ marginTop: spacing.md }}

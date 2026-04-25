@@ -18,7 +18,7 @@ export default function BookingActive() {
   const router = useRouter();
 
   const handleContactHost = () => {
-    router.push('/messages');
+    router.push('/(tabs)/messages');
   };
 
   return (
@@ -130,7 +130,7 @@ export default function BookingActive() {
       <View style={styles.footer}>
         <WKButton
           title="Check In"
-          onPress={() => router.push('/booking/history')}
+          onPress={() => router.push('/(tabs)/map/booking/history')}
           fullWidth
         />
       </View>

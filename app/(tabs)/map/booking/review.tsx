@@ -28,7 +28,7 @@ export default function BookingReview() {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
     setLoading(false);
-    router.push('/booking/history');
+    router.push('/(tabs)/map/booking/history');
   };
 
   const StarRating = () => (

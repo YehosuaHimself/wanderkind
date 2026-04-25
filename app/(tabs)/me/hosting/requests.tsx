@@ -50,7 +50,7 @@ export default function HostingRequests() {
   const renderRequest = ({ item }: { item: Request }) => (
     <TouchableOpacity
       activeOpacity={0.6}
-      onPress={() => router.push(`/hosting/request-detail/${item.id}`)}
+      onPress={() => router.push(`/(tabs)/me/hosting/request-detail/${item.id}`)}
     >
       <WKCard>
         <View style={styles.header}>
