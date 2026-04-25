@@ -75,7 +75,7 @@ export default function TabLayout() {
           options={{
             title: 'My Way',
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="road-variant" size={size} color={color} />
+              <MaterialCommunityIcons name="map-marker-path" size={size} color={color} />
             ),
           }}
         />

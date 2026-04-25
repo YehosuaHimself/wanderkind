@@ -171,7 +171,13 @@ export default function MessagesScreen() {
               onPress={() => {
                 setSearchQuery('');
                 setIsSearching(false);
-                router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
+                // Seed profiles: go directly to chat thread (handled locally)
+                // Real users: go through new message flow
+                if (item.id.startsWith('p-')) {
+                  router.push(`/(tabs)/messages/${item.id}` as any);
+                } else {
+                  router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
+                }
               }}
               activeOpacity={0.7}
             >

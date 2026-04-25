@@ -56,7 +56,31 @@ export default function ChatThread() {
             tier: seedProfile.tier,
           } as Profile);
         }
-        setMessages([]);
+
+        // Check for pending message from new.tsx (sent before navigating here)
+        const pendingMessages: MessageWithAuthor[] = [];
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          const pendingKey = `wk-pending-msg-${threadId}`;
+          const pendingRaw = window.sessionStorage.getItem(pendingKey);
+          if (pendingRaw) {
+            try {
+              const pending = JSON.parse(pendingRaw);
+              pendingMessages.push({
+                id: `local-${Date.now()}`,
+                thread_id: threadId,
+                sender_id: pending.sender_id,
+                content: pending.content,
+                message_type: 'text',
+                created_at: pending.created_at,
+                read_at: null,
+                sender: user as Profile,
+              });
+            } catch {}
+            window.sessionStorage.removeItem(pendingKey);
+          }
+        }
+
+        setMessages(pendingMessages);
         setLoading(false);
         return;
       }

@@ -34,7 +34,7 @@ export default function MyWayScreen() {
           activeOpacity={0.7}
         >
           <Ionicons
-            name="compass-outline"
+            name="trail-sign-outline"
             size={16}
             color={activeTab === 'ways' ? colors.amber : colors.ink3}
           />

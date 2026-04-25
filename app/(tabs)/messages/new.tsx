@@ -111,7 +111,25 @@ export default function NewMessage() {
 
     setSending(true);
     try {
-      // Create or get thread (with race condition protection)
+      // Check if this is a seed profile (id starts with 'p-')
+      const isSeedUser = selectedUser.id.startsWith('p-');
+
+      if (isSeedUser) {
+        // For seed profiles, store the first message locally and navigate to chat
+        // The [id].tsx page handles seed profile chats with local state
+        const initialMessage = messageText.trim();
+        // Store initial message in sessionStorage so the chat page can pick it up
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem(
+            `wk-pending-msg-${selectedUser.id}`,
+            JSON.stringify({ content: initialMessage, sender_id: user.id, created_at: new Date().toISOString() })
+          );
+        }
+        router.replace(`/(tabs)/messages/${selectedUser.id}`);
+        return;
+      }
+
+      // Real Supabase user — create or get thread
       const participantIds = [user.id, selectedUser.id].sort();
       const { data: existingThread } = await supabase
         .from('threads')
@@ -130,9 +148,7 @@ export default function NewMessage() {
             .single();
 
           if (threadError) {
-            // Check if it's a unique constraint violation
             if (threadError.code === '23505') {
-              // Thread was created by concurrent request, fetch it
               const { data: retryThread, error: retryError } = await supabase
                 .from('threads')
                 .select('id')
@@ -148,7 +164,6 @@ export default function NewMessage() {
             threadId = newThread?.id;
           }
         } catch (insertError: any) {
-          // Handle unexpected insert errors gracefully
           if (insertError?.code === '23505') {
             const { data: retryThread, error: retryError } = await supabase
               .from('threads')
