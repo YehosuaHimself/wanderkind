@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../src/lib/supabase';
-import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, dataSourceConfig } from '../../../src/lib/theme';
+import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, getResponseTimeBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, HostType } from '../../../src/types/database';
@@ -124,6 +124,15 @@ export default function HostList() {
                 <View style={[styles.trustBadge, { backgroundColor: 'rgba(155,142,126,0.06)' }]}>
                   <Ionicons name="shield-checkmark-outline" size={10} color={src.color} />
                   <Text style={[styles.trustText, { color: src.color }]}>{src.label}</Text>
+                </View>
+              );
+            })()}
+            {(() => {
+              const resp = getResponseTimeBadge((host as any).avg_response_minutes);
+              return (
+                <View style={[styles.trustBadge, { backgroundColor: resp.bg }]}>
+                  <Ionicons name={resp.icon as any} size={10} color={resp.color} />
+                  <Text style={[styles.trustText, { color: resp.color }]}>{resp.label}</Text>
                 </View>
               );
             })()}

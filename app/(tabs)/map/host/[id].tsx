@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../src/lib/supabase';
-import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, dataSourceConfig } from '../../../src/lib/theme';
+import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, getResponseTimeBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
@@ -36,6 +36,9 @@ export default function HostDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toggleFavorite, isFavorite, loadFavorites } = useFavoritesStore();
+  const [confirmCount, setConfirmCount] = useState(0);
+  const [hasConfirmed, setHasConfirmed] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -68,6 +71,24 @@ export default function HostDetail() {
 
       setHost(hostData as Host);
       setEntries(entriesData as GuestbookEntry[] || []);
+
+      // Fetch confirmation count
+      const { count } = await supabase
+        .from('host_confirmations')
+        .select('*', { count: 'exact', head: true })
+        .eq('host_id', id);
+      setConfirmCount(count || 0);
+
+      // Check if current user confirmed
+      if (user) {
+        const { data: myConf } = await supabase
+          .from('host_confirmations')
+          .select('id')
+          .eq('host_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setHasConfirmed(!!myConf);
+      }
 
       // Fetch nearby hosts for "Next Roof" carousel
       if (hostData) {
@@ -116,6 +137,44 @@ export default function HostDetail() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   };
 
+  const confirmHost = async () => {
+    if (!user || hasConfirmed || confirming) return;
+    setConfirming(true);
+    try {
+      // Check if user already confirmed
+      const { data: existing } = await supabase
+        .from('host_confirmations')
+        .select('id')
+        .eq('host_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        setHasConfirmed(true);
+        setConfirming(false);
+        return;
+      }
+
+      // Insert confirmation
+      await supabase.from('host_confirmations').insert({
+        host_id: id,
+        user_id: user.id,
+      });
+
+      // Update host's last_confirmed
+      await supabase.from('hosts').update({
+        last_confirmed: new Date().toISOString(),
+      }).eq('id', id);
+
+      setConfirmCount(prev => prev + 1);
+      setHasConfirmed(true);
+    } catch (err) {
+      // Silently fail — not critical
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -147,6 +206,7 @@ export default function HostDetail() {
     : colors.ink3;
   const isFav = isFavorite(host.id);
   const freshness = getFreshnessBadge((host as any).last_confirmed);
+  const responseTime = getResponseTimeBadge((host as any).avg_response_minutes);
   const dataSource = dataSourceConfig[(host as any).data_source] || dataSourceConfig.community_report;
 
   return (
@@ -202,6 +262,10 @@ export default function HostDetail() {
               <View style={[styles.trustBadge, { backgroundColor: 'rgba(155,142,126,0.06)' }]}>
                 <Ionicons name="shield-checkmark-outline" size={11} color={dataSource.color} />
                 <Text style={[styles.trustLabel, { color: dataSource.color }]}>{dataSource.label}</Text>
+              </View>
+              <View style={[styles.trustBadge, { backgroundColor: responseTime.bg }]}>
+                <Ionicons name={responseTime.icon as any} size={11} color={responseTime.color} />
+                <Text style={[styles.trustLabel, { color: responseTime.color }]}>{responseTime.label}</Text>
               </View>
               {host.verification_level !== 'none' && (
                 <View style={[styles.trustBadge, { backgroundColor: 'rgba(39,134,74,0.06)' }]}>
@@ -330,6 +394,40 @@ export default function HostDetail() {
             {host.availability_notes && (
               <Text style={styles.availabilityNotes}>{host.availability_notes}</Text>
             )}
+          </WKCard>
+
+          {/* Community Verification */}
+          <WKCard>
+            <Text style={styles.sectionTitle}>Community Trust</Text>
+            {confirmCount > 0 && (
+              <View style={styles.confirmCountRow}>
+                <Ionicons name="people" size={14} color={colors.green} />
+                <Text style={styles.confirmCountText}>
+                  Confirmed by {confirmCount} wanderkind{confirmCount !== 1 ? 'er' : ''}
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={[
+                styles.confirmBtn,
+                hasConfirmed && styles.confirmBtnDone,
+              ]}
+              onPress={confirmHost}
+              disabled={hasConfirmed || confirming}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={hasConfirmed ? 'checkmark-circle' : 'shield-checkmark-outline'}
+                size={18}
+                color={hasConfirmed ? colors.green : colors.amber}
+              />
+              <Text style={[
+                styles.confirmBtnText,
+                hasConfirmed && styles.confirmBtnTextDone,
+              ]}>
+                {hasConfirmed ? 'You confirmed this listing' : confirming ? 'Confirming...' : 'Confirm this listing is accurate'}
+              </Text>
+            </TouchableOpacity>
           </WKCard>
 
           {/* Guestbook */}
@@ -717,6 +815,40 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.ink2,
     fontWeight: '500',
+  },
+  confirmCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  confirmCountText: {
+    ...typography.bodySm,
+    color: colors.green,
+    fontWeight: '600',
+  },
+  confirmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.amberLine,
+    backgroundColor: colors.amberBg,
+  },
+  confirmBtnDone: {
+    backgroundColor: 'rgba(39,134,74,0.06)',
+    borderColor: 'rgba(39,134,74,0.15)',
+  },
+  confirmBtnText: {
+    ...typography.bodySm,
+    fontWeight: '600',
+    color: colors.amber,
+  },
+  confirmBtnTextDone: {
+    color: colors.green,
   },
   requestButton: {
     marginVertical: spacing.lg,

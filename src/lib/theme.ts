@@ -147,6 +147,14 @@ export function getFreshnessBadge(lastConfirmed: string | null | undefined): { l
   return { label: 'STALE', color: '#B03A3A', bg: 'rgba(176,58,58,0.06)', icon: 'warning-outline' };
 }
 
+// Response time badges based on avg_response_minutes
+export function getResponseTimeBadge(avgResponseMinutes: number | null | undefined): { label: string; color: string; bg: string; icon: string } {
+  if (!avgResponseMinutes) return { label: 'NEW HOST', color: '#9B8E7E', bg: 'rgba(155,142,126,0.08)', icon: 'time-outline' };
+  if (avgResponseMinutes <= 120) return { label: 'REPLIES FAST', color: '#27864A', bg: 'rgba(39,134,74,0.08)', icon: 'flash-outline' };
+  if (avgResponseMinutes <= 720) return { label: 'REPLIES SAME DAY', color: '#2E6DA4', bg: 'rgba(46,109,164,0.08)', icon: 'time-outline' };
+  return { label: 'REPLIES SLOWLY', color: '#D4A017', bg: 'rgba(212,160,23,0.1)', icon: 'hourglass-outline' };
+}
+
 // Data source labels
 export const dataSourceConfig: Record<string, { label: string; color: string }> = {
   official_listing: { label: 'OFFICIAL', color: '#27864A' },

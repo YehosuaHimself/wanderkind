@@ -11,6 +11,8 @@ import {
   Platform,
   StatusBar,
   Vibration,
+  Linking,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +35,7 @@ interface RideEntry {
   started_at: string;
   ended_at: string | null;
   driver_note: string;
+  rating: 'good' | 'bad' | null;
   distance_km: number | null;
 }
 
@@ -51,6 +54,9 @@ export default function TrampMode() {
   const [waitMinutes, setWaitMinutes] = useState(0);
   const [shareLocation, setShareLocation] = useState(true);
   const [showSignalScreen, setShowSignalScreen] = useState(false);
+  const [rideEndedAwaitingFeedback, setRideEndedAwaitingFeedback] = useState<RideEntry | null>(null);
+  const [feedbackNote, setFeedbackNote] = useState('');
+  const [feedbackRating, setFeedbackRating] = useState<'good' | 'bad' | null>(null);
 
   // ── Animations ─────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -131,12 +137,31 @@ export default function TrampMode() {
     setShowSignalScreen(false);
   }, []);
 
+  const shareLocationHandler = useCallback(() => {
+    // In a real app, you'd get actual GPS coordinates
+    // For now, use placeholder or fetch from location service
+    const lat = 37.7749; // Example: San Francisco
+    const lng = -122.4194;
+    const mapUrl = `https://maps.google.com/?q=${lat},${lng}`;
+    const message = `I'm hitchhiking near ${lat.toFixed(4)}, ${lng.toFixed(4)}. Track me: ${mapUrl}`;
+
+    const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+    Linking.openURL(smsUrl).catch(() => {
+      // Fallback: try WhatsApp
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      Linking.openURL(whatsappUrl).catch(() => {
+        toast.error('Could not open messaging app');
+      });
+    });
+  }, []);
+
   const startRide = useCallback(() => {
     const ride: RideEntry = {
       id: `ride-${Date.now()}`,
       started_at: new Date().toISOString(),
       ended_at: null,
       driver_note: '',
+      rating: null,
       distance_km: null,
     };
     setCurrentRide(ride);
@@ -146,16 +171,30 @@ export default function TrampMode() {
     toast.success('Ride started. Stay safe out there.');
   }, []);
 
-  const endRide = useCallback(async () => {
-    if (!currentRide || !user?.id) return;
+  const endRide = useCallback(() => {
+    if (!currentRide) return;
     const finished: RideEntry = {
       ...currentRide,
       ended_at: new Date().toISOString(),
     };
+    // Show feedback screen instead of immediately finishing
+    setRideEndedAwaitingFeedback(finished);
+    setCurrentRide(null);
+    setFeedbackNote('');
+    setFeedbackRating(null);
+  }, [currentRide]);
+
+  const submitRideFeedback = useCallback(async () => {
+    if (!rideEndedAwaitingFeedback || !user?.id) return;
+    const finished: RideEntry = {
+      ...rideEndedAwaitingFeedback,
+      driver_note: feedbackNote,
+      rating: feedbackRating,
+    };
 
     // Always add to local state first (fallback)
     setRideLog(prev => [finished, ...prev]);
-    setCurrentRide(null);
+    setRideEndedAwaitingFeedback(null);
 
     // Try to save to Supabase
     try {
@@ -167,6 +206,7 @@ export default function TrampMode() {
           started_at: finished.started_at,
           ended_at: finished.ended_at,
           driver_note: finished.driver_note,
+          rating: finished.rating,
           distance_km: finished.distance_km,
         });
 
@@ -180,7 +220,7 @@ export default function TrampMode() {
       console.error('Error saving ride:', err);
       toast.error('Ride saved locally (network error)');
     }
-  }, [currentRide, user?.id]);
+  }, [rideEndedAwaitingFeedback, feedbackNote, feedbackRating, user?.id]);
 
   // ── Full-screen signal (the core feature) ──────────────────────────
   if (showSignalScreen && signalActive) {
@@ -273,9 +313,83 @@ export default function TrampMode() {
                 Started {formatTimeSince(currentRide.started_at)}
               </Text>
               <WKButton
+                title="Share Location"
+                onPress={shareLocationHandler}
+                variant="primary"
+                size="md"
+                fullWidth
+                style={{ marginTop: spacing.md }}
+              />
+              <WKButton
                 title="End Ride"
                 onPress={endRide}
                 variant="secondary"
+                size="md"
+                fullWidth
+                style={{ marginTop: spacing.sm }}
+              />
+            </WKCard>
+          )}
+
+          {/* ── Ride Feedback ──────────────────────────────────── */}
+          {rideEndedAwaitingFeedback && (
+            <WKCard variant="gold">
+              <Text style={styles.feedbackTitle}>Rate Your Ride</Text>
+              <Text style={styles.feedbackSubtitle}>Help keep hitchhiking safe</Text>
+
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Driver name / license plate (optional)"
+                placeholderTextColor={colors.ink3}
+                value={feedbackNote}
+                onChangeText={setFeedbackNote}
+                maxLength={100}
+              />
+
+              <View style={styles.ratingRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.ratingBtn,
+                    feedbackRating === 'good' && styles.ratingBtnActive,
+                  ]}
+                  onPress={() => setFeedbackRating('good')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="thumbs-up"
+                    size={24}
+                    color={feedbackRating === 'good' ? colors.green : colors.ink2}
+                  />
+                  <Text style={[
+                    styles.ratingLabel,
+                    feedbackRating === 'good' && styles.ratingLabelActive,
+                  ]}>Good</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.ratingBtn,
+                    feedbackRating === 'bad' && styles.ratingBtnActive,
+                  ]}
+                  onPress={() => setFeedbackRating('bad')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="thumbs-down"
+                    size={24}
+                    color={feedbackRating === 'bad' ? colors.red : colors.ink2}
+                  />
+                  <Text style={[
+                    styles.ratingLabel,
+                    feedbackRating === 'bad' && styles.ratingLabelActive,
+                  ]}>Bad</Text>
+                </TouchableOpacity>
+              </View>
+
+              <WKButton
+                title="Save Ride"
+                onPress={submitRideFeedback}
+                variant="primary"
                 size="md"
                 fullWidth
                 style={{ marginTop: spacing.md }}
@@ -743,5 +857,57 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.ink3,
     marginTop: 2,
+  },
+
+  // Feedback
+  feedbackTitle: {
+    ...typography.h3,
+    color: colors.ink,
+    marginBottom: spacing.xs,
+  },
+  feedbackSubtitle: {
+    ...typography.bodySm,
+    color: colors.ink2,
+    marginBottom: spacing.md,
+  },
+  feedbackInput: {
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+    fontSize: 14,
+    color: colors.ink,
+    backgroundColor: colors.surface,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  ratingBtn: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    backgroundColor: colors.surface,
+  },
+  ratingBtnActive: {
+    borderColor: colors.tramp,
+    backgroundColor: `${colors.tramp}08`,
+  },
+  ratingLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.ink2,
+  },
+  ratingLabelActive: {
+    color: colors.ink,
   },
 });

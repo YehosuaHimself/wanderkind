@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch,
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, dataSourceConfig } from '../../../src/lib/theme';
+import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, getResponseTimeBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { toast } from '../../../src/lib/toast';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
@@ -752,7 +752,7 @@ export default function MapHome() {
           </Text>
         </View>
 
-        {/* Trust badges — freshness + data source */}
+        {/* Trust badges — freshness + data source + response time */}
         <View style={styles.trustBadgeRow}>
           {(() => {
             const fresh = getFreshnessBadge((item as any).last_confirmed);
@@ -769,6 +769,15 @@ export default function MapHome() {
               <View style={[styles.trustBadge, { backgroundColor: 'rgba(155,142,126,0.06)' }]}>
                 <Ionicons name="shield-checkmark-outline" size={10} color={src.color} />
                 <Text style={[styles.trustBadgeText, { color: src.color }]}>{src.label}</Text>
+              </View>
+            );
+          })()}
+          {(() => {
+            const resp = getResponseTimeBadge((item as any).avg_response_minutes);
+            return (
+              <View style={[styles.trustBadge, { backgroundColor: resp.bg }]}>
+                <Ionicons name={resp.icon as any} size={10} color={resp.color} />
+                <Text style={[styles.trustBadgeText, { color: resp.color }]}>{resp.label}</Text>
               </View>
             );
           })()}
