@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Share,
   Animated,
 } from 'react-native';
@@ -24,6 +23,7 @@ export default function HospitalityPassScreen() {
 
   const { profile } = useAuth();
   const textTrackAnimation = useRef(new Animated.Value(0)).current;
+  const securityLineAnimation = useRef(new Animated.Value(0)).current;
   const [activeRoute, setActiveRoute] = React.useState<string | null>(null);
 
   useEffect(() => {
@@ -58,6 +58,16 @@ export default function HospitalityPassScreen() {
     ).start();
   }, [textTrackAnimation]);
 
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(securityLineAnimation, {
+        toValue: 1,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [securityLineAnimation]);
+
   const handleShare = async () => {
     try {
       await Share.share({
@@ -80,8 +90,25 @@ export default function HospitalityPassScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Hospitality Pass" showBack />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.wrapper}>
         <View style={styles.page}>
+          {/* Security Line Animation */}
+          <Animated.View
+            style={[
+              styles.securityLine,
+              {
+                transform: [
+                  {
+                    translateX: securityLineAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 320],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+
           {/* Corner Brackets */}
           <View style={[styles.corner, styles.cornerTL]}><View style={styles.bracketH} /><View style={styles.bracketV} /></View>
           <View style={[styles.corner, styles.cornerTR]}><View style={[styles.bracketH, { right: 0 }]} /><View style={[styles.bracketV, { right: 0 }]} /></View>
@@ -99,7 +126,7 @@ export default function HospitalityPassScreen() {
 
           {/* Embassy Header */}
           <View style={styles.headerSection}>
-            <Ionicons name="home" size={24} color={ACCENT} />
+            <Ionicons name="home" size={22} color={ACCENT} />
             <Text style={styles.embassyTitle}>Wanderkind Embassy</Text>
             <Text style={styles.embassySubtitle}>Hospitality & Shelter Pass</Text>
           </View>
@@ -161,7 +188,7 @@ export default function HospitalityPassScreen() {
           <View style={styles.charterSection}>
             <Text style={styles.charterTitle}>HOSPITALITY CHARTER</Text>
             <Text style={styles.charterText}>
-              To open one's door is an ancient and sacred act. The Hospitality Pass recognizes those who welcome wanderers with shelter, safety, and human warmth.
+              To open one's door is an ancient and sacred act. The Hospitality Pass recognizes those who welcome wanderers with shelter and warmth.
             </Text>
           </View>
 
@@ -176,13 +203,19 @@ export default function HospitalityPassScreen() {
             <Text style={styles.mrzLine}>HOSP{'<'.repeat(8)}SHELTER{'<'.repeat(25)}</Text>
           </View>
 
+          {/* QR Code Section */}
+          <View style={styles.qrSection}>
+            <Ionicons name="qr-code" size={50} color={ACCENT} />
+            <Text style={styles.qrText}>SCAN TO VERIFY</Text>
+          </View>
+
           {/* Footer */}
           <View style={styles.pageFooter}>
             <Text style={styles.footerSignature}>Wanderkind Authority</Text>
             <Text style={styles.pageNumber}>HOSPITALITY PASS · SINGLE PAGE</Text>
           </View>
         </View>
-      </ScrollView>
+      </View>
 
       <View style={styles.actions}>
         <WKButton
@@ -200,91 +233,110 @@ export default function HospitalityPassScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
+  wrapper: { flex: 1, paddingHorizontal: spacing.lg, justifyContent: 'flex-start', paddingTop: spacing.md },
   page: {
+    flex: 1,
     backgroundColor: DARK_BG,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     borderRadius: radii.lg,
     position: 'relative',
+    overflow: 'hidden',
   },
-  corner: { position: 'absolute', width: 20, height: 20, overflow: 'hidden' },
-  cornerTL: { top: spacing.md, left: spacing.md },
-  cornerTR: { top: spacing.md, right: spacing.md },
-  cornerBL: { bottom: spacing.md, left: spacing.md },
-  cornerBR: { bottom: spacing.md, right: spacing.md },
-  bracketH: { position: 'absolute', width: 16, height: 0.5, backgroundColor: ACCENT, opacity: 0.5 },
-  bracketV: { position: 'absolute', width: 0.5, height: 16, backgroundColor: ACCENT, opacity: 0.5 },
-  threadContainer: { height: 20, overflow: 'hidden', marginBottom: spacing.lg, justifyContent: 'center' },
+  securityLine: {
+    position: 'absolute',
+    width: 1,
+    height: '100%',
+    backgroundColor: ACCENT,
+    opacity: 0.25,
+    left: 0,
+    top: 0,
+  },
+  corner: { position: 'absolute', width: 16, height: 16, overflow: 'hidden', zIndex: 10 },
+  cornerTL: { top: spacing.sm, left: spacing.sm },
+  cornerTR: { top: spacing.sm, right: spacing.sm },
+  cornerBL: { bottom: spacing.sm, left: spacing.sm },
+  cornerBR: { bottom: spacing.sm, right: spacing.sm },
+  bracketH: { position: 'absolute', width: 12, height: 0.5, backgroundColor: ACCENT, opacity: 0.5 },
+  bracketV: { position: 'absolute', width: 0.5, height: 12, backgroundColor: ACCENT, opacity: 0.5 },
+  threadContainer: { height: 16, overflow: 'hidden', marginBottom: spacing.sm, justifyContent: 'center' },
   thread: { flexDirection: 'row' },
-  threadText: { ...typography.caption, color: ACCENT, opacity: 0.3, letterSpacing: 1 },
+  threadText: { ...typography.caption, color: ACCENT, opacity: 0.25, letterSpacing: 0.5, fontSize: 10 },
   headerSection: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
+    marginBottom: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 0.5,
     borderBottomColor: `${ACCENT}4D`,
   },
-  embassyTitle: { ...typography.h3, color: ACCENT, letterSpacing: 2, fontWeight: '700', marginTop: spacing.sm },
-  embassySubtitle: { ...typography.caption, color: ACCENT, marginTop: spacing.xs, opacity: 0.7 },
+  embassyTitle: { ...typography.h3, color: ACCENT, letterSpacing: 1.5, fontWeight: '700', marginTop: 4, fontSize: 16 },
+  embassySubtitle: { ...typography.caption, color: ACCENT, marginTop: 2, opacity: 0.6, fontSize: 9 },
   statusLine: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green, opacity: 0.8 },
-  statusText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600' },
-  photoSection: { alignItems: 'center', marginBottom: spacing.lg },
+  statusDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.green, opacity: 0.8 },
+  statusText: { ...typography.caption, color: colors.green, letterSpacing: 0.5, fontWeight: '600', fontSize: 8 },
+  photoSection: { alignItems: 'center', marginBottom: spacing.sm },
   initialsCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: `${ACCENT}26`,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: `${ACCENT}4D`,
   },
-  initialsText: { ...typography.h2, color: ACCENT, fontWeight: '700' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.lg },
+  initialsText: { ...typography.h2, color: ACCENT, fontWeight: '700', fontSize: 20 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.sm },
   statCard: {
     width: '47%',
     backgroundColor: colors.ink,
-    padding: spacing.md,
+    padding: spacing.xs,
     borderRadius: radii.sm,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: `${ACCENT}33`,
   },
-  statLabel: { ...typography.caption, color: ACCENT, opacity: 0.7, marginBottom: spacing.xs, letterSpacing: 1 },
-  statValue: { ...typography.body, color: ACCENT, fontSize: 14, fontWeight: '600' },
-  bioGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg, gap: spacing.md },
-  bioField: { width: '47%', paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: `${ACCENT}33` },
-  bioLabel: { ...typography.monoXs, color: ACCENT, opacity: 0.6, marginBottom: spacing.xs, letterSpacing: 1 },
-  bioValue: { ...typography.body, color: ACCENT, fontWeight: '500' },
-  charterSection: { marginBottom: spacing.lg },
-  charterTitle: { ...typography.caption, color: ACCENT, letterSpacing: 2, marginBottom: spacing.md, opacity: 0.7 },
-  charterText: { ...typography.bodySm, color: ACCENT, opacity: 0.6, lineHeight: 20, fontStyle: 'italic' },
+  statLabel: { ...typography.caption, color: ACCENT, opacity: 0.6, marginBottom: 2, letterSpacing: 0.5, fontSize: 7 },
+  statValue: { ...typography.body, color: ACCENT, fontSize: 12, fontWeight: '600' },
+  bioGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm, gap: 6 },
+  bioField: { width: '47%', paddingBottom: spacing.xs, borderBottomWidth: 0.5, borderBottomColor: `${ACCENT}33` },
+  bioLabel: { ...typography.monoXs, color: ACCENT, opacity: 0.5, marginBottom: 2, letterSpacing: 0.5, fontSize: 7 },
+  bioValue: { ...typography.body, color: ACCENT, fontWeight: '500', fontSize: 11 },
+  charterSection: { marginBottom: spacing.sm },
+  charterTitle: { ...typography.caption, color: ACCENT, letterSpacing: 1, marginBottom: 4, opacity: 0.6, fontSize: 8 },
+  charterText: { ...typography.bodySm, color: ACCENT, opacity: 0.5, lineHeight: 16, fontStyle: 'italic', fontSize: 9 },
   verifiedBadge: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginBottom: spacing.lg,
-    borderTopWidth: 1,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+    borderTopWidth: 0.5,
     borderTopColor: `${ACCENT}33`,
   },
-  verifiedText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600' },
-  mrzZone: { backgroundColor: colors.ink, padding: spacing.md, marginBottom: spacing.lg, borderRadius: radii.sm },
-  mrzLine: { fontFamily: 'Courier New', fontSize: 9, color: ACCENT, marginBottom: spacing.xs, letterSpacing: 1 },
+  verifiedText: { ...typography.caption, color: colors.green, letterSpacing: 0.5, fontWeight: '600', fontSize: 8 },
+  mrzZone: { backgroundColor: colors.ink, padding: 6, marginBottom: spacing.sm, borderRadius: radii.sm },
+  mrzLine: { fontFamily: 'Courier New', fontSize: 8, color: ACCENT, marginBottom: 2, letterSpacing: 0.5 },
+  qrSection: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+    borderTopWidth: 0.5,
+    borderTopColor: `${ACCENT}33`,
+    gap: 4,
+  },
+  qrText: { ...typography.caption, color: ACCENT, letterSpacing: 0.5, fontWeight: '600', fontSize: 8 },
   pageFooter: {
     alignItems: 'center',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
+    paddingTop: spacing.xs,
+    borderTopWidth: 0.5,
     borderTopColor: `${ACCENT}33`,
-    gap: spacing.xs,
+    gap: 2,
   },
-  footerSignature: { ...typography.caption, color: ACCENT, opacity: 0.5, letterSpacing: 1 },
-  pageNumber: { ...typography.monoXs, color: ACCENT, opacity: 0.4 },
-  actions: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
+  footerSignature: { ...typography.caption, color: ACCENT, opacity: 0.4, letterSpacing: 0.5, fontSize: 8 },
+  pageNumber: { ...typography.monoXs, color: ACCENT, opacity: 0.3, fontSize: 7 },
+  actions: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
 });

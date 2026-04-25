@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
@@ -50,9 +50,19 @@ export default function WanderkindPassScreen() {
   useAuthGuard();
 
   const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
   const scrollX = useRef(new Animated.Value(0)).current;
   const textTrackAnimation = useRef(new Animated.Value(0)).current;
-  const [activeRoute, setActiveRoute] = React.useState<string | null>(null);
+  const securityLineAnimation = useRef(new Animated.Value(0)).current;
+  const [activeRoute, setActiveRoute] = useState<string | null>(null);
+
+  const windowWidth = Dimensions.get('window').width;
+  const windowHeight = Dimensions.get('window').height;
+
+  // Header is approximately 50px, actions bar is approximately 70px
+  const HEADER_HEIGHT = 50;
+  const ACTIONS_HEIGHT = 70;
+  const pageHeight = windowHeight - HEADER_HEIGHT - insets.top - insets.bottom - ACTIONS_HEIGHT;
 
   // Fetch active route from most recent stamp
   useEffect(() => {
@@ -80,15 +90,24 @@ export default function WanderkindPassScreen() {
   // Animate the kinetic text track
   useEffect(() => {
     Animated.loop(
-      Animated.sequence([
-        Animated.timing(textTrackAnimation, {
-          toValue: -1000,
-          duration: 20000,
-          useNativeDriver: true,
-        }),
-      ])
+      Animated.timing(textTrackAnimation, {
+        toValue: -1000,
+        duration: 20000,
+        useNativeDriver: true,
+      })
     ).start();
   }, [textTrackAnimation]);
+
+  // Animate the security line
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(securityLineAnimation, {
+        toValue: pageHeight,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [securityLineAnimation, pageHeight]);
 
   const handleShare = async () => {
     try {
@@ -105,7 +124,6 @@ export default function WanderkindPassScreen() {
   const passNumber = generatePassNumber(profile?.id);
   const [mrz1, mrz2] = generateMRZLine(profile?.surname || '', profile?.given_names || '');
   const initials = getInitials(profile?.trail_name);
-  const passWidth = Dimensions.get('window').width - 2 * spacing.lg;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -114,15 +132,16 @@ export default function WanderkindPassScreen() {
       <ScrollView
         horizontal
         pagingEnabled
+        showsHorizontalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
           useNativeDriver: false,
         })}
-        style={styles.scrollView}
-        contentContainerStyle={{ width: passWidth * 2 }}
+        style={[styles.scrollView, { height: pageHeight }]}
+        contentContainerStyle={{ width: windowWidth * 2 }}
       >
         {/* PAGE 1: BIO DATA */}
-        <View style={[styles.page, { width: passWidth }]}>
+        <View style={[styles.page, { width: windowWidth, height: pageHeight }]}>
           {/* Corner Brackets */}
           <View style={[styles.corner, styles.cornerTopLeft]}>
             <View style={styles.bracketH} />
@@ -140,6 +159,16 @@ export default function WanderkindPassScreen() {
             <View style={[styles.bracketH, { right: 0, bottom: 0 }]} />
             <View style={[styles.bracketV, { right: 0, bottom: 0 }]} />
           </View>
+
+          {/* Security Line Animation */}
+          <Animated.View
+            style={[
+              styles.securityLine,
+              {
+                transform: [{ translateY: securityLineAnimation }],
+              },
+            ]}
+          />
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
@@ -231,7 +260,7 @@ export default function WanderkindPassScreen() {
         </View>
 
         {/* PAGE 2: SECURITY MATRIX */}
-        <View style={[styles.page, { width: passWidth }]}>
+        <View style={[styles.page, { width: windowWidth, height: pageHeight }]}>
           {/* Corner Brackets */}
           <View style={[styles.corner, styles.cornerTopLeft]}>
             <View style={styles.bracketH} />
@@ -249,6 +278,16 @@ export default function WanderkindPassScreen() {
             <View style={[styles.bracketH, { right: 0, bottom: 0 }]} />
             <View style={[styles.bracketV, { right: 0, bottom: 0 }]} />
           </View>
+
+          {/* Security Line Animation */}
+          <Animated.View
+            style={[
+              styles.securityLine,
+              {
+                transform: [{ translateY: securityLineAnimation }],
+              },
+            ]}
+          />
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
@@ -269,8 +308,7 @@ export default function WanderkindPassScreen() {
           {/* Embassy Header */}
           <View style={styles.headerSection}>
             <Text style={styles.hexagon}>⬡</Text>
-            <Text style={styles.embassyTitle}>Wanderkind Embassy</Text>
-            <Text style={styles.embassySubtitle}>Security Matrix</Text>
+            <Text style={styles.embassyTitle}>Security Matrix</Text>
           </View>
 
           {/* Security Grid 2x2 */}
@@ -355,13 +393,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   scrollView: {
-    flex: 1,
+    overflow: 'hidden',
   },
   page: {
     backgroundColor: DARK_BG,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.md,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  securityLine: {
+    position: 'absolute',
+    left: '50%',
+    width: 1,
+    backgroundColor: colors.amber,
+    opacity: 0.15,
+    zIndex: 1,
   },
   corner: {
     position: 'absolute',
@@ -400,9 +447,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   threadContainer: {
-    height: 20,
+    height: 16,
     overflow: 'hidden',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     justifyContent: 'center',
   },
   thread: {
@@ -412,67 +459,69 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.amber,
     opacity: 0.3,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    fontSize: 9,
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: `${colors.amber}4D`,
   },
   hexagon: {
-    fontSize: 24,
+    fontSize: 20,
     color: colors.amber,
     marginBottom: spacing.xs,
   },
   embassyTitle: {
-    ...typography.h3,
+    fontSize: 16,
     color: colors.amber,
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     fontWeight: '700',
   },
   embassySubtitle: {
-    ...typography.caption,
+    fontSize: 10,
     color: colors.amber,
     marginTop: spacing.xs,
     opacity: 0.7,
+    letterSpacing: 0.5,
   },
   statusLine: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.xs,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.green,
     opacity: 0.8,
   },
   statusText: {
-    ...typography.caption,
+    fontSize: 9,
     color: colors.green,
     letterSpacing: 1,
     fontWeight: '600',
   },
   passNumberText: {
-    ...typography.caption,
+    fontSize: 9,
     color: colors.amber,
     fontFamily: 'Courier New',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
   photoSection: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   initialsCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: `${colors.amber}26`,
     justifyContent: 'center',
     alignItems: 'center',
@@ -480,182 +529,189 @@ const styles = StyleSheet.create({
     borderColor: `${colors.amber}4D`,
   },
   initialsText: {
-    ...typography.h2,
+    fontSize: 24,
     color: colors.amber,
     fontWeight: '700',
   },
   bioGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: spacing.lg,
-    gap: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
   },
   bioField: {
     width: '48%',
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 0.5,
     borderBottomColor: `${colors.amber}33`,
   },
   bioLabel: {
-    ...typography.monoXs,
+    fontSize: 7,
     color: colors.amber,
     opacity: 0.6,
     marginBottom: spacing.xs,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   bioValue: {
-    ...typography.body,
+    fontSize: 11,
     color: colors.amber,
     fontWeight: '500',
   },
   signatureSection: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 0.5,
     borderBottomColor: `${colors.amber}33`,
   },
   signatureLabel: {
-    ...typography.caption,
+    fontSize: 8,
     color: colors.amber,
     opacity: 0.5,
+    letterSpacing: 0.5,
   },
   signatureValue: {
-    ...typography.body,
+    fontSize: 11,
     color: colors.amber,
     fontStyle: 'italic',
     marginTop: spacing.xs,
   },
   verifiedBadge: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginBottom: spacing.lg,
-    borderTopWidth: 1,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+    borderTopWidth: 0.5,
     borderTopColor: `${colors.amber}33`,
   },
   verifiedText: {
-    ...typography.caption,
+    fontSize: 8,
     color: colors.green,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     fontWeight: '600',
   },
   mrzZone: {
     backgroundColor: colors.ink,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
     borderRadius: radii.sm,
   },
   mrzLine: {
     fontFamily: 'Courier New',
-    fontSize: 10,
+    fontSize: 8,
     color: colors.amber,
-    marginBottom: spacing.xs,
-    letterSpacing: 1,
+    marginBottom: 2,
+    letterSpacing: 0.5,
   },
   pageFooter: {
     alignItems: 'center',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
+    paddingTop: spacing.sm,
+    borderTopWidth: 0.5,
     borderTopColor: `${colors.amber}33`,
-    gap: spacing.xs,
+    gap: 2,
   },
   footerSignature: {
-    ...typography.caption,
+    fontSize: 8,
     color: colors.amber,
     opacity: 0.5,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   pageNumber: {
-    ...typography.monoXs,
+    fontSize: 7,
     color: colors.amber,
     opacity: 0.4,
+    letterSpacing: 0.5,
   },
   securityGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   securityCard: {
     width: '48%',
     backgroundColor: colors.ink,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderRadius: radii.sm,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: `${colors.amber}33`,
   },
   securityLabel: {
-    ...typography.caption,
+    fontSize: 7,
     color: colors.amber,
     opacity: 0.7,
     marginBottom: spacing.xs,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   securityValue: {
-    ...typography.body,
+    fontSize: 10,
     color: colors.amber,
-    fontSize: 12,
   },
   charterSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   charterTitle: {
-    ...typography.caption,
+    fontSize: 9,
     color: colors.amber,
-    letterSpacing: 2,
-    marginBottom: spacing.md,
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
     opacity: 0.7,
+    fontWeight: '600',
   },
   charterGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   charterCell: {
     width: '48%',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 0.5,
     borderBottomColor: `${colors.amber}33`,
   },
   charterLabel: {
-    ...typography.caption,
+    fontSize: 7,
     color: colors.amber,
     opacity: 0.6,
     marginBottom: spacing.xs,
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   charterValue: {
-    ...typography.body,
+    fontSize: 11,
     color: colors.amber,
-    fontSize: 14,
   },
   qrSection: {
     alignItems: 'center',
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.lg,
-    borderTopWidth: 1,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    borderTopWidth: 0.5,
     borderTopColor: `${colors.amber}33`,
   },
   qrPlaceholder: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     backgroundColor: colors.ink,
     borderRadius: radii.sm,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    borderWidth: 1,
+    marginBottom: spacing.sm,
+    borderWidth: 0.5,
     borderColor: `${colors.amber}4D`,
   },
   scanText: {
-    ...typography.caption,
+    fontSize: 9,
     color: colors.amber,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     marginBottom: spacing.xs,
+    fontWeight: '600',
   },
   scanUrl: {
-    ...typography.monoXs,
+    fontSize: 8,
     color: colors.amber,
     opacity: 0.6,
+    letterSpacing: 0.5,
   },
   actions: {
     paddingHorizontal: spacing.lg,

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +22,15 @@ const INITIAL_REGION = {
 
 type FilterMode = 'free' | 'donativo' | 'all';
 
+interface LayerState {
+  hosts: boolean;
+  wanderkinder: boolean;
+  ways: boolean;
+  wifi: boolean;
+  churches: boolean;
+  mountains: boolean;
+}
+
 // Dynamically import native-only modules (these crash on web)
 let MapView: any, Marker: any, PROVIDER_GOOGLE: any, Location: any;
 if (Platform.OS !== 'web') {
@@ -32,19 +41,76 @@ if (Platform.OS !== 'web') {
   Location = require('expo-location');
 }
 
-// Web-only map component using Leaflet
 // Get walking seed profiles for map markers
 const walkingSeedProfiles = SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng);
 
-function WebMapComponent({ hosts, filter, onHostPress, walkers, onWalkerPress }: { hosts: Host[]; filter: FilterMode; onHostPress: (id: string) => void; walkers: typeof walkingSeedProfiles; onWalkerPress: (id: string) => void }) {
+// Sample POI data — churches, wifi hotspots, mountains along major routes
+const POI_DATA = {
+  churches: [
+    { id: 'ch-01', name: 'Cathedral of Santiago', lat: 42.8805, lng: -8.5449 },
+    { id: 'ch-02', name: 'Burgos Cathedral', lat: 42.3408, lng: -3.7044 },
+    { id: 'ch-03', name: 'Leon Cathedral', lat: 42.5994, lng: -5.567 },
+    { id: 'ch-04', name: 'Astorga Cathedral', lat: 42.4559, lng: -6.0521 },
+    { id: 'ch-05', name: "St. Peter's Basilica", lat: 41.9022, lng: 12.4539 },
+    { id: 'ch-06', name: 'Siena Cathedral', lat: 43.3175, lng: 11.3292 },
+    { id: 'ch-07', name: 'Canterbury Cathedral', lat: 51.2798, lng: 1.083 },
+    { id: 'ch-08', name: 'Notre-Dame du Puy', lat: 45.0444, lng: 3.885 },
+    { id: 'ch-09', name: 'Vezelay Basilica', lat: 47.4661, lng: 3.7487 },
+    { id: 'ch-10', name: 'Roncesvaux Collegiate', lat: 43.0092, lng: -1.3191 },
+    { id: 'ch-11', name: 'Salzburg Cathedral', lat: 47.7954, lng: 13.0462 },
+    { id: 'ch-12', name: 'Berchtesgaden Stiftskirche', lat: 47.6322, lng: 13.0028 },
+    { id: 'ch-13', name: 'Cologne Cathedral', lat: 50.9413, lng: 6.958 },
+    { id: 'ch-14', name: 'Einsiedeln Abbey', lat: 47.1265, lng: 8.7543 },
+    { id: 'ch-15', name: 'San Isidoro Leon', lat: 42.5988, lng: -5.5718 },
+  ],
+  wifi: [
+    { id: 'wf-01', name: 'Pamplona Library WiFi', lat: 42.8169, lng: -1.6436 },
+    { id: 'wf-02', name: 'Burgos Municipal WiFi', lat: 42.344, lng: -3.697 },
+    { id: 'wf-03', name: 'Leon Plaza WiFi', lat: 42.599, lng: -5.57 },
+    { id: 'wf-04', name: 'Santiago City WiFi', lat: 42.878, lng: -8.544 },
+    { id: 'wf-05', name: 'Porto Center WiFi', lat: 41.15, lng: -8.61 },
+    { id: 'wf-06', name: 'Lucca City WiFi', lat: 43.843, lng: 10.505 },
+    { id: 'wf-07', name: 'Siena Piazza WiFi', lat: 43.318, lng: 11.332 },
+    { id: 'wf-08', name: 'Salzburg Station WiFi', lat: 47.8132, lng: 13.0463 },
+    { id: 'wf-09', name: 'Innsbruck Free WiFi', lat: 47.2654, lng: 11.3927 },
+    { id: 'wf-10', name: 'Cologne Station WiFi', lat: 50.943, lng: 6.959 },
+  ],
+  mountains: [
+    { id: 'mt-01', name: 'Cruz de Ferro', lat: 42.4646, lng: -6.3714 },
+    { id: 'mt-02', name: 'Alto del Perdon', lat: 42.7797, lng: -1.7281 },
+    { id: 'mt-03', name: 'O Cebreiro Pass', lat: 42.7101, lng: -7.0408 },
+    { id: 'mt-04', name: 'Col de Roncevaux', lat: 43.0189, lng: -1.3252 },
+    { id: 'mt-05', name: 'Gran Sasso', lat: 42.4684, lng: 13.5656 },
+    { id: 'mt-06', name: 'Monte Amiata', lat: 42.89, lng: 11.622 },
+    { id: 'mt-07', name: 'Hochkoenig', lat: 47.42, lng: 13.07 },
+    { id: 'mt-08', name: 'Grossglockner', lat: 47.0742, lng: 12.6947 },
+    { id: 'mt-09', name: 'Pic du Midi', lat: 42.937, lng: 0.1424 },
+    { id: 'mt-10', name: 'Sierra Nevada', lat: 37.065, lng: -3.393 },
+    { id: 'mt-11', name: 'Rigi', lat: 47.0567, lng: 8.4856 },
+    { id: 'mt-12', name: 'Arlberg Pass', lat: 47.1297, lng: 10.2129 },
+  ],
+};
+
+function WebMapComponent({
+  hosts, filter, onHostPress, walkers, onWalkerPress, layers
+}: {
+  hosts: Host[];
+  filter: FilterMode;
+  onHostPress: (id: string) => void;
+  walkers: typeof walkingSeedProfiles;
+  onWalkerPress: (id: string) => void;
+  layers: LayerState;
+}) {
   const iframeRef = useRef<any>(null);
 
   // Build filtered hosts list
-  const filteredHosts = hosts.filter(h => {
+  const filteredHosts = layers.hosts ? hosts.filter(h => {
     if (filter === 'free') return h.host_type === 'free';
     if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
     return true;
-  });
+  }) : [];
+
+  const visibleWalkers = layers.wanderkinder ? walkers : [];
 
   // Map host type to marker color
   const getMarkerColor = (type: string): string => {
@@ -53,7 +119,6 @@ function WebMapComponent({ hosts, filter, onHostPress, walkers, onWalkerPress }:
     return config.color;
   };
 
-  // Pre-compute marker colors for all filtered hosts
   const markerColorMap: Record<string, string> = {};
   filteredHosts.forEach(h => {
     markerColorMap[h.id] = getMarkerColor(h.host_type);
@@ -72,116 +137,181 @@ function WebMapComponent({ hosts, filter, onHostPress, walkers, onWalkerPress }:
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     #map { width: 100%; height: 100vh; }
     .leaflet-container { background: #f5f5f0; }
+    .wk-icon { display:flex;align-items:center;justify-content:center;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+    .poi-icon { display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.2);font-size:12px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
-    // Initialize map centered on central Europe
-    const map = L.map('map').setView([47.5, 7.5], 6);
-
-    // Add OpenStreetMap tile layer
+    var map = L.map('map').setView([47.5, 7.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+      attribution: '\\u00a9 OpenStreetMap contributors',
       maxZoom: 19
     }).addTo(map);
 
-    // Hosts data (injected from React)
-    const hosts = ${JSON.stringify(filteredHosts)};
-    const markerColorMap = ${JSON.stringify(markerColorMap)};
-
-    // Add markers for each host
+    // === HOSTS ===
+    var hosts = ${JSON.stringify(filteredHosts)};
+    var markerColorMap = ${JSON.stringify(markerColorMap)};
     hosts.forEach(function(host) {
-      const markerColor = markerColorMap[host.id] || '#999999';
-
-      // Create circle marker (more visible than default pins)
+      var mc = markerColorMap[host.id] || '#999';
       L.circleMarker([host.lat, host.lng], {
-        radius: 8,
-        fillColor: markerColor,
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.85
+        radius: 7, fillColor: mc, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
       })
-      .bindPopup(function() {
-        return '<div style="font-size: 12px; text-align: center;"><strong>' + host.name + '</strong></div>';
-      })
-      .on('click', function(e) {
-        // Send message to parent about host click
-        window.parent.postMessage({
-          type: 'host-click',
-          hostId: host.id
-        }, '*');
+      .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + host.name + '</strong><br/><span style="color:' + mc + ';font-size:10px;text-transform:uppercase;">' + host.host_type + '</span></div>')
+      .on('click', function() {
+        window.parent.postMessage({ type: 'host-click', hostId: host.id }, '*');
       })
       .addTo(map);
     });
 
-    // Walker data (injected from React)
-    const walkers = ${JSON.stringify(walkers)};
-
-    // Add walker markers (blue person icons)
-    walkers.forEach(function(walker) {
-      var walkerIcon = L.divIcon({
+    // === WANDERKINDER (with W overlay for currently walking) ===
+    var walkers = ${JSON.stringify(visibleWalkers)};
+    walkers.forEach(function(w) {
+      var icon = L.divIcon({
         className: '',
-        html: '<div style="width:28px;height:28px;border-radius:50%;background:#3B82F6;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><svg width=\\'14\\' height=\\'14\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'white\\' stroke-width=\\'2.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><path d=\\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\\'/><circle cx=\\'12\\' cy=\\'7\\' r=\\'4\\'/></svg></div>',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        html: '<div class="wk-icon" style="width:30px;height:30px;background:#3B82F6;border:2px solid #fff;position:relative;">'
+          + '<span style="color:#fff;font-weight:900;font-size:14px;font-family:serif;">W</span>'
+          + '</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
       });
-
-      L.marker([walker.lat, walker.lng], { icon: walkerIcon })
-        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + walker.trail_name + '</strong><br/><span style="color:#666;font-size:10px;">Currently wandering</span></div>')
+      L.marker([w.lat, w.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.trail_name + '</strong><br/><span style="color:#3B82F6;font-size:10px;">Currently wandering</span></div>')
         .on('click', function() {
-          window.parent.postMessage({
-            type: 'walker-click',
-            profileId: walker.id
-          }, '*');
+          window.parent.postMessage({ type: 'walker-click', profileId: w.id }, '*');
         })
         .addTo(map);
     });
 
-    // Handle location request from parent
+    // === POI: CHURCHES ===
+    var churches = ${layers.churches ? JSON.stringify(POI_DATA.churches) : '[]'};
+    churches.forEach(function(c) {
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="poi-icon" style="background:#8B4513;color:#fff;">\\u271D</div>',
+        iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      L.marker([c.lat, c.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + c.name + '</strong><br/><span style="color:#8B4513;font-size:10px;">Church</span></div>')
+        .addTo(map);
+    });
+
+    // === POI: WIFI ===
+    var wifis = ${layers.wifi ? JSON.stringify(POI_DATA.wifi) : '[]'};
+    wifis.forEach(function(w) {
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="poi-icon" style="background:#0ea5e9;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="white"/></svg></div>',
+        iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      L.marker([w.lat, w.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.name + '</strong><br/><span style="color:#0ea5e9;font-size:10px;">Free WiFi</span></div>')
+        .addTo(map);
+    });
+
+    // === POI: MOUNTAINS ===
+    var mountains = ${layers.mountains ? JSON.stringify(POI_DATA.mountains) : '[]'};
+    mountains.forEach(function(m) {
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="poi-icon" style="background:#6B7280;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 2L2 22h20L12 2zm0 4l7 14H5l7-14z"/></svg></div>',
+        iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      L.marker([m.lat, m.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + m.name + '</strong><br/><span style="color:#6B7280;font-size:10px;">Mountain</span></div>')
+        .addTo(map);
+    });
+
+    // Handle messages from parent
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'center-on-location') {
-        const { lat, lng } = event.data;
-        map.setView([lat, lng], 10, { animate: true, duration: 1 });
+        map.setView([event.data.lat, event.data.lng], 10, { animate: true, duration: 1 });
       }
     });
   </script>
 </body>
 </html>`;
 
-  // Handle iframe messages for marker clicks
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'host-click') {
-        onHostPress(event.data.hostId);
-      }
-      if (event.data?.type === 'walker-click') {
-        onWalkerPress(event.data.profileId);
-      }
+      if (event.data?.type === 'host-click') onHostPress(event.data.hostId);
+      if (event.data?.type === 'walker-click') onWalkerPress(event.data.profileId);
     };
-
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [onHostPress, onWalkerPress]);
 
   return (
     <View style={styles.map}>
-      {/* Web: render iframe with Leaflet map */}
       {Platform.OS === 'web' && (
-        // @ts-ignore - iframe is supported on web via react-native-web
+        // @ts-ignore
         <iframe
           ref={iframeRef}
           srcDoc={html}
-          style={{
-            flex: 1,
-            border: 'none',
-            width: '100%',
-            height: '100%'
-          }}
+          style={{ flex: 1, border: 'none', width: '100%', height: '100%' }}
           sandbox="allow-scripts allow-same-origin"
         />
       )}
+    </View>
+  );
+}
+
+// Layers panel overlay
+function LayersPanel({ layers, onToggle, onClose }: {
+  layers: LayerState;
+  onToggle: (key: keyof LayerState) => void;
+  onClose: () => void;
+}) {
+  const layerConfig: { key: keyof LayerState; label: string; icon: string; color: string }[] = [
+    { key: 'hosts', label: 'Wanderhosts', icon: 'home', color: colors.amber },
+    { key: 'wanderkinder', label: 'Wanderkinder', icon: 'people', color: '#3B82F6' },
+    { key: 'ways', label: 'The Ways', icon: 'map', color: colors.green },
+    { key: 'wifi', label: 'Public WiFi', icon: 'wifi', color: '#0ea5e9' },
+    { key: 'churches', label: 'Churches', icon: 'business', color: '#8B4513' },
+    { key: 'mountains', label: 'Mountains', icon: 'triangle', color: '#6B7280' },
+  ];
+
+  return (
+    <View style={styles.layersPanel}>
+      <View style={styles.layersPanelHeader}>
+        <Text style={styles.layersPanelTitle}>MAP LAYERS</Text>
+        <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Ionicons name="close" size={20} color={colors.ink} />
+        </TouchableOpacity>
+      </View>
+      {layerConfig.map(({ key, label, icon, color }) => (
+        <TouchableOpacity
+          key={key}
+          style={styles.layerRow}
+          onPress={() => onToggle(key)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.layerIcon, { backgroundColor: `${color}20` }]}>
+            <Ionicons name={icon as any} size={16} color={color} />
+          </View>
+          <Text style={[styles.layerLabel, !layers[key] && { color: colors.ink3 }]}>{label}</Text>
+          <Switch
+            value={layers[key]}
+            onValueChange={() => onToggle(key)}
+            trackColor={{ false: colors.borderLt, true: `${color}40` }}
+            thumbColor={layers[key] ? color : '#ccc'}
+            style={{ transform: [{ scale: 0.8 }] }}
+          />
+        </TouchableOpacity>
+      ))}
+      {/* Legend */}
+      <View style={styles.layersLegend}>
+        <Text style={styles.legendTitle}>HOST COLORS</Text>
+        <View style={styles.legendRow}>
+          {(['free', 'donativo', 'budget', 'paid'] as const).map(t => (
+            <View key={t} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: hostTypeConfig[t].color }]} />
+              <Text style={styles.legendLabel}>{hostTypeConfig[t].label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -192,10 +322,17 @@ export default function MapHome() {
   const router = useRouter();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
-  const [filter, setFilter] = useState<FilterMode>('free');
-  const [isListView, setIsListView] = useState(false);
+  const [filter, setFilter] = useState<FilterMode>('all');
   const [nearestFree, setNearestFree] = useState<Host | null>(null);
-  const iframeRef = useRef<any>(null);
+  const [showLayers, setShowLayers] = useState(false);
+  const [layers, setLayers] = useState<LayerState>({
+    hosts: true,
+    wanderkinder: true,
+    ways: true,
+    wifi: false,
+    churches: false,
+    mountains: false,
+  });
 
   useEffect(() => {
     fetchHosts();
@@ -219,22 +356,15 @@ export default function MapHome() {
       console.error('Failed to fetch hosts from Supabase:', err);
     }
 
-    // Fallback to seed data if Supabase returns empty or fails
+    // Fallback to seed data
     const seedHosts = SEED_HOSTS as unknown as Host[];
     setHosts(seedHosts);
     const free = seedHosts.find(h => h.host_type === 'free' || h.host_type === 'donativo');
     setNearestFree(free || null);
   };
 
-  const filteredHosts = hosts.filter(h => {
-    if (filter === 'free') return h.host_type === 'free';
-    if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
-    return true;
-  });
-
-  const getMarkerColor = (type: string) => {
-    const config = hostTypeConfig[type as keyof typeof hostTypeConfig];
-    return config?.color ?? colors.ink3;
+  const toggleLayer = (key: keyof LayerState) => {
+    setLayers(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleHostPress = (hostId: string) => {
@@ -244,23 +374,18 @@ export default function MapHome() {
   const handleLocationPress = async () => {
     try {
       if (Platform.OS === 'web') {
-        // Use browser geolocation API on web
         if ('geolocation' in navigator) {
           navigator.geolocation.getCurrentPosition((position) => {
             const { latitude, longitude } = position.coords;
-            // Send message to iframe to center on location
             const iframe = document.querySelector('iframe');
             iframe?.contentWindow?.postMessage({
               type: 'center-on-location',
               lat: latitude,
               lng: longitude
             }, '*');
-          }, () => {
-            // Permission denied or error — silently fail
-          });
+          }, () => {});
         }
       } else {
-        // Use expo-location on native
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -271,14 +396,12 @@ export default function MapHome() {
           longitudeDelta: 0.5,
         }, 800);
       }
-    } catch {
-      // Location unavailable — silently fail
-    }
+    } catch {}
   };
 
   return (
     <View style={styles.container}>
-      {/* Map: native or web */}
+      {/* Map */}
       {Platform.OS === 'web' ? (
         <WebMapComponent
           hosts={hosts}
@@ -286,6 +409,7 @@ export default function MapHome() {
           onHostPress={handleHostPress}
           walkers={walkingSeedProfiles}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
+          layers={layers}
         />
       ) : (
         <MapView
@@ -297,29 +421,25 @@ export default function MapHome() {
           showsMyLocationButton={false}
           mapType="standard"
         >
-          {filteredHosts.map(host => (
+          {layers.hosts && hosts.map(host => (
             <Marker
               key={host.id}
               coordinate={{ latitude: host.lat, longitude: host.lng }}
-              pinColor={getMarkerColor(host.host_type)}
+              pinColor={hostTypeConfig[host.host_type as keyof typeof hostTypeConfig]?.color ?? colors.ink3}
               onPress={() => handleHostPress(host.id)}
             />
           ))}
         </MapView>
       )}
 
-      {/* Top controls overlay */}
+      {/* Top controls */}
       <SafeAreaView style={styles.topOverlay} edges={['top']}>
-        {/* Filter chips */}
         <View style={styles.filterRow}>
           {(['free', 'donativo', 'all'] as FilterMode[]).map(f => (
             <TouchableOpacity
               key={f}
               style={[styles.filterChip, filter === f && styles.filterChipActive]}
               onPress={() => setFilter(f)}
-              accessibilityLabel={`Filter: ${f === 'free' ? 'Free only' : f === 'donativo' ? 'Free and donativo' : 'All hosts'}`}
-              accessibilityState={{ selected: filter === f }}
-              accessibilityRole="button"
             >
               <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
                 {f === 'free' ? 'FREE' : f === 'donativo' ? 'FREE + DONATIVO' : 'ALL'}
@@ -328,28 +448,31 @@ export default function MapHome() {
           ))}
           <TouchableOpacity
             style={styles.iconButton}
-            onPress={() => setIsListView(!isListView)}
+            onPress={() => setShowLayers(!showLayers)}
           >
-            <Ionicons
-              name={isListView ? 'map-outline' : 'list-outline'}
-              size={18}
-              color={colors.amber}
-            />
+            <Ionicons name="layers" size={18} color={colors.amber} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
 
+      {/* Layers panel */}
+      {showLayers && (
+        <LayersPanel
+          layers={layers}
+          onToggle={toggleLayer}
+          onClose={() => setShowLayers(false)}
+        />
+      )}
+
       {/* My location button */}
       <TouchableOpacity
         style={styles.locationButton}
-        accessibilityLabel="Center on my location"
-        accessibilityRole="button"
         onPress={handleLocationPress}
       >
         <Ionicons name="locate" size={20} color={colors.amber} />
       </TouchableOpacity>
 
-      {/* Next Free Bed widget */}
+      {/* Next Free Bed */}
       {nearestFree && (
         <TouchableOpacity
           style={styles.nextFreeCard}
@@ -380,8 +503,6 @@ export default function MapHome() {
           </View>
         </TouchableOpacity>
       )}
-
-      {/* SOS long-press hint (shown once) */}
     </View>
   );
 }
@@ -439,6 +560,91 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 'auto',
+  },
+  // Layers panel
+  layersPanel: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 56 : 100,
+    right: spacing.md,
+    width: 260,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: spacing.md,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    zIndex: 100,
+  },
+  layersPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  layersPanelTitle: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  layerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: spacing.sm,
+  },
+  layerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  layerLabel: {
+    ...typography.bodySm,
+    color: colors.ink,
+    fontWeight: '600',
+    flex: 1,
+  },
+  layersLegend: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLt,
+  },
+  legendTitle: {
+    fontFamily: 'Courier New',
+    fontSize: 8,
+    letterSpacing: 1,
+    fontWeight: '600',
+    color: colors.ink3,
+    marginBottom: 6,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    fontFamily: 'Courier New',
+    fontSize: 8,
+    letterSpacing: 0.5,
+    fontWeight: '600',
+    color: colors.ink3,
   },
   locationButton: {
     position: 'absolute',

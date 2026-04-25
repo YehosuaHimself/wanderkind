@@ -82,7 +82,7 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.section}>
           <Text style={[typography.h3, styles.heading]}>7. Contact Us</Text>
           <Text style={styles.body}>
-            If you have questions about this privacy policy, please contact us at privacy@wanderkind.com.
+            If you have questions about this privacy policy, please contact us at hallo@wanderkind.love.
           </Text>
         </View>
 

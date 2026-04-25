@@ -20,26 +20,25 @@ export default function ImprintScreen() {
       >
         <Text style={[typography.h2, styles.title]}>Impressum (Legal Imprint)</Text>
 
-        {/* Company Information */}
+        {/* Organization */}
         <WKCard variant="gold" style={styles.card}>
-          <Text style={[typography.h3, styles.heading]}>Company Information</Text>
+          <Text style={[typography.h3, styles.heading]}>Organization</Text>
           <View style={styles.infoBlock}>
-            <Text style={styles.label}>Company:</Text>
-            <Text style={styles.value}>Wanderkind GmbH</Text>
+            <Text style={styles.value}>Yehosua Himself</Text>
           </View>
+        </WKCard>
+
+        {/* Address */}
+        <WKCard style={styles.card}>
+          <Text style={[typography.h3, styles.heading]}>Address</Text>
           <View style={styles.infoBlock}>
-            <Text style={styles.label}>Address:</Text>
             <Text style={styles.value}>
-              Hauptstraße 42{'\n'}69115 Heidelberg{'\n'}Germany
+              Am Sonnberg 21{'\n'}Berg (Dienten) am Hochkönig{'\n'}5652 Österreich
             </Text>
           </View>
           <View style={styles.infoBlock}>
             <Text style={styles.label}>Email:</Text>
-            <Text style={styles.value}>hello@wanderkind.com</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Phone:</Text>
-            <Text style={styles.value}>+49 (0) 6221 123456</Text>
+            <Text style={styles.value}>hallo@wanderkind.love</Text>
           </View>
         </WKCard>
 
@@ -47,29 +46,11 @@ export default function ImprintScreen() {
         <WKCard style={styles.card}>
           <Text style={[typography.h3, styles.heading]}>Management</Text>
           <View style={styles.infoBlock}>
-            <Text style={styles.label}>Managing Director:</Text>
-            <Text style={styles.value}>European Pilgrimage Foundation</Text>
+            <Text style={styles.value}>KGD Embassy</Text>
           </View>
           <View style={styles.infoBlock}>
             <Text style={styles.label}>Represented by:</Text>
-            <Text style={styles.value}>Board of Directors</Text>
-          </View>
-        </WKCard>
-
-        {/* Registration */}
-        <WKCard style={styles.card}>
-          <Text style={[typography.h3, styles.heading]}>Registration</Text>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Trade Register:</Text>
-            <Text style={styles.value}>Handelsregister Heidelberg</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Register Number:</Text>
-            <Text style={styles.value}>HRB 123456</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>VAT ID:</Text>
-            <Text style={styles.value}>DE 123 456 789</Text>
+            <Text style={styles.value}>Yehosua Himself</Text>
           </View>
         </WKCard>
 

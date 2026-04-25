@@ -131,13 +131,6 @@ export default function EditProfileScreen() {
           placeholder="Where are you from?"
         />
 
-        <WKInput
-          label="Home Country"
-          value={homeCountry}
-          onChangeText={setHomeCountry}
-          placeholder="Where are you from?"
-        />
-
         <Text style={styles.label}>Languages Spoken</Text>
         <View style={styles.languagesGrid}>
           {LANGUAGES.map(lang => (

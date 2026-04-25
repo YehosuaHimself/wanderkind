@@ -15,7 +15,7 @@ export default function ShareProfileScreen() {
 
   const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const profileLink = 'https://wanderkind.com/profile/john-trail-walker';
+  const profileLink = 'https://wanderkind.love/profile/john-trail-walker';
 
   const handleCopyLink = async () => {
     await Clipboard.setString(profileLink);

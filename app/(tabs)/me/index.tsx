@@ -116,6 +116,7 @@ export default function MeScreen() {
           </TouchableOpacity>
 
           <Text style={styles.trailName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
+          <Text style={styles.handle}>@{profile?.trail_name?.replace(/^@/, '') ?? 'wanderkind'}</Text>
 
           {/* Tier badge — hidden in Quiet Mode */}
           {!isQuietMode && (
@@ -307,6 +308,11 @@ const styles = StyleSheet.create({
   trailName: {
     ...typography.h2,
     color: colors.ink,
+    marginBottom: 4,
+  },
+  handle: {
+    ...typography.bodySm,
+    color: colors.ink3,
     marginBottom: 8,
   },
   tierBadge: {

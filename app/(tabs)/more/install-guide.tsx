@@ -19,7 +19,7 @@ export default function InstallGuideScreen() {
     {
       number: '1',
       title: 'Open Safari',
-      description: 'Launch Safari and navigate to the Wanderkind app or visit wanderkind.com',
+      description: 'Launch Safari and navigate to the Wanderkind app or visit wanderkind.love',
     },
     {
       number: '2',
@@ -47,7 +47,7 @@ export default function InstallGuideScreen() {
     {
       number: '1',
       title: 'Open Chrome',
-      description: 'Launch Chrome and navigate to the Wanderkind app or visit wanderkind.com',
+      description: 'Launch Chrome and navigate to the Wanderkind app or visit wanderkind.love',
     },
     {
       number: '2',

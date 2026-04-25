@@ -13,11 +13,11 @@ export default function ContributeScreen() {
   if (isLoading) return null;
 
   const openPayPal = () => {
-    Linking.openURL('https://paypal.me/wanderkind');
+    Linking.openURL('https://paypal.me/YehosuaHimself');
   };
 
   const openEmail = () => {
-    Linking.openURL('mailto:volunteer@wanderkind.com');
+    Linking.openURL('mailto:hallo@wanderkind.love');
   };
 
   const ways = [
@@ -100,20 +100,8 @@ export default function ContributeScreen() {
             </Text>
             <View style={styles.bankInfo}>
               <View style={styles.bankLine}>
-                <Text style={styles.bankLabel}>Account Holder:</Text>
-                <Text style={styles.bankValue}>Wanderkind GmbH</Text>
-              </View>
-              <View style={styles.bankLine}>
                 <Text style={styles.bankLabel}>IBAN:</Text>
-                <Text style={styles.bankValue}>DE89 3704 0044 0532 0130 00</Text>
-              </View>
-              <View style={styles.bankLine}>
-                <Text style={styles.bankLabel}>BIC:</Text>
-                <Text style={styles.bankValue}>COBADEFFXXX</Text>
-              </View>
-              <View style={styles.bankLine}>
-                <Text style={styles.bankLabel}>Bank:</Text>
-                <Text style={styles.bankValue}>Commerzbank AG, Heidelberg</Text>
+                <Text style={styles.bankValue}>CH1300767000T53965217</Text>
               </View>
             </View>
           </WKCard>

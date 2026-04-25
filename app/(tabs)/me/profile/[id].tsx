@@ -120,6 +120,7 @@ export default function PublicProfileScreen() {
         {/* Name and Tier */}
         <View style={styles.headerSection}>
           <Text style={styles.name}>{profile.trail_name}</Text>
+          <Text style={styles.handle}>@{profile.trail_name?.replace(/^@/, '')}</Text>
           <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
             <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
             <Text style={[styles.tierText, { color: tierColor }]}>
@@ -245,6 +246,12 @@ const styles = StyleSheet.create({
   name: {
     ...typography.h2,
     color: colors.ink,
+    marginBottom: 4,
+  },
+  handle: {
+    ...typography.bodySm,
+    color: colors.ink3,
+    marginBottom: 8,
   },
   tierBadge: {
     flexDirection: 'row',

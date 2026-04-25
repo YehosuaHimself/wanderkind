@@ -36,14 +36,14 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-25T09:23:00Z',
   }),
   m('m-002', 'p-002', 'Made 200 pain au chocolat for pilgrims this morning. This is why I left Paris. 🥐', {
-    photo_url: 'https://images.unsplash.com/photo-1555939594-58d7cb561280?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1555939594-58d7cb561280?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Le Puy-en-Velay, France',
     likes_count: 456,
     replies_count: 47,
     created_at: '2026-04-24T16:45:00Z',
   }),
   m('m-003', 'p-003', 'Three weeks in and my camera has more dirt than my hiking boots. Worth it.', {
-    photo_url: 'https://images.unsplash.com/photo-1502791081949-d2b7fdf17897?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1502791081949-d2b7fdf17897?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Vilarinho, Portugal',
     likes_count: 312,
     replies_count: 18,
@@ -56,7 +56,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-24T11:03:00Z',
   }),
   m('m-005', 'p-005', 'Day 89. No timeline. No rush. Just walking and existing. This is what freedom tastes like.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'La Rioja, Spain',
     likes_count: 401,
     replies_count: 35,
@@ -69,14 +69,14 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-23T18:45:00Z',
   }),
   m('m-007', 'p-007', 'Hosted 47 pilgrims this month. Still in love with this life.', {
-    photo_url: 'https://images.unsplash.com/photo-1566486749834-f913b3e2e1be?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1566486749834-f913b3e2e1be?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Black Forest, Germany',
     likes_count: 289,
     replies_count: 28,
     created_at: '2026-04-23T15:22:00Z',
   }),
   m('m-008', 'p-008', 'My sketchbook is filling up faster than my feet are hurting. Every town has a story to draw.', {
-    photo_url: 'https://images.unsplash.com/photo-1579783902614-e3fb5141b0cb?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1579783902614-e3fb5141b0cb?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Tuscany, Italy',
     likes_count: 445,
     replies_count: 41,
@@ -89,7 +89,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-23T09:44:00Z',
   }),
   m('m-010', 'p-010', 'Barefoot for 52 days straight. My soles are leather now. My soul is free.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Alsace, France',
     likes_count: 502,
     replies_count: 55,
@@ -102,14 +102,14 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-22T14:17:00Z',
   }),
   m('m-012', 'p-012', 'Family moment: Kids spotted 6 different birds today. This is better than any screen time.', {
-    photo_url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Stuttgart, Germany',
     likes_count: 388,
     replies_count: 34,
     created_at: '2026-04-22T11:52:00Z',
   }),
   m('m-013', 'p-013', 'Cooking for 30 pilgrims tonight. One person\'s leftovers become another person\'s feast. Love that.', {
-    photo_url: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Namur, Belgium',
     likes_count: 421,
     replies_count: 38,
@@ -122,7 +122,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-21T15:20:00Z',
   }),
   m('m-015', 'p-015', 'As a physio, I\'m doing an unplanned study on how the Camino heals bodies and minds.', {
-    photo_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Bilbao, Spain',
     likes_count: 356,
     replies_count: 26,
@@ -135,7 +135,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-21T10:30:00Z',
   }),
   m('m-017', 'p-017', 'Every interview is a treasure. These stories deserve to be told. Book is becoming real.', {
-    photo_url: 'https://images.unsplash.com/photo-1507842072343-583f20270319?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1507842072343-583f20270319?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Warsaw, Poland',
     likes_count: 312,
     replies_count: 22,
@@ -148,7 +148,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-20T14:48:00Z',
   }),
   m('m-019', 'p-019', 'My Year 9 class is following my trail updates. They\'re learning more history from this than textbooks.', {
-    photo_url: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'London, United Kingdom',
     likes_count: 289,
     replies_count: 24,
@@ -161,7 +161,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-20T09:22:00Z',
   }),
   m('m-021', 'p-021', 'My backpack is 40% spices by weight. No regrets. Making coq au vin on a camp stove tonight.', {
-    photo_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Provence, France',
     likes_count: 523,
     replies_count: 58,
@@ -174,7 +174,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-19T15:14:00Z',
   }),
   m('m-023', 'p-023', 'Route number 5. Still discovering new things at 71. Still walking farther than people expect.', {
-    photo_url: 'https://images.unsplash.com/photo-1465056836342-2b862c2511c2?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1465056836342-2b862c2511c2?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Munich, Germany',
     likes_count: 445,
     replies_count: 42,
@@ -187,7 +187,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-19T11:25:00Z',
   }),
   m('m-025', 'p-025', 'Exchange student to long-term wanderer. Nobody back in Seoul understands but that\'s okay.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Seoul, South Korea',
     likes_count: 334,
     replies_count: 28,
@@ -200,7 +200,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-18T14:33:00Z',
   }),
   m('m-027', 'p-027', 'One-way ticket from Rio to Porto. Day 3. Already understand why people don\'t go back.', {
-    photo_url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Porto, Portugal',
     likes_count: 412,
     replies_count: 37,
@@ -213,7 +213,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-18T09:47:00Z',
   }),
   m('m-029', 'p-029', 'Running this albergue for 15 years. Every pilgrim is my grandchild. Every goodbye hurts beautiful.', {
-    photo_url: 'https://images.unsplash.com/photo-1506704720897-c6b0b8ef6dba?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506704720897-c6b0b8ef6dba?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Logroño, Spain',
     likes_count: 467,
     replies_count: 44,
@@ -226,7 +226,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-17T15:58:00Z',
   }),
   m('m-031', 'p-001', 'Blister on my right heel looks like it has its own blister now. Peak Camino life.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Castrojeriz, Spain',
     likes_count: 378,
     replies_count: 33,
@@ -239,7 +239,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-17T11:09:00Z',
   }),
   m('m-033', 'p-003', 'Light turned golden at 5:47 AM. Camera out immediately. Forgot to eat. No regrets.', {
-    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Barcelos, Portugal',
     likes_count: 445,
     replies_count: 38,
@@ -252,7 +252,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-16T15:21:00Z',
   }),
   m('m-035', 'p-005', 'Day 93. Still haven\'t checked email. The world is fine without me. Revolutionary.', {
-    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Burgos, Spain',
     likes_count: 489,
     replies_count: 51,
@@ -265,7 +265,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-16T10:45:00Z',
   }),
   m('m-037', 'p-007', 'Someone left a handwritten note in the guestbook saying my breakfast changed their day. Worth every sunrise.', {
-    photo_url: 'https://images.unsplash.com/photo-1495699810108-5294db051f31?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1495699810108-5294db051f31?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Freiburg, Germany',
     likes_count: 412,
     replies_count: 35,
@@ -278,7 +278,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-15T15:09:00Z',
   }),
   m('m-039', 'p-009', 'Rain today but the soul still sunny. 1100 nights of practice paying off.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'O Cebreiro, Spain',
     likes_count: 523,
     replies_count: 47,
@@ -291,7 +291,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-15T10:23:00Z',
   }),
   m('m-041', 'p-011', 'Roman roads under my feet. Roman stones in my mind. History is not past. It\'s now.', {
-    photo_url: 'https://images.unsplash.com/photo-1514306688683-266d5d7d6a77?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1514306688683-266d5d7d6a77?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Vatican City, Italy',
     likes_count: 401,
     replies_count: 36,
@@ -304,7 +304,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-14T15:27:00Z',
   }),
   m('m-043', 'p-013', 'Vegetable garden provided 80% of tonight\'s dinner. Pilgrims ate gratefully. Circle complete.', {
-    photo_url: 'https://images.unsplash.com/photo-1464226184679-280f82a809ff?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1464226184679-280f82a809ff?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Liege, Belgium',
     likes_count: 289,
     replies_count: 21,
@@ -317,7 +317,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-14T10:41:00Z',
   }),
   m('m-045', 'p-015', 'Physical therapy note: the Camino is 70% mental. Feet are just the excuse to move the mind.', {
-    photo_url: 'https://images.unsplash.com/photo-1452626212552-c4b80b537697?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1452626212552-c4b80b537697?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'San Sebastian, Spain',
     likes_count: 378,
     replies_count: 28,
@@ -330,7 +330,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-13T14:35:00Z',
   }),
   m('m-047', 'p-017', 'Interviewed a 64-year-old who left everything. Best chapter yet. Real courage in this book.', {
-    photo_url: 'https://images.unsplash.com/photo-1483389127117-b6a2102724ae?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1483389127117-b6a2102724ae?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Krakow, Poland',
     likes_count: 312,
     replies_count: 24,
@@ -343,7 +343,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-13T09:49:00Z',
   }),
   m('m-049', 'p-019', 'Student texted me asking about medieval economics after seeing my trail photos. This is teaching.', {
-    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Oxford, United Kingdom',
     likes_count: 289,
     replies_count: 22,
@@ -356,7 +356,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-12T15:03:00Z',
   }),
   m('m-051', 'p-021', 'Running low on nutmeg. Might have to improvise. Disaster averted. Still have paprika and thyme.', {
-    photo_url: 'https://images.unsplash.com/photo-1543255785-37d7995686ec?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1543255785-37d7995686ec?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Montpellier, France',
     likes_count: 356,
     replies_count: 31,
@@ -369,7 +369,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-12T10:17:00Z',
   }),
   m('m-053', 'p-023', 'Knees are good. Heart is stronger. Mind is clearer. I\'m just getting started on route 6.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Augsburg, Germany',
     likes_count: 301,
     replies_count: 26,
@@ -382,7 +382,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-11T15:31:00Z',
   }),
   m('m-055', 'p-025', 'Video called my parents. They asked if I was coming home. I don\'t know. This feels like home now.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Guarda, Portugal',
     likes_count: 445,
     replies_count: 39,
@@ -395,7 +395,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-11T10:45:00Z',
   }),
   m('m-057', 'p-027', 'Someone asked if the trail is lonely. No. It\'s the opposite of lonely. Full of strangers becoming friends.', {
-    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1495567720989-cebfbb6ae69e?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Ponte da Barca, Portugal',
     likes_count: 512,
     replies_count: 48,
@@ -408,7 +408,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-10T14:59:00Z',
   }),
   m('m-059', 'p-029', 'Teenage pilgrims from Brazil tonight. Tomorrow they\'ll be somebody else\'s memory. I\'ll hold them anyway.', {
-    photo_url: 'https://images.unsplash.com/photo-1495436694665-f32255b98328?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1495436694665-f32255b98328?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Santo Domingo de la Calzada, Spain',
     likes_count: 389,
     replies_count: 34,
@@ -427,7 +427,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-09T17:50:00Z',
   }),
   m('m-062', 'p-004', 'My walking poles are older than some pilgrims. We understand each other now.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Bern, Switzerland',
     likes_count: 367,
     replies_count: 30,
@@ -440,7 +440,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-09T13:04:00Z',
   }),
   m('m-064', 'p-008', 'Drew a portrait of a 79-year-old pilgrim. She cried. I cried. Art is witness to the sacred.', {
-    photo_url: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Siena, Italy',
     likes_count: 501,
     replies_count: 50,
@@ -453,7 +453,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-08T17:58:00Z',
   }),
   m('m-066', 'p-012', 'Eight-year-old asked why walking is better than driving. Spent the next hour trying to explain magic.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Bamberg, Germany',
     likes_count: 445,
     replies_count: 41,
@@ -466,7 +466,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-08T13:12:00Z',
   }),
   m('m-068', 'p-016', 'No laptop. No wifi. Writing by hand feels revolutionary. Thoughts move slower. They matter more.', {
-    photo_url: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Lucerne, Switzerland',
     likes_count: 478,
     replies_count: 45,
@@ -479,7 +479,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-07T17:26:00Z',
   }),
   m('m-070', 'p-021', 'Tonight: bouillabaisse with white wine and dreams. Tomorrow: feet and horizons. Perfection in backpack form.', {
-    photo_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Avignon, France',
     likes_count: 423,
     replies_count: 38,
@@ -492,7 +492,7 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-07T12:40:00Z',
   }),
   m('m-072', 'p-027', 'Day 28. Wrote in my journal: "The Camino is a permission slip to become yourself."', {
-    photo_url: 'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Viana do Castelo, Portugal',
     likes_count: 501,
     replies_count: 46,
@@ -505,14 +505,14 @@ export const SEED_MOMENTS = [
     created_at: '2026-04-06T17:54:00Z',
   }),
   m('m-074', 'p-005', 'Day 111. People ask when it ends. I don\'t know. Maybe it doesn\'t. Maybe that\'s the point.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Palencia, Spain',
     likes_count: 489,
     replies_count: 49,
     created_at: '2026-04-06T15:31:00Z',
   }),
   m('m-075', 'p-003', 'Sunset over vineyards. Camera loaded. Memory card full. Heart fuller.', {
-    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+    photo_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&fm=webp&q=60',
     location_name: 'Douro Valley, Portugal',
     likes_count: 367,
     replies_count: 29,
