@@ -55,10 +55,6 @@ export default function PassesScreen() {
       <WKHeader title="Your Passes" showBack />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.subtitle}>
-          Your credentials and achievements
-        </Text>
-
         {PASSES.map(pass => (
           <TouchableOpacity
             key={pass.id}
@@ -91,7 +87,7 @@ export default function PassesScreen() {
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={18} color={colors.amber} />
           <Text style={styles.infoText}>
-            Each pass is a record of your contributions to the Wanderkind community.
+            Each pass is an official document from WANDERKIND verifying Your identity, and way accomplishments.
           </Text>
         </View>
       </ScrollView>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Modal, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,17 +7,34 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Moment, Profile } from '../../../src/types/database';
 import { SEED_MOMENTS } from '../../../src/data/seed-moments';
+import { SEED_STORIES } from '../../../src/data/seed-stories';
+import { StoryRing } from '../../../src/components/stories/StoryRing';
+import { StoryViewer } from '../../../src/components/stories/StoryViewer';
+import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 type MomentWithAuthor = Moment & { author?: Profile };
+
+type StoryGroup = {
+  authorId: string;
+  authorName: string;
+  authorAvatar: string | null;
+  stories: typeof SEED_STORIES;
+};
 
 export default function MomentsFeed() {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
 
   const router = useRouter();
+  const { profile } = useAuth();
   const [moments, setMoments] = useState<MomentWithAuthor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Stories state
+  const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
+  const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
 
   const fetchMoments = useCallback(async () => {
     try {
@@ -39,62 +56,148 @@ export default function MomentsFeed() {
     setMoments(SEED_MOMENTS as unknown as MomentWithAuthor[]);
   }, []);
 
-  useEffect(() => { fetchMoments(); }, []);
+  const fetchStories = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stories')
+        .select('*')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        // Group by author
+        const grouped = groupStoriesByAuthor(data as any);
+        setStoryGroups(grouped);
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to fetch stories:', err);
+    }
+
+    // Fallback to seed stories
+    const grouped = groupStoriesByAuthor(SEED_STORIES as any);
+    setStoryGroups(grouped);
+  }, []);
+
+  const groupStoriesByAuthor = (stories: typeof SEED_STORIES): StoryGroup[] => {
+    const map = new Map<string, StoryGroup>();
+    for (const story of stories) {
+      if (!map.has(story.author_id)) {
+        map.set(story.author_id, {
+          authorId: story.author_id,
+          authorName: (story as any).author?.trail_name ?? 'Wanderkind',
+          authorAvatar: (story as any).author?.avatar_url ?? null,
+          stories: [],
+        });
+      }
+      map.get(story.author_id)!.stories.push(story as any);
+    }
+    return Array.from(map.values());
+  };
+
+  useEffect(() => {
+    fetchMoments();
+    fetchStories();
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchMoments();
+    await Promise.all([fetchMoments(), fetchStories()]);
     setRefreshing(false);
   };
 
-  const renderMoment = ({ item }: { item: MomentWithAuthor }) => (
-    <View style={styles.momentCard}>
-      {/* Author row */}
-      <TouchableOpacity
-        style={styles.authorRow}
-        onPress={() => router.push(`/(tabs)/me/profile/${item.author_id}`)}
-      >
-        <View style={styles.avatar}>
-          {item.author?.avatar_url ? (
-            <Image source={{ uri: item.author.avatar_url }} style={styles.avatarImage} />
-          ) : (
-            <Ionicons name="person" size={16} color={colors.ink3} />
-          )}
-        </View>
-        <View style={styles.authorInfo}>
-          <Text style={styles.authorName}>{item.author?.trail_name ?? 'Wanderkind'}</Text>
-          <Text style={styles.momentTime}>{formatTime(item.created_at)}</Text>
-        </View>
-      </TouchableOpacity>
+  // Start a message thread with a moment's author
+  const handleMessageAuthor = useCallback(async (authorId: string) => {
+    if (!user) return;
+    if (authorId === user.id) {
+      // Can't message yourself
+      return;
+    }
+    // Navigate to new message with pre-selected user
+    router.push(`/(tabs)/messages/new?userId=${authorId}`);
+  }, [user, router]);
 
-      {/* Photo */}
-      {item.photo_url && (
-        <Image source={{ uri: item.photo_url }} style={styles.momentPhoto} resizeMode="cover" />
-      )}
+  const renderStoryBar = useCallback(() => {
+    if (storyGroups.length === 0) return null;
 
-      {/* Content */}
-      <Text style={styles.momentContent}>{item.content}</Text>
-
-      {/* Location */}
-      {item.location_name && (
-        <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={12} color={colors.ink3} />
-          <Text style={styles.locationText}>{item.location_name}</Text>
-        </View>
-      )}
-
-      {/* Actions */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.actionBtn} accessibilityLabel={`Like, ${item.likes_count || 0} likes`} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="heart-outline" size={20} color={colors.ink3} />
-          <Text style={styles.actionCount}>{item.likes_count || ''}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} accessibilityLabel={`Comment, ${item.replies_count || 0} replies`} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="chatbubble-outline" size={18} color={colors.ink3} />
-          <Text style={styles.actionCount}>{item.replies_count || ''}</Text>
-        </TouchableOpacity>
+    return (
+      <View style={styles.storyBar}>
+        {/* Your story */}
+        <StoryRing
+          imageUri={profile?.avatar_url}
+          name="Your story"
+          size={64}
+          isAdd
+          onPress={() => router.push('/(tabs)/moments/create-story')}
+        />
+        {/* Other users' stories */}
+        {storyGroups.map(group => (
+          <StoryRing
+            key={group.authorId}
+            imageUri={group.authorAvatar}
+            name={group.authorName}
+            size={64}
+            hasUnseenStories
+            onPress={() => setViewingStory(group)}
+          />
+        ))}
       </View>
-    </View>
+    );
+  }, [storyGroups, profile, router]);
+
+  const renderMoment = useCallback(
+    ({ item }: { item: MomentWithAuthor }) => (
+      <View style={styles.momentCard}>
+        {/* Author row */}
+        <TouchableOpacity
+          style={styles.authorRow}
+          onPress={() => router.push(`/(tabs)/me/profile/${item.author_id}`)}
+        >
+          <View style={styles.avatar}>
+            {item.author?.avatar_url ? (
+              <Image source={{ uri: item.author.avatar_url }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person" size={16} color={colors.ink3} />
+            )}
+          </View>
+          <View style={styles.authorInfo}>
+            <Text style={styles.authorName}>{item.author?.trail_name ?? 'Wanderkind'}</Text>
+            <Text style={styles.momentTime}>{formatTime(item.created_at)}</Text>
+          </View>
+
+          {/* Message button — one-click to message this wanderkind */}
+          {user && item.author_id !== user.id && (
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => handleMessageAuthor(item.author_id)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chatbubble-outline" size={18} color={colors.amber} />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+
+        {/* Photo */}
+        {item.photo_url && (
+          <TouchableOpacity onPress={() => setSelectedImage(item.photo_url)}>
+            <Image source={{ uri: item.photo_url }} style={styles.momentPhoto} resizeMode="cover" />
+          </TouchableOpacity>
+        )}
+
+        {/* Content */}
+        <Text style={styles.momentContent}>{item.content}</Text>
+
+        {/* Location */}
+        {item.location_name && (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={12} color={colors.ink3} />
+            <Text style={styles.locationText}>{item.location_name}</Text>
+          </View>
+        )}
+      </View>
+    ),
+    [user, handleMessageAuthor]
   );
 
   const renderEmpty = () => (
@@ -122,12 +225,17 @@ export default function MomentsFeed() {
         data={moments}
         renderItem={renderMoment}
         keyExtractor={item => item.id}
+        ListHeaderComponent={renderStoryBar}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
         }
         showsVerticalScrollIndicator={false}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS !== 'web'}
+        initialNumToRender={10}
       />
 
       {/* FAB - Create Moment */}
@@ -138,6 +246,37 @@ export default function MomentsFeed() {
       >
         <Ionicons name="add" size={24} color="#FFFFFF" />
       </TouchableOpacity>
+
+      {/* Story Viewer Modal */}
+      {viewingStory && (
+        <StoryViewer
+          stories={viewingStory.stories}
+          authorName={viewingStory.authorName}
+          authorAvatar={viewingStory.authorAvatar}
+          visible={!!viewingStory}
+          onClose={() => setViewingStory(null)}
+        />
+      )}
+
+      {/* Image Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setSelectedImage(null)}
+        >
+          <Image
+            source={{ uri: selectedImage || '' }}
+            style={styles.modalImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -186,8 +325,17 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.ink,
   },
+  // Story bar
+  storyBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+    gap: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
   list: {
-    paddingVertical: 8,
+    paddingVertical: 0,
   },
   momentCard: {
     backgroundColor: colors.surface,
@@ -218,6 +366,15 @@ const styles = StyleSheet.create({
   authorInfo: { flex: 1 },
   authorName: { fontSize: 13, fontWeight: '600', color: colors.ink },
   momentTime: { fontSize: 11, color: colors.ink3, marginTop: 1 },
+  // Message button on each post
+  messageButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   momentPhoto: {
     width: '100%',
     height: 240,
@@ -237,24 +394,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   locationText: { fontSize: 11, color: colors.ink3 },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLt,
-    paddingTop: 10,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 4,
-  },
-  actionCount: { fontSize: 12, color: colors.ink3, fontWeight: '500' },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -276,5 +415,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
   },
 });

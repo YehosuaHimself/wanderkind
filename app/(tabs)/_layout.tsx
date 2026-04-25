@@ -1,10 +1,13 @@
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/lib/theme';
+import { OfflineBanner } from '../../src/components/OfflineBanner';
 
 export default function TabLayout() {
   return (
+    <View style={{ flex: 1 }}>
+    <OfflineBanner />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -12,9 +15,9 @@ export default function TabLayout() {
           backgroundColor: 'rgba(250,246,239,0.95)',
           borderTopWidth: 0.5,
           borderTopColor: colors.amberLine,
-          height: Platform.OS === 'ios' ? 84 : Platform.OS === 'web' ? 56 : 60,
+          height: Platform.OS === 'ios' ? 84 : Platform.OS === 'web' ? 62 : 60,
           paddingTop: 6,
-          paddingBottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 6 : 8,
+          paddingBottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 10 : 8,
         },
         tabBarActiveTintColor: colors.amber,
         tabBarInactiveTintColor: colors.ink3,
@@ -74,5 +77,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }

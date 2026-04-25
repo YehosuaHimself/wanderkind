@@ -118,8 +118,8 @@ export default function Wanderkinder() {
       ) : wanderers.length === 0 ? (
         <WKEmpty
           icon="people-outline"
-          title="No One Nearby"
-          message="You're alone on this stretch of the way. Keep walking!"
+          title="No walkers nearby"
+          message="Check back later — the road is always moving."
         />
       ) : (
         <FlatList

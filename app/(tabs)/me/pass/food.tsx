@@ -80,8 +80,8 @@ export default function FoodPassScreen() {
     }
   };
 
-  const mealsShared = (profile as any)?.meals_shared ?? 0;
-  const donativoCount = (profile as any)?.donativo_contributions ?? 0;
+  const mealsShared = profile?.meals_shared ?? 0;
+  const donativoCount = profile?.donativo_contributions ?? 0;
   const initials = profile?.trail_name
     ? profile.trail_name.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
     : 'WK';

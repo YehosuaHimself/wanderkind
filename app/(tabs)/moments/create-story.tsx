@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Image,
   TextInput,
   ScrollView,
@@ -12,28 +11,29 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 let FileSystem: any = null;
 if (Platform.OS !== 'web') {
   try { FileSystem = require('expo-file-system'); } catch {}
 }
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+
+import { colors, typography, spacing } from '../../../src/lib/theme';
 import { showAlert } from '../../../src/lib/alert';
 import { toast } from '../../../src/lib/toast';
 import { sanitizeText, enforceMaxLength, validatePhoto, canPerformAction, LIMITS } from '../../../src/lib/validate';
+import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
-export default function CreateMoment() {
+export default function CreateStory() {
   useAuthGuard();
 
   const router = useRouter();
   const { user } = useAuth();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [content, setContent] = useState('');
+  const [caption, setCaption] = useState('');
   const [locationName, setLocationName] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -41,19 +41,7 @@ export default function CreateMoment() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setPhotoUrl(result.assets[0].uri);
-    }
-  };
-
-  const takePhoto = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [1, 1],
       quality: 0.8,
     });
 
@@ -127,7 +115,7 @@ export default function CreateMoment() {
   const uploadPhoto = async (uri: string): Promise<string | null> => {
     if (!user) return null;
     try {
-      const filename = `moment-${Date.now()}.jpg`;
+      const filename = `story-${Date.now()}.jpg`;
       const filePath = `${user.id}/${filename}`;
 
       let uploadBody: any;
@@ -152,7 +140,7 @@ export default function CreateMoment() {
       }
 
       const { data, error } = await supabase.storage
-        .from('moments')
+        .from('stories')
         .upload(filePath, uploadBody, {
           contentType: 'image/jpeg',
           upsert: false,
@@ -161,7 +149,7 @@ export default function CreateMoment() {
       if (error) throw error;
 
       const { data: publicData } = supabase.storage
-        .from('moments')
+        .from('stories')
         .getPublicUrl(filePath);
 
       return publicData?.publicUrl || null;
@@ -175,29 +163,39 @@ export default function CreateMoment() {
     if (!user) return;
     try {
       await supabase.storage
-        .from('moments')
+        .from('stories')
         .remove([`${user.id}/${filename}`]);
     } catch (err) {
       console.error('Failed to clean up uploaded photo:', err);
     }
   };
 
-  const handlePost = async () => {
-    if (!user || !content.trim()) {
-      showAlert('Missing content', 'Please write something for your moment.');
+  const calculateExpiresAt = (): string => {
+    const now = new Date();
+    // Add 11 hours and 11 minutes
+    now.setHours(now.getHours() + 11);
+    now.setMinutes(now.getMinutes() + 11);
+    return now.toISOString();
+  };
+
+  const handleShareStory = async () => {
+    if (!user || !photoUrl) {
+      showAlert('Missing photo', 'Please select a photo for your story.');
       return;
     }
 
-    // Validate caption
-    const sanitized = sanitizeText(content);
-    if (!enforceMaxLength(sanitized, LIMITS.messageText)) {
-      toast.error(`Moment text cannot exceed ${LIMITS.messageText} characters`);
-      return;
+    // Validate caption if provided
+    if (caption.trim()) {
+      const sanitized = sanitizeText(caption);
+      if (!enforceMaxLength(sanitized, LIMITS.messageText)) {
+        toast.error(`Story caption cannot exceed ${LIMITS.messageText} characters`);
+        return;
+      }
     }
 
     // Prevent double-submit
-    if (!canPerformAction('create-moment')) {
-      toast.error('Please wait before posting another moment');
+    if (!canPerformAction('create-story')) {
+      toast.error('Please wait before posting another story');
       return;
     }
 
@@ -206,40 +204,33 @@ export default function CreateMoment() {
     let uploadedFileName: string | null = null;
 
     try {
-      if (photoUrl) {
-        // Validate photo using validation module
-        const photoValidation = validatePhoto({ uri: photoUrl });
-        if (!photoValidation.valid) {
-          toast.error(photoValidation.error || 'Invalid photo');
-          setLoading(false);
-          return;
-        }
-
-        // Validate photo file size/format
-        const isValid = await validatePhotoFile(photoUrl);
-        if (!isValid) {
-          setLoading(false);
-          return;
-        }
-
-        uploadedPhotoUrl = await uploadPhoto(photoUrl);
-        if (!uploadedPhotoUrl) {
-          toast.error('Failed to upload the photo.');
-          setLoading(false);
-          return;
-        }
-
-        // Extract filename from photoUrl for cleanup if needed
-        uploadedFileName = `moment-${Date.now()}.jpg`;
+      // Validate photo file size/format
+      const isValid = await validatePhotoFile(photoUrl);
+      if (!isValid) {
+        setLoading(false);
+        return;
       }
 
-      const { error } = await supabase.from('moments').insert({
+      uploadedPhotoUrl = await uploadPhoto(photoUrl);
+      if (!uploadedPhotoUrl) {
+        toast.error('Failed to upload the photo.');
+        setLoading(false);
+        return;
+      }
+
+      // Extract filename from photoUrl for cleanup if needed
+      uploadedFileName = `story-${Date.now()}.jpg`;
+
+      const createdAt = new Date().toISOString();
+      const expiresAt = calculateExpiresAt();
+
+      const { error } = await supabase.from('stories').insert({
         author_id: user.id,
-        content: sanitized,
         photo_url: uploadedPhotoUrl,
+        caption: caption.trim() || null,
         location_name: locationName.trim() || null,
-        lat: null,
-        lng: null,
+        created_at: createdAt,
+        expires_at: expiresAt,
       } as any);
 
       if (error) {
@@ -252,8 +243,8 @@ export default function CreateMoment() {
 
       router.back();
     } catch (err) {
-      console.error('Post failed:', err);
-      showAlert('Error', 'Failed to post your moment. Please try again.');
+      console.error('Story share failed:', err);
+      showAlert('Error', 'Failed to share your story. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -261,106 +252,86 @@ export default function CreateMoment() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color={colors.ink} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Moment</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <WKHeader title="New Story" showBack />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Photo Section */}
+        {/* Photo Section - Large Preview */}
         {photoUrl ? (
           <View style={styles.photoContainer}>
             <Image source={{ uri: photoUrl }} style={styles.selectedPhoto} />
-            <TouchableOpacity
-              style={styles.removePhotoBtn}
-              onPress={() => setPhotoUrl(null)}
-            >
-              <Ionicons name="close" size={20} color={colors.surface} />
-            </TouchableOpacity>
+            <WKButton
+              title="Change Photo"
+              onPress={pickPhoto}
+              variant="secondary"
+              size="sm"
+              style={styles.changePhotoBtn}
+            />
           </View>
         ) : (
           <View style={styles.photoPlaceholder}>
-            <Ionicons name="image-outline" size={40} color={colors.amber} />
-            <Text style={styles.photoText}>Capture or choose a photo</Text>
-            <View style={styles.photoButtonRow}>
-              <TouchableOpacity
-                style={styles.photoButton}
-                onPress={takePhoto}
-              >
-                <Ionicons name="camera-outline" size={18} color={colors.amber} />
-                <Text style={styles.photoButtonText}>Camera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.photoButton}
-                onPress={pickPhoto}
-              >
-                <Ionicons name="image-outline" size={18} color={colors.amber} />
-                <Text style={styles.photoButtonText}>Library</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.placeholderText}>Select a photo to start your story</Text>
+            <WKButton
+              title="Pick Photo"
+              onPress={pickPhoto}
+              variant="primary"
+              size="md"
+              style={styles.pickPhotoBtn}
+            />
           </View>
         )}
 
-        {/* Text Input */}
+        {/* Caption Section */}
         <View style={styles.inputSection}>
+          <Text style={styles.sectionLabel}>Caption (optional)</Text>
           <TextInput
-            style={styles.contentInput}
-            placeholder="Share your moment from the road..."
+            style={styles.captionInput}
+            placeholder="Add a caption to your story..."
             placeholderTextColor={colors.ink3}
             multiline
-            numberOfLines={4}
-            value={content}
-            onChangeText={setContent}
-            maxLength={2000}
+            numberOfLines={3}
+            value={caption}
+            onChangeText={setCaption}
+            maxLength={200}
+            editable={!loading}
           />
           <Text style={styles.charCount}>
-            {content.length} / 2000
+            {caption.length} / 200
           </Text>
         </View>
 
-        {/* Location */}
+        {/* Location Section */}
         <View style={styles.inputSection}>
-          <View style={styles.locationInputLabel}>
-            <Ionicons name="location" size={16} color={colors.amber} />
-            <Text style={styles.label}>Location (optional)</Text>
-          </View>
+          <Text style={styles.sectionLabel}>Location (optional)</Text>
           <TextInput
             style={styles.locationInput}
-            placeholder="Where was this moment?"
+            placeholder="Where are you?"
             placeholderTextColor={colors.ink3}
             value={locationName}
             onChangeText={setLocationName}
             maxLength={80}
+            editable={!loading}
           />
+        </View>
+
+        {/* Story Duration Info */}
+        <View style={styles.infoSection}>
+          <Text style={styles.infoText}>
+            Your story will be visible for 11 hours and 11 minutes.
+          </Text>
         </View>
       </ScrollView>
 
-      {/* Footer Buttons */}
+      {/* Footer Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.cancelBtn}
-          onPress={() => router.back()}
-          disabled={loading}
-        >
-          <Text style={styles.cancelBtnText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.postBtn, !content.trim() && styles.postBtnDisabled]}
-          onPress={handlePost}
-          disabled={loading || !content.trim()}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.surface} />
-          ) : (
-            <>
-              <Ionicons name="paper-plane" size={16} color={colors.surface} />
-              <Text style={styles.postBtnText}>Post</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <WKButton
+          title="Share Story"
+          onPress={handleShareStory}
+          variant="primary"
+          size="lg"
+          fullWidth
+          disabled={!photoUrl}
+          loading={loading}
+        />
       </View>
     </SafeAreaView>
   );
@@ -368,120 +339,108 @@ export default function CreateMoment() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  headerTitle: { ...typography.h3, color: colors.ink },
-  headerSpacer: { width: 28 },
   content: { flex: 1, paddingHorizontal: spacing.lg },
+
+  // Photo Section
   photoContainer: {
     marginTop: spacing.lg,
     borderRadius: 12,
     overflow: 'hidden',
-    position: 'relative',
+    backgroundColor: colors.surfaceAlt,
   },
   selectedPhoto: {
     width: '100%',
-    height: 240,
+    height: 320,
     backgroundColor: colors.surfaceAlt,
   },
-  removePhotoBtn: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   photoPlaceholder: {
-    marginTop: spacing.lg,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.amberLine,
-    borderRadius: 12,
+    marginTop: spacing.xl,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    minHeight: 240,
   },
-  photoText: { ...typography.bodySm, color: colors.ink2, marginTop: 8, marginBottom: 12 },
-  photoButtonRow: { flexDirection: 'row', gap: spacing.lg, marginTop: 8 },
-  photoButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: colors.amberBg,
-    borderRadius: 8,
+  placeholderText: {
+    ...typography.body,
+    color: colors.ink2,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
-  photoButtonText: { ...typography.bodySm, color: colors.amber, fontWeight: '500' },
-  inputSection: { marginTop: spacing.lg },
-  contentInput: {
+  pickPhotoBtn: {
+    marginTop: spacing.md,
+  },
+  changePhotoBtn: {
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
+  },
+
+  // Input Sections
+  inputSection: {
+    marginTop: spacing.lg,
+  },
+  sectionLabel: {
+    ...typography.bodySm,
+    color: colors.ink,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
+  captionInput: {
     backgroundColor: colors.surface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.borderLt,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: 14,
     color: colors.ink,
-    minHeight: 100,
+    minHeight: 80,
   },
-  charCount: { ...typography.caption, color: colors.ink3, marginTop: 6, textAlign: 'right' },
-  locationInputLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  label: { ...typography.bodySm, color: colors.ink, fontWeight: '600' },
   locationInput: {
     backgroundColor: colors.surface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.borderLt,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     fontSize: 14,
     color: colors.ink,
+    minHeight: 44,
   },
+  charCount: {
+    ...typography.caption,
+    color: colors.ink3,
+    marginTop: 6,
+    textAlign: 'right',
+  },
+
+  // Info Section
+  infoSection: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.amberBg,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.amber,
+  },
+  infoText: {
+    ...typography.bodySm,
+    color: colors.ink,
+    textAlign: 'center',
+  },
+
+  // Footer
   footer: {
-    flexDirection: 'row',
-    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     paddingBottom: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: colors.borderLt,
   },
-  cancelBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  cancelBtnText: { fontSize: 15, fontWeight: '600', color: colors.ink },
-  postBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.amber,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  postBtnDisabled: { opacity: 0.5 },
-  postBtnText: { fontSize: 15, fontWeight: '600', color: colors.surface },
 });

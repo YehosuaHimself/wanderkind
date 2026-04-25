@@ -81,8 +81,8 @@ export default function WaterPassScreen() {
     }
   };
 
-  const waterSources = (profile as any)?.water_sources_shared ?? 0;
-  const fountainsMarked = (profile as any)?.fountains_marked ?? 0;
+  const waterSources = profile?.water_sources_shared ?? 0;
+  const fountainsMarked = profile?.fountains_marked ?? 0;
   const initials = profile?.trail_name
     ? profile.trail_name.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
     : 'WK';

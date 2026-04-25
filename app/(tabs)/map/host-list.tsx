@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -49,53 +50,56 @@ export default function HostList() {
 
   const filteredHosts = hosts.filter(h => filter === 'all' || h.host_type === filter);
 
-  const renderHostCard = ({ item: host }: { item: Host }) => {
-    const config = hostTypeConfig[host.host_type];
-    const distance = host.route_km ? `${host.route_km} km` : 'Nearby';
+  const renderHostCard = useCallback(
+    ({ item: host }: { item: Host }) => {
+      const config = hostTypeConfig[host.host_type];
+      const distance = host.route_km ? `${host.route_km} km` : 'Nearby';
 
-    return (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push(`/(tabs)/map/host/${host.id}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.hostInfo}>
-            <Text style={styles.hostName} numberOfLines={1}>{host.name}</Text>
-            <Text style={styles.location} numberOfLines={1}>
-              <Ionicons name="location" size={12} color={colors.ink3} />
-              {' '}{host.address || 'Location'}
-            </Text>
-          </View>
-
-          <View style={styles.rightSection}>
-            <View style={[styles.badge, { backgroundColor: config.bg }]}>
-              <Text style={[styles.badgeText, { color: config.color }]}>
-                {config.label}
+      return (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push(`/(tabs)/map/host/${host.id}`)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.cardContent}>
+            <View style={styles.hostInfo}>
+              <Text style={styles.hostName} numberOfLines={1}>{host.name}</Text>
+              <Text style={styles.location} numberOfLines={1}>
+                <Ionicons name="location" size={12} color={colors.ink3} />
+                {' '}{host.address || 'Location'}
               </Text>
             </View>
-            <Text style={styles.distance}>{distance}</Text>
-          </View>
-        </View>
 
-        <View style={styles.cardFooter}>
-          <View style={styles.ratingRow}>
-            {host.rating && (
-              <>
-                <Ionicons name="star" size={14} color={colors.gold} />
-                <Text style={styles.rating}>{host.rating.toFixed(1)}</Text>
-              </>
-            )}
+            <View style={styles.rightSection}>
+              <View style={[styles.badge, { backgroundColor: config.bg }]}>
+                <Text style={[styles.badgeText, { color: config.color }]}>
+                  {config.label}
+                </Text>
+              </View>
+              <Text style={styles.distance}>{distance}</Text>
+            </View>
           </View>
-          <View style={styles.capacityRow}>
-            <Ionicons name="home" size={14} color={colors.amber} />
-            <Text style={styles.capacity}>{host.capacity} bed{host.capacity !== 1 ? 's' : ''}</Text>
+
+          <View style={styles.cardFooter}>
+            <View style={styles.ratingRow}>
+              {host.rating && (
+                <>
+                  <Ionicons name="star" size={14} color={colors.gold} />
+                  <Text style={styles.rating}>{host.rating.toFixed(1)}</Text>
+                </>
+              )}
+            </View>
+            <View style={styles.capacityRow}>
+              <Ionicons name="home" size={14} color={colors.amber} />
+              <Text style={styles.capacity}>{host.capacity} bed{host.capacity !== 1 ? 's' : ''}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-        </View>
-      </TouchableOpacity>
-    );
-  };
+        </TouchableOpacity>
+      );
+    },
+    [router]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -132,9 +136,9 @@ export default function HostList() {
         </View>
       ) : filteredHosts.length === 0 ? (
         <WKEmpty
-          icon="bed-outline"
-          title="No Hosts Found"
-          message={`No ${filter !== 'all' ? hostTypeConfig[filter as HostType].label + ' ' : ''}hosts available right now`}
+          icon="home-outline"
+          title="No hosts found"
+          message="Try adjusting your search or exploring a different area."
         />
       ) : (
         <FlatList
@@ -144,6 +148,10 @@ export default function HostList() {
           contentContainerStyle={styles.listContent}
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS !== 'web'}
+          initialNumToRender={10}
         />
       )}
     </SafeAreaView>

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
+import { toast } from '../../../src/lib/toast';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
@@ -68,20 +69,31 @@ export default function WanderkindPassScreen() {
   useEffect(() => {
     const fetchRoute = async () => {
       if (!profile?.id) return;
-      const { data: stamps } = await supabase
-        .from('stamps')
-        .select('route_id')
-        .eq('walker_id', profile.id)
-        .not('route_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      if (stamps?.[0]?.route_id) {
-        const { data: route } = await supabase
+      try {
+        const { data: stamps, error: stampsError } = await supabase
+          .from('stamps')
+          .select('route_id')
+          .eq('walker_id', profile.id)
+          .not('route_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (stampsError) throw stampsError;
+
+        const routeId = stamps?.[0]?.route_id;
+        if (!routeId) return;
+
+        const { data: route, error: routeError } = await supabase
           .from('routes')
           .select('name')
-          .eq('id', stamps[0].route_id)
+          .eq('id', routeId)
           .single();
+
+        if (routeError && routeError.code !== 'PGRST116') throw routeError;
         if (route) setActiveRoute(route.name);
+      } catch (err) {
+        console.error('Failed to fetch active route:', err);
+        toast.error('Failed to load route');
       }
     };
     fetchRoute();

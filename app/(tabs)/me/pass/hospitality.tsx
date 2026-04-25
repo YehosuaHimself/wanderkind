@@ -79,9 +79,9 @@ export default function HospitalityPassScreen() {
     }
   };
 
-  const nightsHosted = (profile as any)?.nights_hosted ?? 0;
-  const guestsWelcomed = (profile as any)?.guests_count ?? 0;
-  const hostRating = (profile as any)?.hosting_rating ?? 0;
+  const nightsHosted = profile?.nights_hosted ?? 0;
+  const guestsWelcomed = profile?.guests_count ?? 0;
+  const hostRating = profile?.hosting_rating ?? 0;
   const initials = profile?.trail_name
     ? profile.trail_name.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
     : 'WK';

@@ -13,10 +13,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { toast } from '../../../src/lib/toast';
+import { sanitizeText, isEmpty, enforceMaxLength, canPerformAction, LIMITS } from '../../../src/lib/validate';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Message, Profile, Thread } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 type MessageWithAuthor = Message & { sender?: Profile };
 
@@ -32,6 +35,7 @@ export default function ChatThread() {
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isSeedProfile, setIsSeedProfile] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -40,6 +44,23 @@ export default function ChatThread() {
 
   const fetchThread = useCallback(async () => {
     try {
+      // Check if this is a seed profile (starts with 'p-')
+      if (typeof threadId === 'string' && threadId.startsWith('p-')) {
+        setIsSeedProfile(true);
+        const seedProfile = SEED_PROFILES.find(p => p.id === threadId);
+        if (seedProfile) {
+          setOtherUser({
+            id: seedProfile.id,
+            trail_name: seedProfile.trail_name,
+            avatar_url: seedProfile.avatar_url,
+            tier: seedProfile.tier,
+          } as Profile);
+        }
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
+
       const { data: threadData } = await supabase
         .from('threads')
         .select('*')
@@ -50,7 +71,7 @@ export default function ChatThread() {
         setThread(threadData);
 
         // Get other participant
-        const otherId = threadData.participant_ids.find((id: string) => id !== user?.id);
+        const otherId = threadData.participant_ids?.find((id: string) => id !== user?.id);
         if (otherId) {
           const { data: profile } = await supabase
             .from('profiles')
@@ -79,6 +100,7 @@ export default function ChatThread() {
       }
     } catch (err) {
       console.error('Failed to fetch thread:', err);
+      toast.error('Could not load conversation');
     } finally {
       setLoading(false);
     }
@@ -87,28 +109,63 @@ export default function ChatThread() {
   const handleSend = async () => {
     if (!user || !messageText.trim()) return;
 
+    // Validate message text
+    if (isEmpty(messageText)) {
+      toast.error('Please enter a message');
+      return;
+    }
+
+    const sanitized = sanitizeText(messageText);
+    if (!enforceMaxLength(sanitized, LIMITS.messageText)) {
+      toast.error(`Message cannot exceed ${LIMITS.messageText} characters`);
+      return;
+    }
+
+    // Prevent double-send with 500ms cooldown
+    if (!canPerformAction('send-message', 500)) {
+      return; // Silently ignore if too fast
+    }
+
     setSending(true);
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          thread_id: threadId,
+      if (isSeedProfile) {
+        // For seed profiles, just add message to local state
+        const localMessage: MessageWithAuthor = {
+          id: Date.now().toString(),
+          thread_id: threadId as string,
           sender_id: user.id,
-          content: messageText.trim(),
+          content: sanitized,
           message_type: 'text',
-        })
-        .select('*, sender:profiles!messages_sender_id_fkey(*)')
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setMessages([...messages, data as MessageWithAuthor]);
+          created_at: new Date().toISOString(),
+          read_at: null,
+          sender: user as Profile,
+        };
+        setMessages([...messages, localMessage]);
         setMessageText('');
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      } else {
+        const { data, error } = await supabase
+          .from('messages')
+          .insert({
+            thread_id: threadId,
+            sender_id: user.id,
+            content: sanitized,
+            message_type: 'text',
+          })
+          .select('*, sender:profiles!messages_sender_id_fkey(*)')
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setMessages([...messages, data as MessageWithAuthor]);
+          setMessageText('');
+          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        }
       }
     } catch (err) {
       console.error('Send failed:', err);
+      toast.error('Failed to send message');
     } finally {
       setSending(false);
     }

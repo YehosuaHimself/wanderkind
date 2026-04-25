@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
+import { toast } from '../../../../src/lib/toast';
 import { Stamp, Profile } from '../../../../src/types/database';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
@@ -31,13 +32,23 @@ export default function StampDetail() {
         .eq('id', id)
         .single();
 
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Stamp not found
+          toast.error('Stamp not found');
+          router.back();
+          return;
+        }
+        throw error;
+      }
+
       if (data) {
         setStamp(data as StampWithHost);
       }
-
-      if (error) throw error;
     } catch (err) {
       console.error('Failed to fetch stamp:', err);
+      toast.error('Failed to load stamp');
+      router.back();
     } finally {
       setLoading(false);
     }

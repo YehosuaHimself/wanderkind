@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
+import { toast } from '../../../src/lib/toast';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
@@ -42,6 +43,7 @@ export default function GaestebuchScreen() {
       setEntries(data || []);
     } catch (err) {
       console.error('Error fetching entries:', err);
+      toast.error('Could not load guest entries');
     } finally {
       setLoading(false);
     }
@@ -88,7 +90,7 @@ export default function GaestebuchScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <WKHeader title="Gaestebuch" showBack />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color={colors.amber} />
         </View>
       </SafeAreaView>
     );
@@ -101,10 +103,10 @@ export default function GaestebuchScreen() {
       {entries.length === 0 ? (
         <ScrollView style={styles.content} contentContainerStyle={styles.emptyContent}>
           <View style={styles.emptyContainer}>
-            <Ionicons name="book" size={48} color={colors.ink3} />
-            <Text style={styles.emptyText}>No entries yet</Text>
+            <Ionicons name="book-outline" size={48} color={colors.ink3} />
+            <Text style={styles.emptyText}>No guest entries yet</Text>
             <Text style={styles.emptySubtext}>
-              Entries from guests will appear here
+              Your guestbook will fill up as walkers visit.
             </Text>
           </View>
         </ScrollView>
@@ -134,10 +136,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.ink3,
   },
   emptyContent: {
     flex: 1,

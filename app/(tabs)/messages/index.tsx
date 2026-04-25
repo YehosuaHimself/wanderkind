@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,32 +61,35 @@ export default function MessagesScreen() {
     setRefreshing(false);
   };
 
-  const renderThread = ({ item }: { item: Thread }) => (
-    <TouchableOpacity
-      style={styles.threadRow}
-      onPress={() => router.push(`/(tabs)/messages/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.avatar}>
-        {item.other_user.avatar_url ? (
-          <Image source={{ uri: item.other_user.avatar_url }} style={styles.avatarImage} />
-        ) : (
-          <Ionicons name="person" size={18} color={colors.ink3} />
+  const renderThread = useCallback(
+    ({ item }: { item: Thread }) => (
+      <TouchableOpacity
+        style={styles.threadRow}
+        onPress={() => router.push(`/(tabs)/messages/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.avatar}>
+          {item.other_user.avatar_url ? (
+            <Image source={{ uri: item.other_user.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <Ionicons name="person" size={18} color={colors.ink3} />
+          )}
+        </View>
+        <View style={styles.threadInfo}>
+          <View style={styles.threadHeader}>
+            <Text style={styles.threadName} numberOfLines={1}>{item.other_user.trail_name}</Text>
+            <Text style={styles.threadTime}>{formatTime(item.last_message_at)}</Text>
+          </View>
+          <Text style={styles.threadPreview} numberOfLines={1}>{item.last_message}</Text>
+        </View>
+        {item.unread_count > 0 && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadText}>{item.unread_count}</Text>
+          </View>
         )}
-      </View>
-      <View style={styles.threadInfo}>
-        <View style={styles.threadHeader}>
-          <Text style={styles.threadName} numberOfLines={1}>{item.other_user.trail_name}</Text>
-          <Text style={styles.threadTime}>{formatTime(item.last_message_at)}</Text>
-        </View>
-        <Text style={styles.threadPreview} numberOfLines={1}>{item.last_message}</Text>
-      </View>
-      {item.unread_count > 0 && (
-        <View style={styles.unreadBadge}>
-          <Text style={styles.unreadText}>{item.unread_count}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
+      </TouchableOpacity>
+    ),
+    [router]
   );
 
   const renderEmpty = () => (
@@ -122,6 +125,10 @@ export default function MessagesScreen() {
         }
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS !== 'web'}
+        initialNumToRender={10}
       />
     </SafeAreaView>
   );

@@ -10,13 +10,7 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-
-interface EmergencyContact {
-  id: number;
-  name: string;
-  phone: string;
-  relationship: string;
-}
+import type { EmergencyContact } from '../../../src/types/database';
 
 export default function EmergencyContactsScreen() {
   useAuthGuard();
@@ -42,7 +36,7 @@ export default function EmergencyContactsScreen() {
 
   const addContact = () => {
     if (contacts.length < 3) {
-      setContacts([...contacts, { id: Date.now(), name: '', phone: '', relationship: '' }]);
+      setContacts([...contacts, { name: '', phone: '', relationship: '' }]);
     }
   };
 
@@ -90,7 +84,7 @@ export default function EmergencyContactsScreen() {
         </Text>
 
         {contacts.map((contact, idx) => (
-          <WKCard key={contact.id} style={styles.contactCard}>
+          <WKCard key={idx} style={styles.contactCard}>
             <View style={styles.contactHeader}>
               <Text style={styles.contactNumber}>Contact {idx + 1}</Text>
               {contacts.length > 1 && (

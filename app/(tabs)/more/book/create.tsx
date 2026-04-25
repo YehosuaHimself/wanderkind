@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { showAlert } from '../../../../src/lib/alert';
+import { toast } from '../../../../src/lib/toast';
+import { sanitizeText, isEmpty, enforceMaxLength, canPerformAction, LIMITS } from '../../../../src/lib/validate';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
@@ -72,6 +74,30 @@ export default function CreateBookEntry() {
       return;
     }
 
+    // Validate title
+    if (isEmpty(title)) {
+      toast.error('Please enter a title');
+      return;
+    }
+    const sanitizedTitle = sanitizeText(title);
+    if (!enforceMaxLength(sanitizedTitle, LIMITS.blogTitle)) {
+      toast.error(`Title cannot exceed ${LIMITS.blogTitle} characters`);
+      return;
+    }
+
+    // Validate content
+    const sanitizedContent = sanitizeText(content);
+    if (!enforceMaxLength(sanitizedContent, LIMITS.blogContent)) {
+      toast.error(`Content cannot exceed ${LIMITS.blogContent} characters`);
+      return;
+    }
+
+    // Prevent double-submit
+    if (!canPerformAction('save-blog')) {
+      toast.error('Please wait before saving another entry');
+      return;
+    }
+
     setSaving(true);
     try {
       let uploadedCoverUrl = null;
@@ -94,12 +120,12 @@ export default function CreateBookEntry() {
         uploadedCoverUrl = publicData?.publicUrl || null;
       }
 
-      const wordCount = content.trim().split(/\s+/).length;
+      const wordCount = sanitizedContent.trim().split(/\s+/).length;
 
       const { error } = await supabase.from('blog_posts').insert({
         author_id: user.id,
-        title: title.trim(),
-        content: content.trim(),
+        title: sanitizedTitle,
+        content: sanitizedContent,
         cover_image: uploadedCoverUrl,
         location_name: location.trim() || null,
         is_published: true,

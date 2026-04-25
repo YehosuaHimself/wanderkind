@@ -1,13 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, Switch } from 'react-native';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
+  RefreshControl, Switch, FlatList, Dimensions, Platform, ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, shadows, tierColors } from '../../../src/lib/theme';
+import { toast } from '../../../src/lib/toast';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { showAlert } from '../../../src/lib/alert';
+import { SEED_MOMENTS } from '../../../src/data/seed-moments';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GALLERY_SIZE = (SCREEN_WIDTH - 48 - 36) / 7; // 7 items with 6 gaps of 6px
+
+type ContentTab = 'posts' | 'stamps' | 'journal';
 
 export default function MeScreen() {
   useAuthGuard();
@@ -16,65 +27,140 @@ export default function MeScreen() {
   const { profile, user, fetchProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isWalking, setIsWalking] = useState(false);
-  const [isSnoozed, setIsSnoozed] = useState(false);
-  const [snoozeUntil, setSnoozeUntil] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ContentTab>('posts');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [moments, setMoments] = useState<any[]>([]);
+  const [stamps, setStamps] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile) {
       setIsWalking(profile.is_walking ?? false);
-      // Check if hosting is snoozed
-      const snoozedUntil = (profile as any).snoozed_until;
-      if (snoozedUntil && new Date(snoozedUntil) > new Date()) {
-        setIsSnoozed(true);
-        setSnoozeUntil(snoozedUntil);
-      } else {
-        setIsSnoozed(false);
-        setSnoozeUntil(null);
-      }
     }
   }, [profile]);
+
+  useEffect(() => {
+    fetchContent();
+  }, [user?.id]);
+
+  const fetchContent = async () => {
+    if (!user) return;
+    try {
+      // Fetch user's moments
+      const { data: momentsData } = await supabase
+        .from('moments')
+        .select('*')
+        .eq('author_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setMoments(momentsData || []);
+
+      // Fetch user's stamps
+      const { data: stampsData } = await supabase
+        .from('stamps')
+        .select('*')
+        .eq('walker_id', user.id)
+        .order('date', { ascending: false })
+        .limit(20);
+      setStamps(stampsData || []);
+    } catch (err) {
+      console.error('Failed to fetch content:', err);
+      toast.error('Could not load your content');
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchProfile();
+    await fetchContent();
     setRefreshing(false);
   };
 
   const toggleWalking = async (value: boolean) => {
-    const previousValue = isWalking;
+    const prev = isWalking;
     setIsWalking(value);
     if (user) {
-      const { error } = await supabase.from('profiles').update({ is_walking: value }).eq('id', user.id);
-      if (error) {
-        setIsWalking(previousValue);
-        showAlert('Error', error.message);
-      }
+      const { error } = await supabase.from('profiles').update({ is_walking: value } as any).eq('id', user.id);
+      if (error) { setIsWalking(prev); showAlert('Error', error.message); }
     }
   };
 
-  const snoozeHosting = async () => {
-    if (isSnoozed) {
-      // Cancel snooze — you're hosting again
-      setIsSnoozed(false);
-      setSnoozeUntil(null);
-      if (user) {
-        await supabase.from('profiles').update({ is_available: true, snoozed_until: null }).eq('id', user.id);
+  // === PHOTO UPLOAD HANDLERS ===
+  const pickAndUploadAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0] || !user) return;
+
+      setUploadingAvatar(true);
+      let blob;
+      try {
+        const response = await fetch(result.assets[0].uri);
+        blob = await response.blob();
+      } catch (err) {
+        console.error('Failed to fetch photo:', err);
+        throw err;
       }
-      showAlert('Welcome back!', 'You are hosting again.');
-    } else {
-      // Snooze for 24 hours
-      const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      setIsSnoozed(true);
-      setSnoozeUntil(until);
-      if (user) {
-        await supabase.from('profiles').update({ is_available: false, snoozed_until: until }).eq('id', user.id);
-      }
-      showAlert('Hosting snoozed', 'You won\'t appear as a host for the next 24 hours.');
+      const filename = `avatar_${user.id}_${Date.now()}.jpg`;
+      const file = Platform.OS === 'web'
+        ? new File([blob], filename, { type: 'image/jpeg' })
+        : blob;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage.from('profiles').getPublicUrl(filename);
+      await supabase.from('profiles').update({ avatar_url: publicData.publicUrl } as any).eq('id', user.id);
+      await fetchProfile();
+    } catch (err) {
+      showAlert('Upload failed', err instanceof Error ? err.message : 'Could not upload photo');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const pickAndUploadCover = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0] || !user) return;
+
+      setUploadingCover(true);
+      const response = await fetch(result.assets[0].uri);
+      const blob = await response.blob();
+      const filename = `cover_${user.id}_${Date.now()}.jpg`;
+      const file = Platform.OS === 'web'
+        ? new File([blob], filename, { type: 'image/jpeg' })
+        : blob;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage.from('profiles').getPublicUrl(filename);
+      await supabase.from('profiles').update({ cover_url: publicData.publicUrl } as any).eq('id', user.id);
+      await fetchProfile();
+    } catch (err) {
+      showAlert('Upload failed', err instanceof Error ? err.message : 'Could not upload photo');
+    } finally {
+      setUploadingCover(false);
     }
   };
 
   const tierColor = tierColors[profile?.tier ?? 'wanderkind'] ?? colors.ink3;
-  const isQuietMode = (profile as any)?.quiet_mode ?? false;
+  const isQuietMode = profile?.quiet_mode ?? false;
+  const galleryPhotos: string[] = profile?.gallery_urls || profile?.gallery || [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -84,77 +170,108 @@ export default function MeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
         }
       >
-        {/* Cover Image */}
+        {/* ===== COVER PHOTO ===== */}
         <TouchableOpacity
           style={styles.coverContainer}
-          onPress={() => router.push('/(tabs)/me/edit-cover' as any)}
-          activeOpacity={0.9}
+          onPress={pickAndUploadCover}
+          activeOpacity={0.85}
         >
           {profile?.cover_url ? (
             <Image source={{ uri: profile.cover_url }} style={styles.coverImage} />
           ) : (
             <View style={styles.coverPlaceholder}>
-              <Ionicons name="image-outline" size={24} color={colors.ink3} />
-              <Text style={styles.coverPlaceholderText}>CHANGE COVER</Text>
+              <Ionicons name="camera-outline" size={20} color={colors.ink3} />
+              <Text style={styles.coverPlaceholderText}>ADD COVER</Text>
+            </View>
+          )}
+          {uploadingCover && (
+            <View style={styles.uploadOverlay}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          )}
+          {/* Camera icon overlay */}
+          {profile?.cover_url && (
+            <View style={styles.coverEditBadge}>
+              <Ionicons name="camera" size={14} color="#fff" />
             </View>
           )}
         </TouchableOpacity>
 
-        {/* Avatar + Name */}
-        <View style={styles.profileSection}>
-          <TouchableOpacity
-            style={styles.avatarContainer}
-            onPress={() => router.push('/(tabs)/me/edit-profile' as any)}
-          >
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={32} color={colors.ink3} />
+        {/* ===== AVATAR + QR + INFO ===== */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarQrRow}>
+            {/* Avatar */}
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={pickAndUploadAvatar}
+              activeOpacity={0.85}
+            >
+              <View style={styles.avatarBorder}>
+                {profile?.avatar_url ? (
+                  <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={36} color={colors.ink3} />
+                  </View>
+                )}
+              </View>
+              <View style={styles.avatarCameraBadge}>
+                {uploadingAvatar ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="camera" size={12} color="#fff" />
+                )}
+              </View>
+              {/* Walking W badge */}
+              {isWalking && (
+                <View style={styles.walkingBadge}>
+                  <Text style={styles.walkingBadgeText}>W</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Mini QR Code — always visible and scannable */}
+            <TouchableOpacity
+              style={styles.miniQr}
+              onPress={() => router.push('/(tabs)/me/qr-code' as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="qr-code" size={36} color={colors.ink} />
+              <Text style={styles.miniQrLabel}>SCAN ME</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Name + Bio */}
+          <View style={styles.nameSection}>
+            <Text style={styles.trailName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
+            <Text style={styles.handle}>@{profile?.trail_name?.replace(/^@/, '') ?? 'wanderkind'}</Text>
+
+            {!isQuietMode && (
+              <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
+                <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
+                <Text style={[styles.tierText, { color: tierColor }]}>
+                  {(profile?.tier ?? 'wanderkind').toUpperCase()}
+                </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </View>
 
-          <Text style={styles.trailName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
-          <Text style={styles.handle}>@{profile?.trail_name?.replace(/^@/, '') ?? 'wanderkind'}</Text>
+          {/* Bio */}
+          {profile?.bio ? (
+            <Text style={styles.bio} numberOfLines={3}>{profile.bio}</Text>
+          ) : (
+            <TouchableOpacity onPress={() => router.push('/(tabs)/me/edit-profile' as any)}>
+              <Text style={styles.bioPlaceholder}>Add a bio to let others know your story...</Text>
+            </TouchableOpacity>
+          )}
 
-          {/* Tier badge — hidden in Quiet Mode */}
-          {!isQuietMode && (
-            <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
-              <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
-              <Text style={[styles.tierText, { color: tierColor }]}>
-                {(profile?.tier ?? 'wanderkind').toUpperCase()}
+          {/* Walking toggle */}
+          <View style={styles.walkingToggle}>
+            <View style={styles.walkingToggleInfo}>
+              <Ionicons name="walk-outline" size={16} color={isWalking ? colors.amber : colors.ink3} />
+              <Text style={[styles.walkingToggleText, isWalking && { color: colors.amber }]}>
+                {isWalking ? 'Currently Wandering' : 'Resting'}
               </Text>
-            </View>
-          )}
-
-          {/* Stats — hidden in Quiet Mode */}
-          {!isQuietMode && (
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Text style={styles.statValue}>{profile?.nights_walked ?? 0}</Text>
-                <Text style={styles.statLabel}>NIGHTS</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <Text style={styles.statValue}>{profile?.stamps_count ?? 0}</Text>
-                <Text style={styles.statLabel}>STAMPS</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
-                <Text style={styles.statLabel}>HOSTED</Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Walking toggle + Snooze hosting */}
-        <View style={styles.togglesSection}>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleInfo}>
-              <Ionicons name="walk-outline" size={18} color={colors.amber} />
-              <Text style={styles.toggleLabel}>Currently Wandering</Text>
             </View>
             <Switch
               value={isWalking}
@@ -163,98 +280,251 @@ export default function MeScreen() {
               thumbColor={isWalking ? colors.amber : colors.ink3}
             />
           </View>
-          <TouchableOpacity
-            style={[styles.snoozeButton, isSnoozed && styles.snoozeButtonActive]}
-            onPress={snoozeHosting}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={isSnoozed ? 'moon' : 'moon-outline'}
-              size={18}
-              color={isSnoozed ? '#fff' : colors.ink2}
-            />
-            <Text style={[styles.snoozeText, isSnoozed && styles.snoozeTextActive]}>
-              {isSnoozed ? 'Hosting snoozed — tap to resume' : 'Snooze hosting for 24h'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Quick actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/me/edit-profile' as any)}
-          >
-            <Ionicons name="create-outline" size={18} color={colors.amber} />
-            <Text style={styles.quickActionText}>Edit Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/me/qr-code' as any)}
-          >
-            <Ionicons name="qr-code-outline" size={18} color={colors.amber} />
-            <Text style={styles.quickActionText}>My QR Code</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/me/gallery' as any)}
-          >
-            <Ionicons name="images-outline" size={18} color={colors.amber} />
-            <Text style={styles.quickActionText}>Photo Gallery</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Host section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Hosting</Text>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/me/host-listing' as any)}
-          >
-            <Ionicons name="bed-outline" size={18} color={colors.ink2} />
-            <Text style={styles.menuItemText}>My Listing</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/me/gaestebuch' as any)}
-          >
-            <Ionicons name="book-outline" size={18} color={colors.ink2} />
-            <Text style={styles.menuItemText}>Gaestebuch</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/me/my-project' as any)}
-          >
-            <Ionicons name="hammer-outline" size={18} color={colors.ink2} />
-            <Text style={styles.menuItemText}>My Project</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Journey section — hidden in Quiet Mode */}
+        {/* ===== STATS ROW ===== */}
         {!isQuietMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Journey</Text>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => router.push('/(tabs)/me/journey' as any)}
-            >
-              <Ionicons name="ribbon-outline" size={18} color={colors.ink2} />
-              <Text style={styles.menuItemText}>Journey Tiers</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+          <View style={styles.statsRow}>
+            <TouchableOpacity style={styles.stat} onPress={() => setActiveTab('posts')}>
+              <Text style={styles.statValue}>{moments.length || profile?.nights_walked || 0}</Text>
+              <Text style={styles.statLabel}>NIGHTS</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => router.push('/(tabs)/me/verification' as any)}
-            >
-              <Ionicons name="shield-checkmark-outline" size={18} color={colors.ink2} />
-              <Text style={styles.menuItemText}>Verification</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+            <View style={styles.statDivider} />
+            <TouchableOpacity style={styles.stat} onPress={() => setActiveTab('stamps')}>
+              <Text style={styles.statValue}>{stamps.length || profile?.stamps_count || 0}</Text>
+              <Text style={styles.statLabel}>STAMPS</Text>
+            </TouchableOpacity>
+            <View style={styles.statDivider} />
+            <TouchableOpacity style={styles.stat} onPress={() => setActiveTab('journal')}>
+              <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
+              <Text style={styles.statLabel}>HOSTED</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        {/* ===== ACTION BUTTONS ===== */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => router.push('/(tabs)/me/edit-profile' as any)}
+          >
+            <Ionicons name="create-outline" size={16} color={colors.ink} />
+            <Text style={styles.actionBtnText}>Edit Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => router.push('/(tabs)/more/share-profile' as any)}
+          >
+            <Ionicons name="share-outline" size={16} color={colors.ink} />
+            <Text style={styles.actionBtnText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ===== SWIPEABLE IMAGE CAROUSEL (up to 7 photos) ===== */}
+        {(galleryPhotos.length > 0) ? (
+          <View style={styles.carouselSection}>
+            <FlatList
+              data={galleryPhotos}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => `gallery-${i}`}
+              renderItem={({ item }) => (
+                <View style={styles.carouselSlide}>
+                  <Image source={{ uri: item }} style={styles.carouselImage} resizeMode="cover" />
+                </View>
+              )}
+            />
+            <View style={styles.carouselDots}>
+              {galleryPhotos.map((_, i) => (
+                <View key={i} style={styles.carouselDot} />
+              ))}
+            </View>
+            {/* Add more photos indicator */}
+            {galleryPhotos.length < 7 && (
+              <TouchableOpacity
+                style={styles.addPhotoOverlay}
+                onPress={() => router.push('/(tabs)/me/gallery' as any)}
+              >
+                <Ionicons name="add-circle" size={20} color="#fff" />
+                <Text style={styles.addPhotoText}>{galleryPhotos.length}/7</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.carouselEmpty}
+            onPress={() => router.push('/(tabs)/me/gallery' as any)}
+          >
+            <Ionicons name="images-outline" size={28} color={colors.ink3} />
+            <Text style={styles.carouselEmptyText}>Add up to 7 journey photos</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* ===== PASSES QUICK ACCESS ===== */}
+        <TouchableOpacity
+          style={styles.passesRow}
+          onPress={() => router.push('/(tabs)/me/passes' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.passesIcon}>
+            <Ionicons name="document-text" size={16} color={colors.amber} />
+          </View>
+          <Text style={styles.passesText}>Your Passes</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
+        </TouchableOpacity>
+
+        {/* ===== CONTENT TABS ===== */}
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'posts' && styles.tabActive]}
+            onPress={() => setActiveTab('posts')}
+          >
+            <Ionicons
+              name="grid-outline"
+              size={20}
+              color={activeTab === 'posts' ? colors.amber : colors.ink3}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'stamps' && styles.tabActive]}
+            onPress={() => setActiveTab('stamps')}
+          >
+            <Ionicons
+              name="star-outline"
+              size={20}
+              color={activeTab === 'stamps' ? colors.amber : colors.ink3}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
+            onPress={() => setActiveTab('journal')}
+          >
+            <Ionicons
+              name="journal-outline"
+              size={20}
+              color={activeTab === 'journal' ? colors.amber : colors.ink3}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* ===== TAB CONTENT ===== */}
+        {activeTab === 'posts' && (
+          <View style={styles.contentGrid}>
+            {moments.length > 0 ? (
+              <View style={styles.photoGrid}>
+                {moments.map((m, idx) => (
+                  <TouchableOpacity
+                    key={m.id || idx}
+                    style={styles.gridItem}
+                    onPress={() => router.push(`/(tabs)/moments` as any)}
+                  >
+                    {m.photo_url ? (
+                      <Image source={{ uri: m.photo_url }} style={styles.gridImage} />
+                    ) : (
+                      <View style={styles.gridTextItem}>
+                        <Text style={styles.gridText} numberOfLines={4}>{m.content}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyTab}>
+                <Ionicons name="camera-outline" size={36} color={colors.ink3} />
+                <Text style={styles.emptyTabTitle}>No posts yet</Text>
+                <Text style={styles.emptyTabText}>Share your first moment from the road.</Text>
+                <TouchableOpacity
+                  style={styles.emptyTabAction}
+                  onPress={() => router.push('/(tabs)/moments/create' as any)}
+                >
+                  <Text style={styles.emptyTabActionText}>Create Post</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'stamps' && (
+          <View style={styles.contentGrid}>
+            {stamps.length > 0 ? (
+              <View style={styles.stampsList}>
+                {stamps.map((s, idx) => (
+                  <TouchableOpacity
+                    key={s.id || idx}
+                    style={styles.stampItem}
+                    onPress={() => router.push(`/(tabs)/me/stamp/${s.id}` as any)}
+                  >
+                    <View style={styles.stampCircle}>
+                      <Ionicons name="star" size={16} color={colors.amber} />
+                    </View>
+                    <View style={styles.stampInfo}>
+                      <Text style={styles.stampName}>{s.host_name || s.location || 'Stamp'}</Text>
+                      <Text style={styles.stampDate}>{s.date || ''}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyTab}>
+                <Ionicons name="star-outline" size={36} color={colors.ink3} />
+                <Text style={styles.emptyTabTitle}>No stamps yet</Text>
+                <Text style={styles.emptyTabText}>Collect stamps at hosts along the way.</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'journal' && (
+          <View style={styles.contentGrid}>
+            <TouchableOpacity
+              style={styles.journalCard}
+              onPress={() => router.push('/(tabs)/more/book' as any)}
+            >
+              <View style={styles.journalCardIcon}>
+                <Ionicons name="journal-outline" size={20} color={colors.amber} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.journalCardTitle}>My Journal</Text>
+                <Text style={styles.journalCardSub}>Stories, reflections, and trail notes</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.journalCard}
+              onPress={() => router.push('/(tabs)/more/book/create' as any)}
+            >
+              <View style={styles.journalCardIcon}>
+                <Ionicons name="create-outline" size={20} color={colors.amber} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.journalCardTitle}>Write New Entry</Text>
+                <Text style={styles.journalCardSub}>Capture today's moment on the road</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ===== MORE LINKS ===== */}
+        <View style={styles.moreSection}>
+          <TouchableOpacity
+            style={styles.moreItem}
+            onPress={() => router.push('/(tabs)/more/book' as any)}
+          >
+            <Ionicons name="journal-outline" size={18} color={colors.ink2} />
+            <Text style={styles.moreItemText}>My Journal</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.moreItem}
+            onPress={() => router.push('/(tabs)/me/emergency-contacts' as any)}
+          >
+            <Ionicons name="call-outline" size={18} color={colors.ink2} />
+            <Text style={styles.moreItemText}>Emergency Contacts</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+          </TouchableOpacity>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -264,65 +534,128 @@ export default function MeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+
+  // === COVER ===
   coverContainer: {
-    height: 160,
+    height: 180,
     backgroundColor: colors.surfaceAlt,
+    position: 'relative',
   },
   coverImage: { width: '100%', height: '100%' },
   coverPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   coverPlaceholderText: {
-    fontFamily: 'Courier New',
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
     fontSize: 9,
     letterSpacing: 2,
     color: colors.ink3,
     fontWeight: '600',
   },
-  profileSection: {
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -40,
-    paddingBottom: 20,
   },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  coverEditBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // === PROFILE HEADER ===
+  profileHeader: {
+    paddingHorizontal: 20,
+    marginTop: -44,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  avatarBorder: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     borderWidth: 3,
     borderColor: colors.bg,
-    marginBottom: 12,
     overflow: 'hidden',
+    backgroundColor: colors.surfaceAlt,
   },
   avatar: { width: '100%', height: '100%' },
   avatarPlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: colors.surfaceAlt,
+  },
+  avatarCameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.amber,
+    borderWidth: 2,
+    borderColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  walkingBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#3B82F6',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  walkingBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'web' ? 'Georgia, serif' : 'serif',
+  },
+
+  nameSection: {
+    marginBottom: 8,
+  },
   trailName: {
-    ...typography.h2,
+    fontSize: 22,
+    fontWeight: '700',
     color: colors.ink,
-    marginBottom: 4,
+    lineHeight: 28,
   },
   handle: {
-    ...typography.bodySm,
+    fontSize: 13,
     color: colors.ink3,
-    marginBottom: 8,
+    marginTop: 2,
   },
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 6,
   },
   tierDot: {
     width: 6,
@@ -330,17 +663,60 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   tierText: {
-    fontFamily: 'Courier New',
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
     fontSize: 9,
     letterSpacing: 2,
     fontWeight: '600',
   },
+  bio: {
+    fontSize: 14,
+    color: colors.ink2,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  bioPlaceholder: {
+    fontSize: 14,
+    color: colors.ink3,
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  walkingToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  walkingToggleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  walkingToggleText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink2,
+  },
+
+  // === STATS ===
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 24,
+    justifyContent: 'center',
+    paddingVertical: 16,
+    marginHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
   },
-  stat: { alignItems: 'center' },
+  stat: {
+    flex: 1,
+    alignItems: 'center',
+  },
   statValue: {
     fontSize: 20,
     fontWeight: '800',
@@ -348,113 +724,305 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   statLabel: {
-    fontFamily: 'Courier New',
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
     fontSize: 8,
     letterSpacing: 2,
     color: colors.ink3,
     marginTop: 2,
+    textAlign: 'center',
   },
   statDivider: {
     width: 1,
     height: 24,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderLt,
   },
-  togglesSection: {
-    marginHorizontal: spacing.lg,
-    marginBottom: 16,
+
+  // === AVATAR + QR ROW ===
+  avatarQrRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  miniQr: {
+    alignItems: 'center',
+    padding: 8,
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.borderLt,
-    overflow: 'hidden',
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
+  miniQrLabel: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 7,
+    letterSpacing: 2,
+    color: colors.ink3,
+    fontWeight: '600',
+    marginTop: 4,
   },
-  toggleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.ink,
-  },
-  snoozeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-  },
-  snoozeButtonActive: {
-    backgroundColor: colors.ink2,
-  },
-  snoozeText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.ink2,
-  },
-  snoozeTextActive: {
-    color: '#fff',
-  },
-  quickActions: {
+
+  // === ACTION BUTTONS ===
+  actionRow: {
     flexDirection: 'row',
     gap: 8,
-    marginHorizontal: spacing.lg,
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
-  quickAction: {
+  actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 8,
+  },
+  actionBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+
+  // === IMAGE CAROUSEL ===
+  carouselSection: {
+    height: 260,
+    position: 'relative',
+    marginBottom: 4,
+  },
+  carouselSlide: {
+    width: SCREEN_WIDTH,
+    height: 260,
+  },
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+  },
+  carouselDots: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  carouselDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  addPhotoOverlay: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  addPhotoText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  carouselEmpty: {
+    height: 120,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceAlt,
+  },
+  carouselEmptyText: {
+    fontSize: 13,
+    color: colors.ink3,
+  },
+
+  // === PASSES ROW ===
+  passesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 20,
+    marginVertical: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     backgroundColor: colors.amberBg,
     borderRadius: 10,
-    paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.amberLine,
   },
-  quickActionText: {
-    fontSize: 11,
+  passesIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  passesText: {
+    flex: 1,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.amber,
   },
-  section: {
-    marginHorizontal: spacing.lg,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.ink3,
-    fontWeight: '600',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    fontFamily: 'Courier New',
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
-  menuItem: {
+
+  // === TAB BAR ===
+  tabBar: {
     flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  tab: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: colors.amber,
+  },
+
+  // === CONTENT GRID ===
+  contentGrid: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    minHeight: 200,
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  gridItem: {
+    width: (SCREEN_WIDTH - 44) / 3,
+    height: (SCREEN_WIDTH - 44) / 3,
+    backgroundColor: colors.surfaceAlt,
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  gridTextItem: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
     backgroundColor: colors.surface,
-    padding: 14,
-    gap: 10,
     borderWidth: 1,
     borderColor: colors.borderLt,
-    borderRadius: 10,
-    marginBottom: 6,
   },
-  menuItemText: {
+  gridText: {
+    fontSize: 11,
+    color: colors.ink2,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  emptyTab: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 8,
+  },
+  emptyTabTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  emptyTabText: {
+    fontSize: 13,
+    color: colors.ink3,
+    textAlign: 'center',
+  },
+  emptyTabAction: {
+    marginTop: 12,
+    backgroundColor: colors.amber,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  emptyTabActionText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // === STAMPS LIST ===
+  stampsList: {
+    gap: 8,
+  },
+  stampItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  stampCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stampInfo: { flex: 1 },
+  stampName: { fontSize: 14, fontWeight: '600', color: colors.ink },
+  stampDate: { fontSize: 11, color: colors.ink3, marginTop: 2 },
+
+  // === JOURNAL CARDS ===
+  journalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    marginBottom: 8,
+  },
+  journalCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  journalCardTitle: { fontSize: 14, fontWeight: '600', color: colors.ink },
+  journalCardSub: { fontSize: 12, color: colors.ink3, marginTop: 2 },
+
+  // === MORE LINKS ===
+  moreSection: {
+    marginHorizontal: 20,
+    marginTop: 16,
+  },
+  moreItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  moreItemText: {
     flex: 1,
     fontSize: 14,
     fontWeight: '500',

@@ -150,14 +150,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user;
     if (!user) return;
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-    if (data) {
-      set({ profile: data as Profile, isOnboarded: true });
+      if (error) {
+        console.error('Profile fetch failed:', error.message);
+        return;
+      }
+
+      if (data) {
+        set({ profile: data as Profile, isOnboarded: true });
+      }
+    } catch (err) {
+      console.error('Profile fetch error:', err);
     }
   },
 
@@ -183,12 +192,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        set({ session: null, user: null, profile: null, isOnboarded: false });
+        // Session expired — try to refresh the token
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session) {
+          // Token is truly expired — clean logout
+          set({ session: null, user: null, profile: null, isOnboarded: false });
+          return;
+        }
+        set({ session: refreshData.session, user: refreshData.session.user });
       } else {
         set({ session, user: session.user });
       }
     } catch (err) {
       console.error('Session refresh failed:', err);
+      // Network error during refresh — keep existing state, don't logout
     }
   },
 

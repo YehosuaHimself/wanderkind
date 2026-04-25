@@ -106,10 +106,10 @@ export default function StampsOverviewScreen() {
       {stamps.length === 0 ? (
         <ScrollView style={styles.content} contentContainerStyle={styles.emptyContent}>
           <View style={styles.emptyContainer}>
-            <Ionicons name="stamp" size={48} color={colors.ink3} />
+            <Ionicons name="grid-outline" size={48} color={colors.ink3} />
             <Text style={styles.emptyText}>No stamps yet</Text>
             <Text style={styles.emptySubtext}>
-              Collect artisanal stamps from hosts as you walk
+              Start collecting stamps from hosts along your journey.
             </Text>
           </View>
         </ScrollView>

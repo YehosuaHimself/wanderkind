@@ -122,7 +122,7 @@ export default function WaysList() {
     <View style={styles.emptyState}>
       <Ionicons name="map-outline" size={48} color={colors.amberLine} />
       <Text style={styles.emptyTitle}>No ways yet</Text>
-      <Text style={styles.emptyText}>Check back soon for pilgrimage routes.</Text>
+      <Text style={styles.emptyText}>Check back soon for walking routes.</Text>
     </View>
   );
 
@@ -134,7 +134,7 @@ export default function WaysList() {
             <View style={styles.headerDot} />
             <Text style={styles.headerLabelText}>WAYS</Text>
           </View>
-          <Text style={styles.headerTitle}>Pilgrimage Routes</Text>
+          <Text style={styles.headerTitle}>Walking Routes</Text>
         </View>
         <View style={styles.centerLoading}>
           <ActivityIndicator size="large" color={colors.amber} />
@@ -151,7 +151,7 @@ export default function WaysList() {
           <View style={styles.headerDot} />
           <Text style={styles.headerLabelText}>WAYS</Text>
         </View>
-        <Text style={styles.headerTitle}>Pilgrimage Routes</Text>
+        <Text style={styles.headerTitle}>Walking Routes</Text>
       </View>
 
       <FlatList

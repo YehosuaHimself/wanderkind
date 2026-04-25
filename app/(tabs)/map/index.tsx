@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../src/lib/theme';
+import { toast } from '../../../src/lib/toast';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
 import { SEED_HOSTS } from '../../../src/data/seed-hosts';
@@ -184,6 +185,10 @@ function WebMapComponent({
     #map { width: 100%; height: 100vh; }
     .leaflet-container { background: #f5f5f0; }
     .wk-icon { display:flex;align-items:center;justify-content:center;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+    @keyframes wk-rotate { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(360deg)} }
+    @keyframes wk-walk { 0%{transform:translate(0,0)} 25%{transform:translate(0.3px,-0.2px)} 50%{transform:translate(0.6px,0)} 75%{transform:translate(0.3px,0.2px)} 100%{transform:translate(0,0)} }
+    .wk-w { animation: wk-rotate 4s linear infinite; display:inline-block; perspective: 200px; }
+    .wk-walking { animation: wk-walk 3s ease-in-out infinite; }
     .poi-icon { display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.2);font-size:12px; }
   </style>
 </head>
@@ -211,23 +216,42 @@ function WebMapComponent({
       .addTo(map);
     });
 
-    // === WANDERKINDER (with W overlay for currently walking) ===
+    // === WANDERKINDER (orange circle with rotating W in Helvetica Neue) ===
     var walkers = ${JSON.stringify(visibleWalkers)};
     walkers.forEach(function(w) {
+      var isWalking = w.is_walking;
+      var walkClass = isWalking ? ' wk-walking' : '';
       var icon = L.divIcon({
         className: '',
-        html: '<div class="wk-icon" style="width:30px;height:30px;background:#3B82F6;border:2px solid #fff;position:relative;">'
-          + '<span style="color:#fff;font-weight:900;font-size:14px;font-family:serif;">W</span>'
+        html: '<div class="wk-icon' + walkClass + '" style="width:32px;height:32px;background:#C8762A;border:2.5px solid #fff;position:relative;perspective:200px;">'
+          + '<span class="wk-w" style="color:#fff;font-weight:800;font-size:15px;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;letter-spacing:-0.5px;text-transform:uppercase;">W</span>'
           + '</div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
       });
-      L.marker([w.lat, w.lng], { icon: icon })
-        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.trail_name + '</strong><br/><span style="color:#3B82F6;font-size:10px;">Currently wandering</span></div>')
+      var marker = L.marker([w.lat, w.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.trail_name + '</strong><br/><span style="color:#C8762A;font-size:10px;">' + (isWalking ? 'Currently walking' : 'Wanderkind') + '</span></div>')
         .on('click', function() {
           window.parent.postMessage({ type: 'walker-click', profileId: w.id }, '*');
         })
         .addTo(map);
+
+      // Simulate realistic walking movement for actively walking users (~5km/h ≈ 0.00001° per update)
+      if (isWalking) {
+        var baseLat = w.lat;
+        var baseLng = w.lng;
+        var walkAngle = Math.random() * Math.PI * 2;
+        var walkStep = 0;
+        setInterval(function() {
+          walkStep++;
+          var drift = 0.00003 * walkStep;
+          var newLat = baseLat + Math.sin(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
+          var newLng = baseLng + Math.cos(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
+          marker.setLatLng([newLat, newLng]);
+          // Occasionally shift direction slightly (simulating path curves)
+          if (walkStep % 10 === 0) walkAngle += (Math.random() - 0.5) * 0.3;
+        }, 4000);
+      }
     });
 
     // === POI: CHURCHES ===
@@ -327,7 +351,7 @@ function LayersPanel({ layers, onToggle, onClose }: {
 }) {
   const layerConfig: { key: keyof LayerState; label: string; icon: string; color: string }[] = [
     { key: 'hosts', label: 'Wanderhosts', icon: 'home', color: colors.amber },
-    { key: 'wanderkinder', label: 'Wanderkinder', icon: 'people', color: '#3B82F6' },
+    { key: 'wanderkinder', label: 'Wanderkinder', icon: 'people', color: '#C8762A' },
     { key: 'ways', label: 'The Ways', icon: 'map', color: colors.green },
     { key: 'wifi', label: 'Public WiFi', icon: 'wifi', color: '#0ea5e9' },
     { key: 'churches', label: 'Churches', icon: 'business', color: '#8B4513' },
@@ -402,27 +426,33 @@ export default function MapHome() {
 
   const fetchHosts = async () => {
     try {
-      const { data } = await supabase
-        .from('hosts')
-        .select('*')
-        .eq('is_available', true)
-        .order('total_hosted', { ascending: false });
+      try {
+        const { data } = await supabase
+          .from('hosts')
+          .select('*')
+          .eq('is_available', true)
+          .order('total_hosted', { ascending: false });
 
-      if (data && data.length > 0) {
-        setHosts(data as Host[]);
-        const free = data.find(h => h.host_type === 'free' || h.host_type === 'donativo');
-        setNearestFree(free as Host | null);
-        return;
+        if (data && data.length > 0) {
+          setHosts(data as Host[]);
+          const free = data.find(h => h.host_type === 'free' || h.host_type === 'donativo');
+          setNearestFree(free as Host | null);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to fetch hosts from Supabase:', err);
+        toast.error('Could not load hosts');
       }
-    } catch (err) {
-      console.error('Failed to fetch hosts from Supabase:', err);
-    }
 
-    // Fallback to seed data
-    const seedHosts = SEED_HOSTS as unknown as Host[];
-    setHosts(seedHosts);
-    const free = seedHosts.find(h => h.host_type === 'free' || h.host_type === 'donativo');
-    setNearestFree(free || null);
+      // Fallback to seed data
+      const seedHosts = SEED_HOSTS as unknown as Host[];
+      setHosts(seedHosts);
+      const free = seedHosts.find(h => h.host_type === 'free' || h.host_type === 'donativo');
+      setNearestFree(free || null);
+    } catch (err) {
+      console.error('Failed to load hosts:', err);
+      toast.error('Could not load hosts');
+    }
   };
 
   const toggleLayer = (key: keyof LayerState) => {

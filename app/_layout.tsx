@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, Platform, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../src/stores/auth';
 import { DesktopGate } from '../src/components/web/DesktopGate';
+import { ToastProvider } from '../src/components/ToastProvider';
 import '../global.css';
 
 // Web error boundary to show errors instead of white screen
@@ -91,9 +92,11 @@ function RootLayoutInner() {
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <DesktopGate>
-        <RootLayoutInner />
-      </DesktopGate>
+      <ToastProvider>
+        <DesktopGate>
+          <RootLayoutInner />
+        </DesktopGate>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

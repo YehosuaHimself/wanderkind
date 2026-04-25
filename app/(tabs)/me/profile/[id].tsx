@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ interface PublicProfile {
   stamps_collected: number;
   home_country?: string;
   verification_level?: string;
+  is_walking?: boolean;
 }
 
 export default function PublicProfileScreen() {
@@ -41,6 +42,28 @@ export default function PublicProfileScreen() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+
+      // Check seed profiles first for instant loading (IDs start with 'p-')
+      if (typeof id === 'string' && id.startsWith('p-')) {
+        const seedProfile = SEED_PROFILES.find(p => p.id === id);
+        if (seedProfile) {
+          setProfile({
+            id: seedProfile.id,
+            trail_name: seedProfile.trail_name,
+            bio: seedProfile.bio,
+            avatar_url: seedProfile.avatar_url,
+            tier: seedProfile.tier,
+            nights_walked: seedProfile.nights_walked,
+            nights_hosted: seedProfile.hosts_stayed,
+            stamps_collected: seedProfile.stamps_count,
+            verification_level: seedProfile.verification_level,
+            is_walking: seedProfile.is_walking,
+          } as PublicProfile);
+          setLoading(false);
+          return;
+        }
+      }
+
       const { data, error: queryError } = await supabase
         .from('profiles')
         .select('*')
@@ -56,7 +79,7 @@ export default function PublicProfileScreen() {
       console.error('Failed to fetch profile:', err);
     }
 
-    // Fallback to seed profiles
+    // Final fallback — check all seed profiles by ID
     const seedProfile = SEED_PROFILES.find(p => p.id === id);
     if (seedProfile) {
       setProfile({
@@ -69,6 +92,7 @@ export default function PublicProfileScreen() {
         nights_hosted: seedProfile.hosts_stayed,
         stamps_collected: seedProfile.stamps_count,
         verification_level: seedProfile.verification_level,
+        is_walking: seedProfile.is_walking,
       } as PublicProfile);
     } else {
       setError('Profile not found');
@@ -108,13 +132,20 @@ export default function PublicProfileScreen() {
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={48} color={colors.ink3} />
-            </View>
-          )}
+          <View style={{ position: 'relative' }}>
+            {profile.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={48} color={colors.ink3} />
+              </View>
+            )}
+            {profile.is_walking && (
+              <View style={styles.walkingBadge}>
+                <Text style={styles.walkingBadgeText}>W</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Name and Tier */}
@@ -239,6 +270,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  walkingBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#3B82F6',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  walkingBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'web' ? 'Georgia, serif' : 'serif',
+  },
   headerSection: {
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -294,6 +344,7 @@ const styles = StyleSheet.create({
     ...typography.monoXs,
     color: colors.ink3,
     marginTop: spacing.xs,
+    textAlign: 'center',
   },
   divider: {
     width: 1,

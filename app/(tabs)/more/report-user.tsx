@@ -13,6 +13,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { showAlert } from '../../../src/lib/alert';
+import { toast } from '../../../src/lib/toast';
+import { sanitizeText, isEmpty, enforceMaxLength, canPerformAction, LIMITS } from '../../../src/lib/validate';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
@@ -91,8 +93,26 @@ export default function ReportUserScreen() {
       showAlert('Missing Information', 'Please select a reason');
       return;
     }
+
+    // Validate description
+    if (isEmpty(description)) {
+      toast.error('Please provide a reason for your report');
+      return;
+    }
     if (descriptionLength < 20) {
       showAlert('Missing Information', 'Description must be at least 20 characters');
+      return;
+    }
+
+    const sanitized = sanitizeText(description);
+    if (!enforceMaxLength(sanitized, LIMITS.reportReason)) {
+      toast.error(`Report reason cannot exceed ${LIMITS.reportReason} characters`);
+      return;
+    }
+
+    // Prevent double-submit with 5s cooldown
+    if (!canPerformAction('report-user', 5000)) {
+      toast.error('Please wait before submitting another report');
       return;
     }
 
@@ -105,7 +125,7 @@ export default function ReportUserScreen() {
           reported_user_id: user_id || null,
           reporter_id: user?.id || null,
           reason: selectedReason,
-          description: description.trim(),
+          description: sanitized,
           created_at: new Date().toISOString(),
         });
 

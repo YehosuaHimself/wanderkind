@@ -39,9 +39,9 @@ export default function EditProfileScreen() {
       setHomeCountry(profile.home_country || '');
       setLanguages(profile.languages || []);
       setExperience(profile.walking_experience || '');
-      setSkills((profile as any).skills?.join(', ') || '');
-      setQuietMode((profile as any).quiet_mode || false);
-      setPrivateProfile(!(profile as any).searchable);
+      setSkills(profile.skills?.join(', ') || '');
+      setQuietMode(profile.quiet_mode || false);
+      setPrivateProfile(!profile.searchable);
     }
   }, [profile]);
 

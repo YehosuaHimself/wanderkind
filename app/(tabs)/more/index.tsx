@@ -16,13 +16,38 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   {
+    icon: 'home-outline',
+    title: 'WanderHost',
+    subtitle: 'Your hosting home, guestbook & project',
+    route: '/(tabs)/more/wanderhost',
+    accent: colors.amber,
+  },
+  {
     icon: 'trail-sign-outline',
     title: 'Ways',
     subtitle: 'Discover walking routes across Europe',
     route: '/(tabs)/more/ways',
   },
   {
+    icon: 'ribbon-outline',
+    title: 'The Wanderkind Way',
+    subtitle: 'Your journey, tiers & progression',
+    route: '/(tabs)/more/wanderkind-way',
+  },
+  {
     icon: 'shield-checkmark-outline',
+    title: 'Verification',
+    subtitle: 'Verify your identity for trust & safety',
+    route: '/(tabs)/more/verification',
+  },
+  {
+    icon: 'shield-outline',
+    title: 'Privacy & Blocking',
+    subtitle: 'Privacy settings and blocked users',
+    route: '/(tabs)/more/privacy',
+  },
+  {
+    icon: 'document-text-outline',
     title: 'Passes',
     subtitle: 'Your credentials and passes',
     route: '/(tabs)/me/passes',
@@ -35,13 +60,13 @@ const menuItems: MenuItem[] = [
     route: '/(tabs)/more/stamps',
   },
   {
-    icon: 'book-outline',
-    title: 'Book',
-    subtitle: 'Your walking journal and stories',
+    icon: 'journal-outline',
+    title: 'Journal',
+    subtitle: 'Journal, blog & book — your stories',
     route: '/(tabs)/more/book',
   },
   {
-    icon: 'backpack-outline',
+    icon: 'bag-outline',
     title: 'Packlist',
     subtitle: 'Your interactive walking packlist',
     route: '/(tabs)/more/packlist',
@@ -53,17 +78,11 @@ const menuItems: MenuItem[] = [
     route: '/(tabs)/more/group-walk',
   },
   {
-    icon: 'car-outline',
-    title: 'Tramp Mode',
+    icon: 'thumbs-up-outline',
+    title: 'Hitch Hike',
     subtitle: 'Hitchhike safely between stages',
     route: '/(tabs)/map/tramp-mode',
     accent: colors.green,
-  },
-  {
-    icon: 'scan-outline',
-    title: 'Scan Stamp',
-    subtitle: 'Scan QR codes for check-ins',
-    route: '/(tabs)/more/scan',
   },
   {
     icon: 'information-circle-outline',

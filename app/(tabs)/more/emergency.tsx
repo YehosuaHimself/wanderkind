@@ -19,7 +19,7 @@ import { useAuth } from '../../../src/stores/auth';
 type Contact = {
   name: string;
   phone: string;
-  relation: string;
+  relationship: string;
 };
 
 export default function EmergencyScreen() {
@@ -168,7 +168,7 @@ export default function EmergencyScreen() {
                 <View key={idx} style={styles.contactCard}>
                   <View style={styles.contactInfo}>
                     <Text style={styles.contactName}>{contact.name}</Text>
-                    <Text style={styles.contactRelation}>{contact.relation}</Text>
+                    <Text style={styles.contactRelation}>{contact.relationship}</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.callButton}
