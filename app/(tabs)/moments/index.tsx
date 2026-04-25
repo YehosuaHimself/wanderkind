@@ -214,7 +214,7 @@ export default function MomentsFeed() {
   useEffect(() => {
     fetchMoments();
     fetchStories();
-  }, [fetchStories]);
+  }, [fetchMoments, fetchStories]);
 
   const onRefresh = async () => {
     setRefreshing(true);

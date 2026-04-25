@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, Clipboard } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, Clipboard, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -41,17 +41,19 @@ export default function ShareProfileScreen() {
       label: 'WhatsApp',
       color: '#25D366',
       onPress: () => {
-        const text = `Check out my Wanderkind profile: ${profileLink}`;
-        // Deep link to WhatsApp
+        const text = encodeURIComponent(`Check out my Wanderkind profile: ${profileLink}`);
+        Linking.openURL(`whatsapp://send?text=${text}`).catch(() => {
+          Linking.openURL(`https://wa.me/?text=${text}`);
+        });
       },
     },
     {
       icon: 'logo-instagram' as const,
       label: 'Instagram',
       color: '#E4405F',
-      onPress: () => {
-        // Copy link for Instagram share
-        handleCopyLink();
+      onPress: async () => {
+        await handleCopyLink();
+        // Instagram doesn't support direct link sharing; copy link and notify
       },
     },
     {
@@ -59,7 +61,9 @@ export default function ShareProfileScreen() {
       label: 'Email',
       color: colors.amber,
       onPress: () => {
-        // Share via email
+        const subject = encodeURIComponent('My Wanderkind Profile');
+        const body = encodeURIComponent(`Check out my Wanderkind profile: ${profileLink}`);
+        Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
       },
     },
   ];
@@ -141,50 +145,18 @@ export default function ShareProfileScreen() {
           </View>
         </View>
 
-        {/* Privacy Info */}
-        <WKCard variant="parchment">
-          <View style={styles.privacyHeader}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.amber} />
-            <Text style={[typography.h3, { color: colors.ink, marginLeft: spacing.md }]}>
-              Privacy
-            </Text>
-          </View>
-          <Text style={[typography.bodySm, { color: colors.ink2, marginTop: spacing.md, lineHeight: 20 }]}>
-            Your profile link is public and shareable. Update your privacy settings to control what information is visible.
+        {/* Privacy hint — directs to the real privacy settings */}
+        <TouchableOpacity
+          style={styles.privacyLink}
+          onPress={() => router.push('/(tabs)/more/privacy' as any)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="shield-checkmark-outline" size={16} color={colors.amber} />
+          <Text style={[typography.bodySm, { color: colors.amber, fontWeight: '600' }]}>
+            Manage visibility in Privacy & Trust settings
           </Text>
-        </WKCard>
-
-        {/* Profile Visibility */}
-        <View style={styles.section}>
-          <Text style={[typography.label, styles.sectionLabel]}>Visibility</Text>
-          <WKCard>
-            {[
-              { label: 'Show Name', sublabel: 'Your trail name is always visible' },
-              { label: 'Show Photo', sublabel: 'Your profile picture is always visible' },
-              { label: 'Show Stamps', sublabel: 'Your walking achievements' },
-            ].map((item, idx) => (
-              <View
-                key={idx}
-                style={[
-                  styles.visibilityRow,
-                  idx < 2 && styles.visibilityRowBorder,
-                ]}
-              >
-                <View style={styles.visibilityText}>
-                  <Text style={[typography.body, { color: colors.ink, fontWeight: '600' }]}>
-                    {item.label}
-                  </Text>
-                  <Text style={[typography.caption, { color: colors.ink3, marginTop: 2 }]}>
-                    {item.sublabel}
-                  </Text>
-                </View>
-                <View style={styles.toggleSmall}>
-                  <View style={styles.toggleSmallOn} />
-                </View>
-              </View>
-            ))}
-          </WKCard>
-        </View>
+          <Ionicons name="chevron-forward" size={14} color={colors.amber} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -248,34 +220,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   socialLabel: { ...typography.caption, fontWeight: '600', marginTop: spacing.sm },
-  privacyHeader: {
+  privacyLink: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  visibilityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
     paddingVertical: spacing.md,
-  },
-  visibilityRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  visibilityText: { flex: 1 },
-  toggleSmall: {
-    width: 40,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.green,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 3,
-  },
-  toggleSmallOn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.amberBg,
+    borderRadius: 10,
+    marginBottom: spacing.xl,
   },
 });

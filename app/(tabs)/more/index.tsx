@@ -167,7 +167,7 @@ export default function MoreScreen() {
           </View>
           <View style={styles.menuInfo}>
             <Text style={styles.menuTitle}>Settings</Text>
-            <Text style={styles.menuSubtitle}>Language, notifications, privacy</Text>
+            <Text style={styles.menuSubtitle}>Language, notifications, appearance</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
         </TouchableOpacity>

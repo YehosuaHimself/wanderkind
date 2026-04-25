@@ -356,7 +356,7 @@ function WebMapComponent({
         <iframe
           ref={iframeRef}
           srcDoc={html}
-          style={{ flex: 1, border: 'none', width: '100%', height: '100%' }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: 'none', width: '100%', height: '100%' }}
           sandbox="allow-scripts allow-same-origin"
         />
       )}
@@ -824,11 +824,6 @@ export default function MapHome() {
             ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
-            getItemLayout={(_, index) => ({
-              length: HOST_CARD_WIDTH + 12,
-              offset: (HOST_CARD_WIDTH + 12) * index,
-              index,
-            })}
             initialNumToRender={3}
             maxToRenderPerBatch={5}
             windowSize={5}
