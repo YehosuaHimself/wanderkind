@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,188 +6,455 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Animated,
+  Dimensions,
+  Platform,
+  StatusBar,
+  Vibration,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
+import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
+import { toast } from '../../../src/lib/toast';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ── Ride log entry ──────────────────────────────────────────────────
+interface RideEntry {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  driver_note: string;
+  distance_km: number | null;
+}
 
 export default function TrampMode() {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
 
   const router = useRouter();
-  const [trampModeEnabled, setTrampModeEnabled] = useState(false);
-  const [showingProfile, setShowingProfile] = useState(false);
+  const { profile } = useAuth();
 
-  const tips = [
-    {
-      title: 'Stay Visible',
-      description: 'Stand in a visible location with good sight lines. Make eye contact and smile.',
-      icon: 'eye' as const,
-    },
-    {
-      title: 'Safety First',
-      description: 'Trust your instinct. If something feels off, wait for the next ride.',
-      icon: 'shield-checkmark' as const,
-    },
-    {
-      title: 'Travel Light',
-      description: 'Keep your main pack with you. Hitchhikers often have limited space.',
-      icon: 'backpack' as const,
-    },
-    {
-      title: 'Be Friendly',
-      description: 'Chat with drivers. They\'re more likely to stop if you seem personable.',
-      icon: 'happy' as const,
-    },
-    {
-      title: 'Have Cash',
-      description: 'Offer to contribute to fuel. Many drivers appreciate the gesture.',
-      icon: 'cash' as const,
-    },
-    {
-      title: 'Plan Ahead',
-      description: 'Know your route and have backup plans for longer stretches.',
-      icon: 'map' as const,
-    },
-  ];
+  // ── State ──────────────────────────────────────────────────────────
+  const [signalActive, setSignalActive] = useState(false);
+  const [rideLog, setRideLog] = useState<RideEntry[]>([]);
+  const [currentRide, setCurrentRide] = useState<RideEntry | null>(null);
+  const [waitStarted, setWaitStarted] = useState<Date | null>(null);
+  const [waitMinutes, setWaitMinutes] = useState(0);
+  const [shareLocation, setShareLocation] = useState(true);
+  const [showSignalScreen, setShowSignalScreen] = useState(false);
 
+  // ── Animations ─────────────────────────────────────────────────────
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    if (signalActive) {
+      // Gentle pulse on the W
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.06, duration: 2000, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        ])
+      ).start();
+      // Glow ring
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
+          Animated.timing(glowAnim, { toValue: 0.4, duration: 1500, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+      glowAnim.setValue(0.4);
+    }
+  }, [signalActive]);
+
+  // Wait timer
+  useEffect(() => {
+    if (!waitStarted) return;
+    const iv = setInterval(() => {
+      setWaitMinutes(Math.floor((Date.now() - waitStarted.getTime()) / 60000));
+    }, 10000);
+    return () => clearInterval(iv);
+  }, [waitStarted]);
+
+  // ── Handlers ───────────────────────────────────────────────────────
+  const activateSignal = useCallback(() => {
+    setSignalActive(true);
+    setWaitStarted(new Date());
+    setShowSignalScreen(true);
+    if (Platform.OS !== 'web') {
+      Vibration.vibrate(100);
+    }
+  }, []);
+
+  const deactivateSignal = useCallback(() => {
+    setSignalActive(false);
+    setWaitStarted(null);
+    setWaitMinutes(0);
+    setShowSignalScreen(false);
+  }, []);
+
+  const startRide = useCallback(() => {
+    const ride: RideEntry = {
+      id: `ride-${Date.now()}`,
+      started_at: new Date().toISOString(),
+      ended_at: null,
+      driver_note: '',
+      distance_km: null,
+    };
+    setCurrentRide(ride);
+    setShowSignalScreen(false);
+    setSignalActive(false);
+    setWaitStarted(null);
+    toast.success('Ride started. Stay safe out there.');
+  }, []);
+
+  const endRide = useCallback(() => {
+    if (!currentRide) return;
+    const finished: RideEntry = {
+      ...currentRide,
+      ended_at: new Date().toISOString(),
+    };
+    setRideLog(prev => [finished, ...prev]);
+    setCurrentRide(null);
+    toast.success('Ride logged.');
+  }, [currentRide]);
+
+  // ── Full-screen signal (the core feature) ──────────────────────────
+  if (showSignalScreen && signalActive) {
+    return (
+      <View style={signalStyles.container}>
+        <StatusBar barStyle="light-content" />
+
+        {/* Pulsing glow ring */}
+        <Animated.View style={[signalStyles.glowRing, { opacity: glowAnim }]} />
+
+        {/* The large W */}
+        <Animated.View style={[signalStyles.wContainer, { transform: [{ scale: pulseAnim }] }]}>
+          <Text style={signalStyles.wLetter}>W</Text>
+        </Animated.View>
+
+        {/* WANDERKIND label */}
+        <Text style={signalStyles.brandLabel}>WANDERKIND</Text>
+
+        {/* Wait time */}
+        {waitMinutes > 0 && (
+          <Text style={signalStyles.waitText}>
+            Waiting {waitMinutes} min
+          </Text>
+        )}
+
+        {/* Trail name so drivers see who you are */}
+        {profile?.trail_name && (
+          <Text style={signalStyles.trailName}>{profile.trail_name}</Text>
+        )}
+
+        {/* Bottom controls */}
+        <View style={signalStyles.controls}>
+          <TouchableOpacity
+            style={signalStyles.gotRideBtn}
+            onPress={startRide}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="car-outline" size={22} color={colors.tramp} />
+            <Text style={signalStyles.gotRideBtnText}>Got a ride</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={signalStyles.stopBtn}
+            onPress={deactivateSignal}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Main settings / dashboard view ─────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Tramp Mode" showBack />
+      <WKHeader title="Hitchhike" showBack />
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Toggle Card */}
-          <WKCard variant="gold">
-            <View style={styles.toggleHeader}>
-              <View style={styles.toggleLeft}>
-                <View style={styles.trampIcon}>
-                  <Ionicons name="car" size={28} color={colors.tramp} />
-                </View>
-                <View>
-                  <Text style={styles.toggleTitle}>Tramp Mode</Text>
-                  <Text style={styles.toggleSubtitle}>
-                    {trampModeEnabled ? 'Active' : 'Inactive'}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={trampModeEnabled}
-                onValueChange={setTrampModeEnabled}
-                thumbColor={trampModeEnabled ? colors.tramp : colors.ink3}
-                trackColor={{ false: colors.borderLt, true: `${colors.tramp}40` }}
-              />
+
+          {/* ── Hero: Activate Signal ───────────────────────────── */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroIconRing}>
+              <Text style={styles.heroW}>W</Text>
             </View>
-
-            {trampModeEnabled && (
-              <View style={styles.activeIndicator}>
-                <Ionicons name="checkmark-circle" size={16} color={colors.green} />
-                <Text style={styles.activeText}>You're visible to drivers on the map</Text>
-              </View>
-            )}
-          </WKCard>
-
-          {/* How It Works */}
-          <WKCard>
-            <Text style={styles.sectionTitle}>How It Works</Text>
-            <View style={styles.howItWorks}>
-              <HowItWorksStep number="1" title="Enable Tramp Mode" description="Turn on your hitchhiking status above" />
-              <HowItWorksStep number="2" title="Share Your Location" description="Drivers nearby will see you on their map" />
-              <HowItWorksStep number="3" title="Connect with Drivers" description="Accept ride requests from fellow wanderers" />
-            </View>
-          </WKCard>
-
-          {/* Tips */}
-          <View>
-            <Text style={styles.sectionTitle} style={[styles.sectionTitle, { marginLeft: spacing.lg }]}>
-              Hitchhiking Tips
+            <Text style={styles.heroTitle}>Hitchhike Signal</Text>
+            <Text style={styles.heroSubtitle}>
+              Hold your phone up while thumbing a ride. The bright orange screen with the Wanderkind W tells drivers you are a trusted wanderkind.
             </Text>
-            <View style={styles.tipsList}>
-              {tips.map((tip, i) => (
-                <WKCard key={i} style={styles.tipCard}>
-                  <View style={styles.tipHeader}>
-                    <View style={styles.tipIcon}>
-                      <Ionicons name={tip.icon} size={18} color={colors.tramp} />
-                    </View>
-                    <Text style={styles.tipTitle}>{tip.title}</Text>
-                  </View>
-                  <Text style={styles.tipDescription}>{tip.description}</Text>
-                </WKCard>
-              ))}
-            </View>
+
+            <WKButton
+              title={signalActive ? 'Signal is Active' : 'Activate Signal'}
+              onPress={signalActive ? () => setShowSignalScreen(true) : activateSignal}
+              variant="primary"
+              size="lg"
+              fullWidth
+              style={styles.heroBtn}
+            />
           </View>
 
-          {/* Safety Guidelines */}
-          <WKCard variant="parchment">
-            <Text style={styles.sectionTitle}>Safety Guidelines</Text>
-            <View style={styles.safetyList}>
-              <SafetyItem text="Share your location with a trusted friend" />
-              <SafetyItem text="Trust your gut feeling about drivers" />
-              <SafetyItem text="Avoid accepting rides at night" />
-              <SafetyItem text="Keep valuables with you, not in luggage" />
-              <SafetyItem text="Let someone know your expected arrival" />
-            </View>
-          </WKCard>
-
-          {/* Nearby Drivers (when enabled) */}
-          {trampModeEnabled && (
-            <WKCard>
-              <Text style={styles.sectionTitle}>Nearby Drivers</Text>
-              <Text style={styles.noDriversText}>No drivers nearby right now</Text>
+          {/* ── Active Ride Card ────────────────────────────────── */}
+          {currentRide && (
+            <WKCard variant="gold">
+              <View style={styles.rideActiveHeader}>
+                <View style={styles.rideDot} />
+                <Text style={styles.rideActiveTitle}>Ride in Progress</Text>
+              </View>
+              <Text style={styles.rideActiveTime}>
+                Started {formatTimeSince(currentRide.started_at)}
+              </Text>
+              <WKButton
+                title="End Ride"
+                onPress={endRide}
+                variant="secondary"
+                size="md"
+                fullWidth
+                style={{ marginTop: spacing.md }}
+              />
             </WKCard>
           )}
 
-          {/* Action Buttons */}
-          <View style={styles.buttonGroup}>
-            <WKButton
-              title={trampModeEnabled ? 'Turn Off Tramp Mode' : 'Enable Tramp Mode'}
-              onPress={() => setTrampModeEnabled(!trampModeEnabled)}
-              variant={trampModeEnabled ? 'danger' : 'primary'}
-              fullWidth
-            />
+          {/* ── Settings ───────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>SETTINGS</Text>
+            <View style={styles.settingsCard}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Share Location</Text>
+                  <Text style={styles.settingDesc}>
+                    Let other wanderkinder see you are hitchhiking nearby
+                  </Text>
+                </View>
+                <Switch
+                  value={shareLocation}
+                  onValueChange={setShareLocation}
+                  trackColor={{ false: colors.borderLt, true: `${colors.tramp}40` }}
+                  thumbColor={shareLocation ? colors.tramp : colors.ink3}
+                />
+              </View>
+            </View>
           </View>
+
+          {/* ── How It Works ───────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
+            <View style={styles.stepsCard}>
+              <StepRow
+                number="1"
+                title="Activate the signal"
+                desc="Your screen turns into a bright orange beacon with the Wanderkind W."
+              />
+              <StepRow
+                number="2"
+                title="Hold your phone up"
+                desc="Stand at a good spot with visibility. Drivers see the W and know you are a wanderkind."
+              />
+              <StepRow
+                number="3"
+                title="Log your ride"
+                desc="Tap 'Got a ride' when a driver stops. Keep a record of your hitchhiking journey."
+              />
+            </View>
+          </View>
+
+          {/* ── Safety Tips ────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>STAY SAFE</Text>
+            <View style={styles.safetyCard}>
+              <SafetyTip icon="location-outline" text="Share your live location with someone you trust before hitching." />
+              <SafetyTip icon="shield-checkmark-outline" text="Trust your instincts. If something feels off, wait for the next ride." />
+              <SafetyTip icon="eye-outline" text="Stand in a visible spot with good sight lines and room for a car to pull over." />
+              <SafetyTip icon="moon-outline" text="Avoid hitchhiking after dark. Daylight rides are safer." />
+              <SafetyTip icon="chatbubble-outline" text="Tell the driver your destination before getting in. Agree on the route." />
+            </View>
+          </View>
+
+          {/* ── Ride Log ───────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>RIDE LOG</Text>
+            {rideLog.length === 0 ? (
+              <View style={styles.emptyLog}>
+                <Ionicons name="car-outline" size={36} color={colors.ink3} />
+                <Text style={styles.emptyLogText}>No rides logged yet</Text>
+                <Text style={styles.emptyLogSub}>
+                  Your hitchhiking history will appear here.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.logList}>
+                {rideLog.map(ride => (
+                  <View key={ride.id} style={styles.logEntry}>
+                    <View style={styles.logDot} />
+                    <View style={styles.logContent}>
+                      <Text style={styles.logDate}>
+                        {new Date(ride.started_at).toLocaleDateString(undefined, {
+                          weekday: 'short', month: 'short', day: 'numeric',
+                        })}
+                      </Text>
+                      <Text style={styles.logDuration}>
+                        {formatRideDuration(ride.started_at, ride.ended_at)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={{ height: spacing.xl }} />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function HowItWorksStep({
-  number,
-  title,
-  description,
-}: {
-  number: string;
-  title: string;
-  description: string;
-}) {
+// ── Helper components ─────────────────────────────────────────────────
+
+function StepRow({ number, title, desc }: { number: string; title: string; desc: string }) {
   return (
-    <View style={styles.step}>
-      <View style={styles.stepNumber}>
-        <Text style={styles.stepNumberText}>{number}</Text>
+    <View style={styles.stepRow}>
+      <View style={styles.stepCircle}>
+        <Text style={styles.stepNum}>{number}</Text>
       </View>
       <View style={styles.stepContent}>
         <Text style={styles.stepTitle}>{title}</Text>
-        <Text style={styles.stepDescription}>{description}</Text>
+        <Text style={styles.stepDesc}>{desc}</Text>
       </View>
     </View>
   );
 }
 
-function SafetyItem({ text }: { text: string }) {
+function SafetyTip({ icon, text }: { icon: string; text: string }) {
   return (
-    <View style={styles.safetyItem}>
-      <Ionicons name="checkmark-circle" size={16} color={colors.green} />
+    <View style={styles.safetyRow}>
+      <Ionicons name={icon as any} size={18} color={colors.tramp} />
       <Text style={styles.safetyText}>{text}</Text>
     </View>
   );
 }
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function formatTimeSince(iso: string): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ${mins % 60}m ago`;
+}
+
+function formatRideDuration(start: string, end: string | null): string {
+  if (!end) return 'In progress';
+  const mins = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / 60000);
+  if (mins < 60) return `${mins} min ride`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ${mins % 60}m ride`;
+}
+
+// ── Signal screen styles ─────────────────────────────────────────────
+
+const signalStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.tramp,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  glowRing: {
+    position: 'absolute',
+    width: SCREEN_W * 0.7,
+    height: SCREEN_W * 0.7,
+    borderRadius: SCREEN_W * 0.35,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  wContainer: {
+    width: SCREEN_W * 0.5,
+    height: SCREEN_W * 0.5,
+    borderRadius: SCREEN_W * 0.25,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wLetter: {
+    fontSize: SCREEN_W * 0.32,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -2,
+    // Helvetica Neue on iOS, fallback on Android/web
+    ...(Platform.OS === 'ios'
+      ? { fontFamily: 'Helvetica Neue' }
+      : { fontFamily: 'sans-serif' }),
+  },
+  brandLabel: {
+    marginTop: 28,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 6,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  waitText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '500',
+  },
+  trailName: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  controls: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 56 : 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  gotRideBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 28,
+  },
+  gotRideBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.tramp,
+  },
+  stopBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+// ── Main view styles ─────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -201,139 +468,227 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  toggleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  // Hero
+  heroCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: spacing.xl,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  heroIconRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.tramp,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  heroW: {
+    fontSize: 44,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -1,
+    ...(Platform.OS === 'ios'
+      ? { fontFamily: 'Helvetica Neue' }
+      : { fontFamily: 'sans-serif' }),
+  },
+  heroTitle: {
+    ...typography.h2,
+    color: colors.ink,
+    marginBottom: spacing.sm,
+  },
+  heroSubtitle: {
+    ...typography.bodySm,
+    color: colors.ink2,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.md,
+  },
+  heroBtn: {
+    marginTop: spacing.sm,
+  },
+
+  // Active ride
+  rideActiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  rideDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.green,
+  },
+  rideActiveTitle: {
+    ...typography.h3,
+    color: colors.ink,
+  },
+  rideActiveTime: {
+    ...typography.bodySm,
+    color: colors.ink2,
+  },
+
+  // Sections
+  section: {
     gap: spacing.md,
   },
-  toggleLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 3,
+    color: colors.tramp,
   },
-  trampIcon: {
-    width: 48,
-    height: 48,
+
+  // Settings
+  settingsCard: {
+    backgroundColor: colors.surface,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    overflow: 'hidden',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    justifyContent: 'space-between',
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  settingTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.ink,
+    marginBottom: 2,
+  },
+  settingDesc: {
+    ...typography.caption,
+    color: colors.ink3,
+  },
+
+  // Steps
+  stepsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    gap: spacing.lg,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: `${colors.tramp}15`,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  toggleTitle: {
-    ...typography.h3,
-    color: colors.ink,
-  },
-  toggleSubtitle: {
-    ...typography.bodySm,
-    color: colors.ink2,
-  },
-  activeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(200,118,42,0.1)',
-  },
-  activeText: {
-    ...typography.bodySm,
-    color: colors.green,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  howItWorks: {
-    gap: spacing.md,
-  },
-  step: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  stepNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.amberBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepNumberText: {
-    ...typography.h3,
-    color: colors.amber,
+  stepNum: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.tramp,
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
-    ...typography.body,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.ink,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
-  stepDescription: {
-    ...typography.bodySm,
+  stepDesc: {
+    ...typography.caption,
     color: colors.ink2,
+    lineHeight: 18,
   },
-  tipsList: {
-    gap: spacing.md,
-    marginLeft: spacing.lg,
-  },
-  tipCard: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  tipHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  tipIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: `${colors.tramp}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tipTitle: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  tipDescription: {
-    ...typography.bodySm,
-    color: colors.ink2,
-    marginLeft: 44,
-  },
-  safetyList: {
+
+  // Safety
+  safetyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
     gap: spacing.md,
   },
-  safetyItem: {
+  safetyRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
   },
   safetyText: {
     ...typography.bodySm,
-    color: colors.parchmentInk,
-    flex: 1,
-    paddingTop: 2,
-  },
-  noDriversText: {
-    ...typography.bodySm,
     color: colors.ink2,
-    textAlign: 'center',
-    paddingVertical: spacing.lg,
+    flex: 1,
+    lineHeight: 20,
   },
-  buttonGroup: {
+
+  // Ride log
+  emptyLog: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  emptyLogText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.ink,
+    marginTop: spacing.md,
+  },
+  emptyLogSub: {
+    ...typography.caption,
+    color: colors.ink3,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  logList: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    overflow: 'hidden',
+  },
+  logEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
-    marginVertical: spacing.lg,
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  logDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.tramp,
+  },
+  logContent: {
+    flex: 1,
+  },
+  logDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  logDuration: {
+    ...typography.caption,
+    color: colors.ink3,
+    marginTop: 2,
   },
 });

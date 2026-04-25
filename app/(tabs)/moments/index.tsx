@@ -22,6 +22,22 @@ type StoryGroup = {
   stories: typeof SEED_STORIES;
 };
 
+type FeedFilter = 'nearby' | 'recent';
+
+// ── Haversine distance (km) ──────────────────────────────────────────
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function MomentsFeed() {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
@@ -31,10 +47,94 @@ export default function MomentsFeed() {
   const [moments, setMoments] = useState<MomentWithAuthor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FeedFilter>('nearby');
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
 
   // Stories state
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
+
+  // ── Get user location ─────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        if (Platform.OS === 'web') {
+          if (navigator?.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                setUserLat(pos.coords.latitude);
+                setUserLng(pos.coords.longitude);
+              },
+              () => {
+                // Permission denied or error — fall back to profile location
+                if (profile?.lat && profile?.lng) {
+                  setUserLat(profile.lat);
+                  setUserLng(profile.lng);
+                }
+              },
+              { enableHighAccuracy: false, timeout: 8000 }
+            );
+          }
+        } else {
+          // Native: use expo-location
+          try {
+            const Location = require('expo-location');
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+              const loc = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              });
+              setUserLat(loc.coords.latitude);
+              setUserLng(loc.coords.longitude);
+            } else if (profile?.lat && profile?.lng) {
+              setUserLat(profile.lat);
+              setUserLng(profile.lng);
+            }
+          } catch {
+            if (profile?.lat && profile?.lng) {
+              setUserLat(profile.lat);
+              setUserLng(profile.lng);
+            }
+          }
+        }
+      } catch {
+        // Silent fallback
+        if (profile?.lat && profile?.lng) {
+          setUserLat(profile.lat);
+          setUserLng(profile.lng);
+        }
+      }
+    })();
+  }, [profile]);
+
+  // ── Sort moments by proximity or recency ───────────────────────────
+  const sortedMoments = useMemo(() => {
+    if (filter === 'recent') {
+      return [...moments].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
+    // Nearby: sort by distance (moments without coords go to the end)
+    if (userLat == null || userLng == null) {
+      // No user location — fall back to recent
+      return [...moments].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
+    return [...moments].sort((a, b) => {
+      const aHas = a.lat != null && a.lng != null;
+      const bHas = b.lat != null && b.lng != null;
+      if (!aHas && !bHas) return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (!aHas) return 1;
+      if (!bHas) return -1;
+      const distA = haversineKm(userLat, userLng, a.lat!, a.lng!);
+      const distB = haversineKm(userLat, userLng, b.lat!, b.lng!);
+      return distA - distB;
+    });
+  }, [moments, filter, userLat, userLng]);
 
   const fetchMoments = useCallback(async () => {
     try {
@@ -109,13 +209,21 @@ export default function MomentsFeed() {
   // Start a message thread with a moment's author
   const handleMessageAuthor = useCallback(async (authorId: string) => {
     if (!user) return;
-    if (authorId === user.id) {
-      // Can't message yourself
-      return;
-    }
-    // Navigate to new message with pre-selected user
+    if (authorId === user.id) return;
     router.push(`/(tabs)/messages/new?userId=${authorId}`);
   }, [user, router]);
+
+  // ── Format distance for display ────────────────────────────────────
+  const formatDistance = useCallback(
+    (lat: number | null, lng: number | null): string | null => {
+      if (lat == null || lng == null || userLat == null || userLng == null) return null;
+      const km = haversineKm(userLat, userLng, lat, lng);
+      if (km < 1) return `${Math.round(km * 1000)}m away`;
+      if (km < 100) return `${Math.round(km)}km away`;
+      return `${Math.round(km)}km`;
+    },
+    [userLat, userLng]
+  );
 
   const renderStoryBar = useCallback(() => {
     if (storyGroups.length === 0) return null;
@@ -145,59 +253,113 @@ export default function MomentsFeed() {
     );
   }, [storyGroups, profile, router]);
 
-  const renderMoment = useCallback(
-    ({ item }: { item: MomentWithAuthor }) => (
-      <View style={styles.momentCard}>
-        {/* Author row */}
-        <TouchableOpacity
-          style={styles.authorRow}
-          onPress={() => router.push(`/(tabs)/me/profile/${item.author_id}`)}
-        >
-          <View style={styles.avatar}>
-            {item.author?.avatar_url ? (
-              <Image source={{ uri: item.author.avatar_url }} style={styles.avatarImage} />
-            ) : (
-              <Ionicons name="person" size={16} color={colors.ink3} />
-            )}
-          </View>
-          <View style={styles.authorInfo}>
-            <Text style={styles.authorName}>{item.author?.trail_name ?? 'Wanderkind'}</Text>
-            <Text style={styles.momentTime}>{formatTime(item.created_at)}</Text>
-          </View>
+  // ── Filter tabs ────────────────────────────────────────────────────
+  const renderFilterTabs = useCallback(() => (
+    <View style={styles.filterBar}>
+      <TouchableOpacity
+        style={[styles.filterTab, filter === 'nearby' && styles.filterTabActive]}
+        onPress={() => setFilter('nearby')}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name="location-outline"
+          size={14}
+          color={filter === 'nearby' ? colors.amber : colors.ink3}
+        />
+        <Text style={[styles.filterTabText, filter === 'nearby' && styles.filterTabTextActive]}>
+          Nearby
+        </Text>
+      </TouchableOpacity>
 
-          {/* Message button — one-click to message this wanderkind */}
-          {user && item.author_id !== user.id && (
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => handleMessageAuthor(item.author_id)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="chatbubble-outline" size={18} color={colors.amber} />
+      <TouchableOpacity
+        style={[styles.filterTab, filter === 'recent' && styles.filterTabActive]}
+        onPress={() => setFilter('recent')}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name="time-outline"
+          size={14}
+          color={filter === 'recent' ? colors.amber : colors.ink3}
+        />
+        <Text style={[styles.filterTabText, filter === 'recent' && styles.filterTabTextActive]}>
+          Recent
+        </Text>
+      </TouchableOpacity>
+    </View>
+  ), [filter]);
+
+  const renderListHeader = useCallback(() => (
+    <View>
+      {renderStoryBar()}
+      {renderFilterTabs()}
+    </View>
+  ), [renderStoryBar, renderFilterTabs]);
+
+  const renderMoment = useCallback(
+    ({ item }: { item: MomentWithAuthor }) => {
+      const dist = filter === 'nearby' ? formatDistance(item.lat, item.lng) : null;
+
+      return (
+        <View style={styles.momentCard}>
+          {/* Author row */}
+          <TouchableOpacity
+            style={styles.authorRow}
+            onPress={() => router.push(`/(tabs)/me/profile/${item.author_id}`)}
+          >
+            <View style={styles.avatar}>
+              {item.author?.avatar_url ? (
+                <Image source={{ uri: item.author.avatar_url }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="person" size={16} color={colors.ink3} />
+              )}
+            </View>
+            <View style={styles.authorInfo}>
+              <Text style={styles.authorName}>{item.author?.trail_name ?? 'Wanderkind'}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.momentTime}>{formatTime(item.created_at)}</Text>
+                {dist && (
+                  <>
+                    <View style={styles.metaDot} />
+                    <Text style={styles.distanceText}>{dist}</Text>
+                  </>
+                )}
+              </View>
+            </View>
+
+            {/* Message button */}
+            {user && item.author_id !== user.id && (
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={() => handleMessageAuthor(item.author_id)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chatbubble-outline" size={18} color={colors.amber} />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+
+          {/* Photo */}
+          {item.photo_url && (
+            <TouchableOpacity onPress={() => setSelectedImage(item.photo_url)}>
+              <Image source={{ uri: item.photo_url }} style={styles.momentPhoto} resizeMode="cover" />
             </TouchableOpacity>
           )}
-        </TouchableOpacity>
 
-        {/* Photo */}
-        {item.photo_url && (
-          <TouchableOpacity onPress={() => setSelectedImage(item.photo_url)}>
-            <Image source={{ uri: item.photo_url }} style={styles.momentPhoto} resizeMode="cover" />
-          </TouchableOpacity>
-        )}
+          {/* Content */}
+          <Text style={styles.momentContent}>{item.content}</Text>
 
-        {/* Content */}
-        <Text style={styles.momentContent}>{item.content}</Text>
-
-        {/* Location */}
-        {item.location_name && (
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={12} color={colors.ink3} />
-            <Text style={styles.locationText}>{item.location_name}</Text>
-          </View>
-        )}
-      </View>
-    ),
-    [user, handleMessageAuthor]
+          {/* Location */}
+          {item.location_name && (
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={12} color={colors.ink3} />
+              <Text style={styles.locationText}>{item.location_name}</Text>
+            </View>
+          )}
+        </View>
+      );
+    },
+    [user, handleMessageAuthor, filter, formatDistance]
   );
 
   const renderEmpty = () => (
@@ -222,10 +384,10 @@ export default function MomentsFeed() {
       </View>
 
       <FlatList
-        data={moments}
+        data={sortedMoments}
         renderItem={renderMoment}
         keyExtractor={item => item.id}
-        ListHeaderComponent={renderStoryBar}
+        ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.list}
         refreshControl={
@@ -334,6 +496,39 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLt,
   },
+  // Filter tabs
+  filterBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  filterTabActive: {
+    backgroundColor: colors.amberBg,
+    borderColor: colors.amberLine,
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink3,
+  },
+  filterTabTextActive: {
+    color: colors.amber,
+    fontWeight: '600',
+  },
   list: {
     paddingVertical: 0,
   },
@@ -365,7 +560,24 @@ const styles = StyleSheet.create({
   avatarImage: { width: 32, height: 32 },
   authorInfo: { flex: 1 },
   authorName: { fontSize: 13, fontWeight: '600', color: colors.ink },
-  momentTime: { fontSize: 11, color: colors.ink3, marginTop: 1 },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 1,
+  },
+  momentTime: { fontSize: 11, color: colors.ink3 },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.ink3,
+  },
+  distanceText: {
+    fontSize: 11,
+    color: colors.amber,
+    fontWeight: '500',
+  },
   // Message button on each post
   messageButton: {
     width: 36,
