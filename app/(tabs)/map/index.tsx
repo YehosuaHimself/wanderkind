@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, shadows, hostTypeConfig } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
+import { SEED_HOSTS } from '../../../src/data/seed-hosts';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const { width, height } = Dimensions.get('window');
@@ -171,17 +172,28 @@ export default function MapHome() {
   }, []);
 
   const fetchHosts = async () => {
-    const { data } = await supabase
-      .from('hosts')
-      .select('*')
-      .eq('is_available', true)
-      .order('total_hosted', { ascending: false });
+    try {
+      const { data } = await supabase
+        .from('hosts')
+        .select('*')
+        .eq('is_available', true)
+        .order('total_hosted', { ascending: false });
 
-    if (data) {
-      setHosts(data as Host[]);
-      const free = data.find(h => h.host_type === 'free' || h.host_type === 'donativo');
-      setNearestFree(free as Host | null);
+      if (data && data.length > 0) {
+        setHosts(data as Host[]);
+        const free = data.find(h => h.host_type === 'free' || h.host_type === 'donativo');
+        setNearestFree(free as Host | null);
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to fetch hosts from Supabase:', err);
     }
+
+    // Fallback to seed data if Supabase returns empty or fails
+    const seedHosts = SEED_HOSTS as unknown as Host[];
+    setHosts(seedHosts);
+    const free = seedHosts.find(h => h.host_type === 'free' || h.host_type === 'donativo');
+    setNearestFree(free || null);
   };
 
   const filteredHosts = hosts.filter(h => {

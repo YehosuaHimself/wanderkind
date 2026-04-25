@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { Route } from '../../../src/types/database';
+import { SEED_ROUTES } from '../../../src/data/seed-routes';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function WaysList() {
@@ -35,13 +36,18 @@ export default function WaysList() {
         .select('*')
         .order('walker_count', { ascending: false });
 
-      if (error) throw error;
-      setWays((data || []) as Route[]);
+      if (!error && data && data.length > 0) {
+        setWays(data as Route[]);
+        setLoading(false);
+        return;
+      }
     } catch (err) {
       console.error('Failed to fetch ways:', err);
-    } finally {
-      setLoading(false);
     }
+
+    // Fallback to seed data if Supabase returns empty or fails
+    setWays(SEED_ROUTES as unknown as Route[]);
+    setLoading(false);
   };
 
   const getDifficultyColor = (difficulty: string) => {

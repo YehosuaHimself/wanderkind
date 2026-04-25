@@ -25,7 +25,7 @@ const menuItems: MenuItem[] = [
     icon: 'shield-checkmark-outline',
     title: 'Passes',
     subtitle: 'Your credentials and passes',
-    route: '/(tabs)/more/passes',
+    route: '/(tabs)/me/passes',
     accent: colors.amber,
   },
   {
