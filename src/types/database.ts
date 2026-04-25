@@ -101,6 +101,10 @@ export interface ProfileRow {
   show_location: boolean;
   show_walking_status: boolean;
   show_stats: boolean;
+  show_profile_public: boolean;
+  allow_messages_from: 'everyone' | 'verified' | 'nobody';
+  show_on_map: boolean;
+  show_in_search: boolean;
   // Passport / identity fields
   surname: string | null;
   given_names: string | null;

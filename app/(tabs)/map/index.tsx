@@ -242,7 +242,7 @@ function WebMapComponent({
         var baseLng = w.lng;
         var walkAngle = Math.random() * Math.PI * 2;
         var walkStep = 0;
-        setInterval(function() {
+        var walkInterval = setInterval(function() {
           walkStep++;
           var drift = 0.00003 * walkStep;
           var newLat = baseLat + Math.sin(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
@@ -250,7 +250,12 @@ function WebMapComponent({
           marker.setLatLng([newLat, newLng]);
           // Occasionally shift direction slightly (simulating path curves)
           if (walkStep % 10 === 0) walkAngle += (Math.random() - 0.5) * 0.3;
+          // Reset after 100 steps to prevent drift too far from origin
+          if (walkStep > 100) { walkStep = 0; baseLat = newLat; baseLng = newLng; }
         }, 4000);
+        // Store for cleanup
+        if (!window._wkWalkIntervals) window._wkWalkIntervals = [];
+        window._wkWalkIntervals.push(walkInterval);
       }
     });
 
@@ -643,9 +648,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderWidth: 1,
     borderColor: colors.border,

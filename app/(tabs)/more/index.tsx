@@ -42,8 +42,8 @@ const menuItems: MenuItem[] = [
   },
   {
     icon: 'shield-outline',
-    title: 'Privacy & Blocking',
-    subtitle: 'Privacy settings and blocked users',
+    title: 'Privacy & Trust',
+    subtitle: 'Control what others see, messages & blocking',
     route: '/(tabs)/more/privacy',
   },
   {
