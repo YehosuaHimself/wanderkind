@@ -8,12 +8,12 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Profile } from '../../../src/types/database';
@@ -55,7 +55,7 @@ export default function NewMessage() {
 
   const handleSendMessage = async () => {
     if (!user || !selectedUser || !messageText.trim()) {
-      Alert.alert('Missing information', 'Please select a user and write a message.');
+      showAlert('Missing information', 'Please select a user and write a message.');
       return;
     }
 
@@ -95,7 +95,7 @@ export default function NewMessage() {
       router.replace(`/(tabs)/messages/${threadId}`);
     } catch (err) {
       console.error('Send failed:', err);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
+      showAlert('Error', 'Failed to send message. Please try again.');
     } finally {
       setSending(false);
     }

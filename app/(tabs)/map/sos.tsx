@@ -6,11 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
@@ -58,7 +58,7 @@ export default function SOS() {
     const cleanNumber = number.replace(/\D/g, '');
     if (cleanNumber) {
       Linking.openURL(`tel:${cleanNumber}`).catch(() => {
-        Alert.alert('Error', 'Cannot make calls on this device');
+        showAlert('Error', 'Cannot make calls on this device');
       });
     }
   };

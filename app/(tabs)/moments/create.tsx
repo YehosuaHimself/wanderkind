@@ -7,7 +7,6 @@ import {
   Image,
   TextInput,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
@@ -79,7 +79,7 @@ export default function CreateMoment() {
 
   const handlePost = async () => {
     if (!user || !content.trim()) {
-      Alert.alert('Missing content', 'Please write something for your moment.');
+      showAlert('Missing content', 'Please write something for your moment.');
       return;
     }
 
@@ -104,7 +104,7 @@ export default function CreateMoment() {
       router.back();
     } catch (err) {
       console.error('Post failed:', err);
-      Alert.alert('Error', 'Failed to post your moment. Please try again.');
+      showAlert('Error', 'Failed to post your moment. Please try again.');
     } finally {
       setLoading(false);
     }

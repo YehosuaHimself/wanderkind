@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { showAlert } from '../../../src/lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,11 +24,11 @@ export default function FeedbackScreen() {
 
   const handleSubmit = async () => {
     if (!message.trim()) {
-      Alert.alert('Missing Information', 'Please enter your feedback');
+      showAlert('Missing Information', 'Please enter your feedback');
       return;
     }
     // Submit feedback to backend
-    Alert.alert('Success', 'Thank you for your feedback!');
+    showAlert('Success', 'Thank you for your feedback!');
     router.back();
   };
 

@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
@@ -36,7 +36,7 @@ export default function ReportIssueScreen() {
 
   const handleSubmit = async () => {
     if (!selectedOption) {
-      Alert.alert('Missing Information', 'Please select an issue type');
+      showAlert('Missing Information', 'Please select an issue type');
       return;
     }
 
@@ -56,11 +56,11 @@ export default function ReportIssueScreen() {
       if (error) throw error;
 
       // Show success and go back
-      Alert.alert('Success', 'Thank you for reporting. We will investigate this.');
+      showAlert('Success', 'Thank you for reporting. We will investigate this.');
       router.back();
     } catch (err) {
       console.error('Report submission error:', err);
-      Alert.alert('Error', 'Error submitting report. Please try again.');
+      showAlert('Error', 'Error submitting report. Please try again.');
     } finally {
       setLoading(false);
     }

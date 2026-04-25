@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
@@ -85,11 +85,11 @@ export default function ReportUserScreen() {
 
   const handleSubmit = async () => {
     if (!selectedReason) {
-      Alert.alert('Missing Information', 'Please select a reason');
+      showAlert('Missing Information', 'Please select a reason');
       return;
     }
     if (descriptionLength < 20) {
-      Alert.alert('Missing Information', 'Description must be at least 20 characters');
+      showAlert('Missing Information', 'Description must be at least 20 characters');
       return;
     }
 
@@ -112,7 +112,7 @@ export default function ReportUserScreen() {
       setConfirmed(true);
     } catch (err) {
       console.error('Report submission error:', err);
-      Alert.alert('Error', 'Error submitting report. Please try again.');
+      showAlert('Error', 'Error submitting report. Please try again.');
     } finally {
       setLoading(false);
     }

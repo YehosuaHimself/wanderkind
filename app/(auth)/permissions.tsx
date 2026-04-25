@@ -81,18 +81,25 @@ export default function PermissionsScreen() {
   };
 
   const handleContinue = async () => {
-    // Request both permissions in parallel
     setLoading(true);
     try {
-      const [locResult, notifResult] = await Promise.all([
-        Location.requestForegroundPermissionsAsync(),
-        Notifications.requestPermissionsAsync(),
-      ]);
+      if (Platform.OS === 'web') {
+        // On web, use browser APIs (already requested individually above)
+        // Just continue to next screen
+      } else {
+        // On native, request both permissions in parallel
+        const promises: Promise<any>[] = [];
+        if (Location) promises.push(Location.requestForegroundPermissionsAsync());
+        if (Notifications) promises.push(Notifications.requestPermissionsAsync());
 
-      setLocationGranted(locResult.status === 'granted');
-      setNotificationsGranted(notifResult.status === 'granted');
+        if (promises.length > 0) {
+          const results = await Promise.all(promises);
+          let idx = 0;
+          if (Location) { setLocationGranted(results[idx]?.status === 'granted'); idx++; }
+          if (Notifications) { setNotificationsGranted(results[idx]?.status === 'granted'); }
+        }
+      }
 
-      // Continue regardless of permissions granted
       router.push('/(auth)/onboarding-complete');
     } catch (error) {
       console.error(error);

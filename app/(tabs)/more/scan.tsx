@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { showAlert } from '../../../src/lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -122,7 +123,7 @@ function NativeScanScreen() {
     // Parse QR code data
     try {
       const scannedData = JSON.parse(data);
-      Alert.alert('QR Code Scanned', `Type: ${scannedData.type}`, [
+      showAlert('QR Code Scanned', `Type: ${scannedData.type}`, [
         {
           text: 'OK',
           onPress: () => {
@@ -136,7 +137,7 @@ function NativeScanScreen() {
         },
       ]);
     } catch (e) {
-      Alert.alert('Invalid QR Code', 'Could not read this QR code.', [
+      showAlert('Invalid QR Code', 'Could not read this QR code.', [
         {
           text: 'Try Again',
           onPress: () => setScanned(false),

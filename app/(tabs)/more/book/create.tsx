@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Image,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { showAlert } from '../../../../src/lib/alert';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 
@@ -65,7 +65,7 @@ export default function CreateBookEntry() {
 
   const handlePublish = async () => {
     if (!user || !title.trim() || !content.trim()) {
-      Alert.alert('Missing content', 'Please enter a title and some content for your entry.');
+      showAlert('Missing content', 'Please enter a title and some content for your entry.');
       return;
     }
 
@@ -105,11 +105,11 @@ export default function CreateBookEntry() {
 
       if (error) throw error;
 
-      Alert.alert('Success', 'Your entry has been published to your walking book.');
+      showAlert('Success', 'Your entry has been published to your walking book.');
       router.back();
     } catch (err) {
       console.error('Publish failed:', err);
-      Alert.alert('Error', 'Failed to publish your entry. Please try again.');
+      showAlert('Error', 'Failed to publish your entry. Please try again.');
     } finally {
       setSaving(false);
     }

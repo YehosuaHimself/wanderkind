@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform } from 'react-native';
+import { showAlert } from '../../../src/lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -65,7 +66,7 @@ export default function EmergencyScreen() {
   };
 
   const callEmergency = (number: string) => {
-    Alert.alert(
+    showAlert(
       'Emergency Call',
       `Call ${number}?`,
       [

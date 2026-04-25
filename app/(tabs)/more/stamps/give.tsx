@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
@@ -85,7 +85,7 @@ export default function GiveStampScreen() {
 
   const handleConfirm = async () => {
     if (!selectedCategory) {
-      Alert.alert('Missing Category', 'Please select a stamp category');
+      showAlert('Missing Category', 'Please select a stamp category');
       return;
     }
 
@@ -118,7 +118,7 @@ export default function GiveStampScreen() {
       setSuccess(true);
     } catch (err) {
       console.error('Stamp creation error:', err);
-      Alert.alert('Error', 'Error creating stamp. Please try again.');
+      showAlert('Error', 'Error creating stamp. Please try again.');
     } finally {
       setLoading(false);
     }

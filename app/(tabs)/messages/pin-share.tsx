@@ -7,13 +7,13 @@ import {
   TextInput,
   FlatList,
   Image,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { showAlert } from '../../../src/lib/alert';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Booking, Profile } from '../../../src/types/database';
@@ -56,7 +56,7 @@ export default function PINShare() {
 
   const handleSharePIN = async () => {
     if (!user || !selectedBooking || !pin.trim()) {
-      Alert.alert('Missing information', 'Please select a booking and enter the PIN.');
+      showAlert('Missing information', 'Please select a booking and enter the PIN.');
       return;
     }
 
@@ -93,11 +93,11 @@ export default function PINShare() {
 
       if (messageError) throw messageError;
 
-      Alert.alert('Success', 'Door PIN shared securely.');
+      showAlert('Success', 'Door PIN shared securely.');
       router.back();
     } catch (err) {
       console.error('Share failed:', err);
-      Alert.alert('Error', 'Failed to share PIN. Please try again.');
+      showAlert('Error', 'Failed to share PIN. Please try again.');
     } finally {
       setSharing(false);
     }

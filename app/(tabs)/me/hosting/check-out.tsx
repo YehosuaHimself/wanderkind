@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../../src/lib/theme';
+import { showAlert } from '../../../../src/lib/alert';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
@@ -143,7 +143,7 @@ export default function CheckOutScreen() {
       setConfirmed(true);
     } catch (err) {
       console.error('Check-out error:', err);
-      Alert.alert('Error', 'Error processing check-out. Please try again.');
+      showAlert('Error', 'Error processing check-out. Please try again.');
     } finally {
       setLoading(false);
     }

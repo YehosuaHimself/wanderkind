@@ -9,12 +9,12 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { showAlert } from '../../../../src/lib/alert';
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 import { Profile } from '../../../../src/types/database';
@@ -65,7 +65,7 @@ export default function CreateGroupChat() {
 
   const handleCreateGroup = async () => {
     if (!user || !groupName.trim() || selectedMembers.length === 0) {
-      Alert.alert('Missing information', 'Please enter a group name and select at least one member.');
+      showAlert('Missing information', 'Please enter a group name and select at least one member.');
       return;
     }
 
@@ -87,7 +87,7 @@ export default function CreateGroupChat() {
       router.replace(`/(tabs)/messages/group/${data.id}`);
     } catch (err) {
       console.error('Create group failed:', err);
-      Alert.alert('Error', 'Failed to create group. Please try again.');
+      showAlert('Error', 'Failed to create group. Please try again.');
     } finally {
       setCreating(false);
     }
