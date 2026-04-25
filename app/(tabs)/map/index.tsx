@@ -91,6 +91,52 @@ const POI_DATA = {
   ],
 };
 
+// Simplified route waypoints for polylines on the map
+const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, number][] }[] = [
+  { id: 'koenigsweg', name: "The King's Way", color: '#D4A017', coords: [
+    [47.63, 13.00], [47.42, 13.07], [47.27, 12.39], [47.26, 11.39], [47.17, 10.21],
+    [47.37, 9.75], [47.43, 9.38], [47.13, 8.75], [47.00, 8.00], [46.95, 7.44],
+    [46.52, 6.63], [46.20, 6.14], [45.90, 5.77], [45.44, 4.39], [45.05, 3.89],
+    [44.84, 3.18], [44.37, 2.58], [43.93, 2.15], [43.60, 1.44], [43.30, 0.50],
+    [42.88, -0.30], [42.82, -1.64], [42.47, -2.33], [42.34, -3.70], [42.60, -5.57],
+    [42.46, -6.05], [42.44, -7.01], [42.88, -8.54], [42.23, -8.71], [41.65, -8.14],
+    [40.96, -8.54], [39.74, -8.24], [38.72, -9.14], [38.08, -7.90], [37.39, -5.99],
+    [36.72, -4.42], [36.01, -5.60],
+  ]},
+  { id: 'camino-frances', name: 'Camino Francés', color: '#C8762A', coords: [
+    [43.01, -1.32], [42.97, -1.39], [42.82, -1.64], [42.67, -2.03], [42.47, -2.33],
+    [42.34, -3.70], [42.27, -4.54], [42.60, -5.57], [42.46, -6.05], [42.44, -7.01],
+    [42.88, -8.54],
+  ]},
+  { id: 'via-francigena', name: 'Via Francigena', color: '#8B4513', coords: [
+    [51.28, 1.08], [50.94, 1.86], [49.90, 2.30], [49.25, 4.03], [48.30, 5.38],
+    [47.47, 7.35], [46.95, 7.44], [46.52, 6.63], [46.00, 8.95], [45.46, 9.19],
+    [44.72, 10.35], [43.77, 11.25], [43.32, 11.33], [42.73, 11.79], [42.29, 12.24],
+    [41.90, 12.45],
+  ]},
+  { id: 'camino-portugues', name: 'Camino Portugués', color: '#2E6DA4', coords: [
+    [41.15, -8.61], [41.37, -8.76], [41.69, -8.83], [42.05, -8.63], [42.43, -8.64],
+    [42.63, -8.62], [42.88, -8.54],
+  ]},
+  { id: 'camino-del-norte', name: 'Camino del Norte', color: '#27864A', coords: [
+    [43.19, -3.00], [43.26, -2.93], [43.32, -3.01], [43.39, -3.44], [43.46, -3.80],
+    [43.38, -4.45], [43.37, -5.85], [43.27, -6.55], [43.23, -7.56], [43.01, -7.56],
+    [42.88, -8.54],
+  ]},
+  { id: 'e1', name: 'E1 (North Cape — Sicily)', color: '#6366F1', coords: [
+    [71.17, 25.78], [69.65, 18.96], [63.43, 10.40], [59.91, 10.75], [57.71, 11.97],
+    [55.68, 12.57], [54.32, 10.14], [53.55, 9.99], [51.51, 7.47], [50.11, 8.68],
+    [48.78, 9.18], [47.37, 9.75], [46.95, 7.44], [46.00, 8.95], [45.07, 7.69],
+    [43.77, 11.25], [41.90, 12.45], [38.11, 13.36],
+  ]},
+  { id: 'e5', name: 'E5 (Pointe du Raz — Verona)', color: '#EC4899', coords: [
+    [48.04, -4.73], [47.66, -2.76], [47.22, -1.55], [46.16, -1.15], [45.18, 0.72],
+    [44.84, 0.58], [43.30, 0.50], [43.00, -0.05], [42.76, 0.17], [42.68, 0.73],
+    [42.44, 1.47], [42.53, 2.43], [43.30, 5.37], [44.06, 6.24], [44.90, 6.87],
+    [45.92, 7.87], [46.07, 11.12], [45.44, 11.00],
+  ]},
+];
+
 function WebMapComponent({
   hosts, filter, onHostPress, walkers, onWalkerPress, layers
 }: {
@@ -221,6 +267,22 @@ function WebMapComponent({
       L.marker([m.lat, m.lng], { icon: icon })
         .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + m.name + '</strong><br/><span style="color:#6B7280;font-size:10px;">Mountain</span></div>')
         .addTo(map);
+    });
+
+    // === ROUTE POLYLINES (The Ways) ===
+    var routes = ${layers.ways ? JSON.stringify(ROUTE_LINES) : '[]'};
+    routes.forEach(function(route) {
+      var latlngs = route.coords.map(function(c) { return [c[0], c[1]]; });
+      L.polyline(latlngs, {
+        color: route.color,
+        weight: 3,
+        opacity: 0.7,
+        dashArray: route.id === 'koenigsweg' ? null : '8 4',
+        lineCap: 'round',
+        lineJoin: 'round'
+      })
+      .bindPopup('<div style="font-size:13px;text-align:center;font-weight:600;color:' + route.color + ';">' + route.name + '</div>')
+      .addTo(map);
     });
 
     // Handle messages from parent
