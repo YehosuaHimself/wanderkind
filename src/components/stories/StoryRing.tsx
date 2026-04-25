@@ -72,7 +72,9 @@ export const StoryRing: React.FC<StoryRingProps> = ({
     },
   });
 
-  const truncatedName = name.length > 8 ? `${name.substring(0, 8)}` : name;
+  // Show @handle format, truncated to fit
+  const displayName = name === 'Your story' ? name : (name.startsWith('@') ? name : `@${name}`);
+  const truncatedName = displayName.length > 10 ? `${displayName.substring(0, 10)}` : displayName;
 
   return (
     <TouchableOpacity

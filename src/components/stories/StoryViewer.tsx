@@ -10,6 +10,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
 import type { StoryRow } from '../../types/database';
 
@@ -17,6 +19,7 @@ type StoryViewerProps = {
   stories: StoryRow[];
   authorName: string;
   authorAvatar?: string | null;
+  authorId?: string;
   initialIndex?: number;
   visible: boolean;
   onClose: () => void;
@@ -30,10 +33,23 @@ export const StoryViewer = ({
   stories,
   authorName,
   authorAvatar,
+  authorId,
   initialIndex = 0,
   visible,
   onClose,
 }: StoryViewerProps) => {
+  const router = useRouter();
+  const handleProfilePress = useCallback(() => {
+    if (authorId) {
+      onClose();
+      setTimeout(() => {
+        router.push(`/(tabs)/me/profile/${authorId}` as any);
+      }, 300);
+    }
+  }, [authorId, onClose, router]);
+
+  // Display @handle format
+  const displayHandle = authorName.startsWith('@') ? authorName : `@${authorName}`;
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [paused, setPaused] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -184,8 +200,13 @@ export const StoryViewer = ({
           />
         </TouchableOpacity>
 
-        {/* Top header: avatar + author + time */}
-        <View style={styles.header}>
+        {/* Top header: avatar + author + time — tappable for profile */}
+        <TouchableOpacity
+          style={styles.header}
+          onPress={handleProfilePress}
+          activeOpacity={0.8}
+          disabled={!authorId}
+        >
           {authorAvatar ? (
             <Image
               source={{ uri: authorAvatar }}
@@ -195,12 +216,15 @@ export const StoryViewer = ({
             <View style={styles.avatarPlaceholder} />
           )}
           <View style={styles.authorInfo}>
-            <Text style={styles.authorName}>{authorName}</Text>
+            <Text style={styles.authorName}>{displayHandle}</Text>
             <Text style={styles.timeAgo}>
               {getTimeAgo(currentStory.created_at)}
             </Text>
           </View>
-        </View>
+          {authorId && (
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" />
+          )}
+        </TouchableOpacity>
 
         {/* Close button */}
         <TouchableOpacity

@@ -33,6 +33,18 @@ const storyTimestamps = [
   new Date(now.getTime() - 7 * 60 * 60 * 1000), // 7h ago
   new Date(now.getTime() - 8.5 * 60 * 60 * 1000), // 8.5h ago
   new Date(now.getTime() - 9.5 * 60 * 60 * 1000), // 9.5h ago
+  new Date(now.getTime() - 0.25 * 60 * 60 * 1000), // 15 min ago
+  new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1h ago
+  new Date(now.getTime() - 1.75 * 60 * 60 * 1000), // 1h 45min ago
+  new Date(now.getTime() - 3 * 60 * 60 * 1000), // 3h ago
+  new Date(now.getTime() - 4.75 * 60 * 60 * 1000), // 4h 45min ago
+  new Date(now.getTime() - 5.5 * 60 * 60 * 1000), // 5.5h ago
+  new Date(now.getTime() - 6 * 60 * 60 * 1000), // 6h ago
+  new Date(now.getTime() - 7.5 * 60 * 60 * 1000), // 7.5h ago
+  new Date(now.getTime() - 8 * 60 * 60 * 1000), // 8h ago
+  new Date(now.getTime() - 9 * 60 * 60 * 1000), // 9h ago
+  new Date(now.getTime() - 10 * 60 * 60 * 1000), // 10h ago
+  new Date(now.getTime() - 10.5 * 60 * 60 * 1000), // 10.5h ago
 ];
 
 export const SEED_STORIES = [
@@ -191,6 +203,162 @@ export const SEED_STORIES = [
     lng: -8.545,
     created_at: storyTimestamps[11].toISOString(),
     expires_at: addStoryExpiry(storyTimestamps[11].toISOString()),
+  },
+  {
+    id: 'story-013',
+    author_id: 'p-006',
+    author: getProfileById('p-006'),
+    photo_url:
+      'https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Year two on the road. Every village has a different bread. Today: sourdough from a 90-year-old baker.',
+    location_name: 'Camino Portugues, Tui',
+    lat: 42.046,
+    lng: -8.643,
+    created_at: storyTimestamps[12].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[12].toISOString()),
+  },
+  {
+    id: 'story-014',
+    author_id: 'p-007',
+    author: getProfileById('p-007'),
+    photo_url:
+      'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Hosted three wanderkinder tonight. The kitchen smells like home. Their stories fill the room.',
+    location_name: 'Black Forest, Germany',
+    lat: 48.030,
+    lng: 8.210,
+    created_at: storyTimestamps[13].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[13].toISOString()),
+  },
+  {
+    id: 'story-015',
+    author_id: 'p-009',
+    author: getProfileById('p-009'),
+    photo_url:
+      'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: null,
+    location_name: 'Finisterre coastline',
+    lat: 42.906,
+    lng: -9.263,
+    created_at: storyTimestamps[14].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[14].toISOString()),
+  },
+  {
+    id: 'story-016',
+    author_id: 'p-011',
+    author: getProfileById('p-011'),
+    photo_url:
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Stars above the Meseta. No light pollution for 50km in any direction. Just me and the universe.',
+    location_name: 'Meseta Central',
+    lat: 42.100,
+    lng: -4.520,
+    created_at: storyTimestamps[15].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[15].toISOString()),
+  },
+  {
+    id: 'story-017',
+    author_id: 'p-013',
+    author: getProfileById('p-013'),
+    photo_url:
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Morning fog lifting over the vineyard paths. This is why I wake up at 5am.',
+    location_name: 'La Rioja wine country',
+    lat: 42.450,
+    lng: -2.450,
+    created_at: storyTimestamps[16].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[16].toISOString()),
+  },
+  {
+    id: 'story-018',
+    author_id: 'p-014',
+    author: getProfileById('p-014'),
+    photo_url:
+      'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Wild camping under ancient oaks. The ground is hard but the soul is soft.',
+    location_name: 'Near Sahagún',
+    lat: 42.370,
+    lng: -5.030,
+    created_at: storyTimestamps[17].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[17].toISOString()),
+  },
+  {
+    id: 'story-019',
+    author_id: 'p-016',
+    author: getProfileById('p-016'),
+    photo_url:
+      'https://images.unsplash.com/photo-1495837174058-628aafc7d610?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Local market day. Fresh cheese, olives, and bread for 3 euros. Walking rich.',
+    location_name: 'Estella, Navarra',
+    lat: 42.671,
+    lng: -2.032,
+    created_at: storyTimestamps[18].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[18].toISOString()),
+  },
+  {
+    id: 'story-020',
+    author_id: 'p-017',
+    author: getProfileById('p-017'),
+    photo_url:
+      'https://images.unsplash.com/photo-1465189684280-6a8fa9b19a7a?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: null,
+    location_name: 'Via de la Plata, Extremadura',
+    lat: 39.470,
+    lng: -6.370,
+    created_at: storyTimestamps[19].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[19].toISOString()),
+  },
+  {
+    id: 'story-021',
+    author_id: 'p-019',
+    author: getProfileById('p-019'),
+    photo_url:
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Bridge crossing at dawn. Every step forward is a step away from who I was.',
+    location_name: 'Puente la Reina',
+    lat: 42.673,
+    lng: -1.811,
+    created_at: storyTimestamps[20].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[20].toISOString()),
+  },
+  {
+    id: 'story-022',
+    author_id: 'p-021',
+    author: getProfileById('p-021'),
+    photo_url:
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Found a spring that is not on any map. Cold, clear, perfect. Shared the coordinates with the next walker.',
+    location_name: 'Between Astorga and Ponferrada',
+    lat: 42.487,
+    lng: -6.340,
+    created_at: storyTimestamps[21].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[21].toISOString()),
+  },
+  {
+    id: 'story-023',
+    author_id: 'p-022',
+    author: getProfileById('p-022'),
+    photo_url:
+      'https://images.unsplash.com/photo-1445363692815-ebcd599f7621?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Stone path worn smooth by a million feet before mine. Humbling.',
+    location_name: 'O Cebreiro, Galicia',
+    lat: 42.709,
+    lng: -7.043,
+    created_at: storyTimestamps[22].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[22].toISOString()),
+  },
+  {
+    id: 'story-024',
+    author_id: 'p-024',
+    author: getProfileById('p-024'),
+    photo_url:
+      'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Sunset from the hilltop. Took my boots off, sat in the grass, and just breathed.',
+    location_name: 'Alto del Perdón',
+    lat: 42.778,
+    lng: -1.738,
+    created_at: storyTimestamps[23].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[23].toISOString()),
   },
 ];
 

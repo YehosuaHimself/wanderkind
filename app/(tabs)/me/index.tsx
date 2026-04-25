@@ -18,7 +18,7 @@ import { SEED_MOMENTS } from '../../../src/data/seed-moments';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GALLERY_SIZE = (SCREEN_WIDTH - 48 - 36) / 7; // 7 items with 6 gaps of 6px
 
-type ContentTab = 'posts' | 'stamps' | 'journal';
+type ContentTab = 'posts' | 'stamps';
 
 export default function MeScreen() {
   useAuthGuard();
@@ -295,7 +295,7 @@ export default function MeScreen() {
               <Text style={styles.statLabel}>STAMPS</Text>
             </TouchableOpacity>
             <View style={styles.statDivider} />
-            <TouchableOpacity style={styles.stat} onPress={() => setActiveTab('journal')}>
+            <TouchableOpacity style={styles.stat}>
               <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
               <Text style={styles.statLabel}>HOSTED</Text>
             </TouchableOpacity>
@@ -396,16 +396,6 @@ export default function MeScreen() {
               color={activeTab === 'stamps' ? colors.amber : colors.ink3}
             />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
-            onPress={() => setActiveTab('journal')}
-          >
-            <Ionicons
-              name="journal-outline"
-              size={20}
-              color={activeTab === 'journal' ? colors.amber : colors.ink3}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* ===== TAB CONTENT ===== */}
@@ -475,56 +465,6 @@ export default function MeScreen() {
           </View>
         )}
 
-        {activeTab === 'journal' && (
-          <View style={styles.contentGrid}>
-            <TouchableOpacity
-              style={styles.journalCard}
-              onPress={() => router.push('/(tabs)/more/book' as any)}
-            >
-              <View style={styles.journalCardIcon}>
-                <Ionicons name="journal-outline" size={20} color={colors.amber} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.journalCardTitle}>My Journal</Text>
-                <Text style={styles.journalCardSub}>Stories, reflections, and trail notes</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.journalCard}
-              onPress={() => router.push('/(tabs)/more/book/create' as any)}
-            >
-              <View style={styles.journalCardIcon}>
-                <Ionicons name="create-outline" size={20} color={colors.amber} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.journalCardTitle}>Write New Entry</Text>
-                <Text style={styles.journalCardSub}>Capture today's moment on the road</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ===== MORE LINKS ===== */}
-        <View style={styles.moreSection}>
-          <TouchableOpacity
-            style={styles.moreItem}
-            onPress={() => router.push('/(tabs)/more/book' as any)}
-          >
-            <Ionicons name="journal-outline" size={18} color={colors.ink2} />
-            <Text style={styles.moreItemText}>My Journal</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.moreItem}
-            onPress={() => router.push('/(tabs)/me/emergency-contacts' as any)}
-          >
-            <Ionicons name="call-outline" size={18} color={colors.ink2} />
-            <Text style={styles.moreItemText}>Emergency Contacts</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-          </TouchableOpacity>
-        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -986,46 +926,4 @@ const styles = StyleSheet.create({
   stampName: { fontSize: 14, fontWeight: '600', color: colors.ink },
   stampDate: { fontSize: 11, color: colors.ink3, marginTop: 2 },
 
-  // === JOURNAL CARDS ===
-  journalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.borderLt,
-    marginBottom: 8,
-  },
-  journalCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.amberBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  journalCardTitle: { fontSize: 14, fontWeight: '600', color: colors.ink },
-  journalCardSub: { fontSize: 12, color: colors.ink3, marginTop: 2 },
-
-  // === MORE LINKS ===
-  moreSection: {
-    marginHorizontal: 20,
-    marginTop: 16,
-  },
-  moreItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  moreItemText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.ink,
-  },
 });

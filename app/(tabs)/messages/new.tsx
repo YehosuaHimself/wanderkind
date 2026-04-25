@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
@@ -18,6 +18,7 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Profile } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 // Helper function to escape SQL wildcards in ILIKE queries
 function escapeIlike(input: string): string {
@@ -28,6 +29,7 @@ export default function NewMessage() {
   useAuthGuard();
 
   const router = useRouter();
+  const params = useLocalSearchParams<{ userId?: string; name?: string }>();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
@@ -36,6 +38,37 @@ export default function NewMessage() {
   const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-select user when passed via URL params (e.g. from feed DM button)
+  useEffect(() => {
+    if (params.userId && !selectedUser) {
+      // Try to find in seed profiles first
+      const seedProfile = SEED_PROFILES.find(p => p.id === params.userId);
+      if (seedProfile) {
+        setSelectedUser(seedProfile as unknown as Profile);
+        return;
+      }
+      // Otherwise fetch from Supabase
+      (async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', params.userId)
+            .single();
+          if (data) setSelectedUser(data as Profile);
+        } catch {
+          // Fallback: create minimal profile from name param
+          if (params.name) {
+            setSelectedUser({
+              id: params.userId,
+              trail_name: params.name,
+            } as Profile);
+          }
+        }
+      })();
+    }
+  }, [params.userId]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

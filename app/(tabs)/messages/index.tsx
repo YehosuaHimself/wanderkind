@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Platform, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 type Thread = {
   id: string;
@@ -27,6 +28,21 @@ export default function MessagesScreen() {
   const { user } = useAuth();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Search wanderkinder by name or @handle
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().replace(/^@/, '');
+    return SEED_PROFILES
+      .filter(p => {
+        if (user && p.id === user.id) return false;
+        const name = (p.trail_name || '').toLowerCase().replace(/^@/, '');
+        return name.includes(q);
+      })
+      .slice(0, 10);
+  }, [searchQuery, user]);
 
   const fetchThreads = useCallback(async () => {
     if (!user) return;
@@ -114,22 +130,98 @@ export default function MessagesScreen() {
         <Text style={styles.headerTitle}>Conversations</Text>
       </View>
 
-      <FlatList
-        data={threads}
-        renderItem={renderThread}
-        keyExtractor={item => item.id}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
-        }
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={Platform.OS !== 'web'}
-        initialNumToRender={10}
-      />
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={16} color={colors.ink3} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search wanderkinder by name or @handle..."
+            placeholderTextColor={colors.ink3}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onFocus={() => setIsSearching(true)}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => { setSearchQuery(''); setIsSearching(false); }}>
+              <Ionicons name="close-circle" size={16} color={colors.ink3} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Search Results */}
+      {isSearching && searchQuery.trim().length > 0 ? (
+        <FlatList
+          data={searchResults}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No wanderkinder found</Text>
+              <Text style={styles.emptyText}>Try a different name or @handle</Text>
+            </View>
+          )}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.threadRow}
+              onPress={() => {
+                setSearchQuery('');
+                setIsSearching(false);
+                router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.avatar}>
+                {item.avatar_url ? (
+                  <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
+                ) : (
+                  <Ionicons name="person" size={18} color={colors.ink3} />
+                )}
+              </View>
+              <View style={styles.threadInfo}>
+                <Text style={styles.threadName}>{item.trail_name}</Text>
+                <Text style={styles.threadPreview} numberOfLines={1}>
+                  {item.bio ? item.bio.slice(0, 60) + (item.bio.length > 60 ? '...' : '') : 'Wanderkind'}
+                </Text>
+              </View>
+              <View style={styles.newMsgBadge}>
+                <Ionicons name="chatbubble-outline" size={14} color={colors.amber} />
+              </View>
+            </TouchableOpacity>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      ) : (
+        <FlatList
+          data={threads}
+          renderItem={renderThread}
+          keyExtractor={item => item.id}
+          ListEmptyComponent={renderEmpty}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
+          }
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS !== 'web'}
+          initialNumToRender={10}
+        />
+      )}
+
+      {/* FAB — New Message */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/(tabs)/messages/new' as any)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -240,12 +332,58 @@ const styles = StyleSheet.create({
     backgroundColor: colors.borderLt,
     marginLeft: spacing.xl + 56,
   },
+  searchContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.ink,
+    padding: 0,
+  },
+  newMsgBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
     paddingHorizontal: 48,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.amber,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    zIndex: 10,
   },
   emptyIcon: { marginBottom: 16 },
   emptyTitle: { ...typography.h3, color: colors.ink, marginBottom: 8, textAlign: 'center' },

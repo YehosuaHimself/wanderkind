@@ -179,8 +179,8 @@ export default function MomentsFeed() {
     setStoryGroups(grouped);
   }, []);
 
-  const groupStoriesByAuthor = (stories: typeof SEED_STORIES): StoryGroup[] => {
-    const map = new Map<string, StoryGroup>();
+  const groupStoriesByAuthor = useCallback((stories: typeof SEED_STORIES): StoryGroup[] => {
+    const map = new Map<string, StoryGroup & { lat?: number | null; lng?: number | null }>();
     for (const story of stories) {
       if (!map.has(story.author_id)) {
         map.set(story.author_id, {
@@ -188,17 +188,33 @@ export default function MomentsFeed() {
           authorName: (story as any).author?.trail_name ?? 'Wanderkind',
           authorAvatar: (story as any).author?.avatar_url ?? null,
           stories: [],
+          lat: story.lat,
+          lng: story.lng,
         });
       }
       map.get(story.author_id)!.stories.push(story as any);
     }
-    return Array.from(map.values());
-  };
+    const groups = Array.from(map.values());
+
+    // Sort by proximity if user location is available
+    if (userLat != null && userLng != null) {
+      groups.sort((a, b) => {
+        const aHas = a.lat != null && a.lng != null;
+        const bHas = b.lat != null && b.lng != null;
+        if (!aHas && !bHas) return 0;
+        if (!aHas) return 1;
+        if (!bHas) return -1;
+        return haversineKm(userLat, userLng, a.lat!, a.lng!) - haversineKm(userLat, userLng, b.lat!, b.lng!);
+      });
+    }
+
+    return groups;
+  }, [userLat, userLng]);
 
   useEffect(() => {
     fetchMoments();
     fetchStories();
-  }, []);
+  }, [fetchStories]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -206,11 +222,13 @@ export default function MomentsFeed() {
     setRefreshing(false);
   };
 
-  // Start a message thread with a moment's author
-  const handleMessageAuthor = useCallback(async (authorId: string) => {
+  // Start a message thread with a moment's author — direct DM
+  const handleMessageAuthor = useCallback(async (authorId: string, authorName?: string) => {
     if (!user) return;
     if (authorId === user.id) return;
-    router.push(`/(tabs)/messages/new?userId=${authorId}`);
+    const params = new URLSearchParams({ userId: authorId });
+    if (authorName) params.set('name', authorName);
+    router.push(`/(tabs)/messages/new?${params.toString()}` as any);
   }, [user, router]);
 
   // ── Format distance for display ────────────────────────────────────
@@ -290,10 +308,9 @@ export default function MomentsFeed() {
 
   const renderListHeader = useCallback(() => (
     <View>
-      {renderStoryBar()}
       {renderFilterTabs()}
     </View>
-  ), [renderStoryBar, renderFilterTabs]);
+  ), [renderFilterTabs]);
 
   const renderMoment = useCallback(
     ({ item }: { item: MomentWithAuthor }) => {
@@ -326,11 +343,11 @@ export default function MomentsFeed() {
               </View>
             </View>
 
-            {/* Message button */}
+            {/* Message button — direct DM */}
             {user && item.author_id !== user.id && (
               <TouchableOpacity
                 style={styles.messageButton}
-                onPress={() => handleMessageAuthor(item.author_id)}
+                onPress={() => handleMessageAuthor(item.author_id, item.author?.trail_name)}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -383,6 +400,9 @@ export default function MomentsFeed() {
         <Text style={styles.headerTitle}>From the Road</Text>
       </View>
 
+      {/* Sticky Stories Bar */}
+      {renderStoryBar()}
+
       <FlatList
         data={sortedMoments}
         renderItem={renderMoment}
@@ -415,6 +435,7 @@ export default function MomentsFeed() {
           stories={viewingStory.stories}
           authorName={viewingStory.authorName}
           authorAvatar={viewingStory.authorAvatar}
+          authorId={viewingStory.authorId}
           visible={!!viewingStory}
           onClose={() => setViewingStory(null)}
         />

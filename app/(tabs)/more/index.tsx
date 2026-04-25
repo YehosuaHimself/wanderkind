@@ -85,6 +85,12 @@ const menuItems: MenuItem[] = [
     accent: colors.green,
   },
   {
+    icon: 'call-outline',
+    title: 'Emergency Contacts',
+    subtitle: 'Your emergency contact list',
+    route: '/(tabs)/me/emergency-contacts',
+  },
+  {
     icon: 'information-circle-outline',
     title: 'About',
     subtitle: 'About Wanderkind',
