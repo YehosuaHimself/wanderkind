@@ -64,7 +64,7 @@ jobs:
             event.respondWith(fetch(event.request));
           });
           SWEOF
-          cp dist/sw.js dist/service-worker.js
+          # Only sw.js needed — registered in HTML injection above
 
       - name: Add custom domain CNAME
         run: echo "wanderkind.love" > dist/CNAME

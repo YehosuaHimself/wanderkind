@@ -97,9 +97,9 @@ function IOSInstallGuide({ visible, onClose }: { visible: boolean; onClose: () =
                     isDone && styles.stepNumberDone,
                   ]}>
                     {isDone ? (
-                      <Ionicons name="checkmark" size={14} color="#fff" />
+                      <Ionicons name="checkmark" size={14} color={colors.surface} />
                     ) : (
-                      <Text style={[styles.stepNumberText, (isActive || isDone) && { color: '#fff' }]}>
+                      <Text style={[styles.stepNumberText, (isActive || isDone) && { color: colors.surface }]}>
                         {i + 1}
                       </Text>
                     )}
@@ -160,6 +160,7 @@ export function InstallBanner({ mode = 'banner' }: { mode?: 'banner' | 'fullscre
   } = useInstallPrompt();
 
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
@@ -182,9 +183,15 @@ export function InstallBanner({ mode = 'banner' }: { mode?: 'banner' | 'fullscre
   if (!canInstall) return null;
 
   const handleInstall = async () => {
+    if (installing) return; // Prevent double-tap
     haptic.medium();
     if (canNativeInstall) {
-      await install();
+      setInstalling(true);
+      try {
+        await install();
+      } finally {
+        setInstalling(false);
+      }
     } else if (isIOS) {
       setShowIOSGuide(true);
     }
@@ -211,18 +218,20 @@ export function InstallBanner({ mode = 'banner' }: { mode?: 'banner' | 'fullscre
     if (!showBanner) return null;
 
     return (
-      <Animated.View style={[styles.banner, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+      <Animated.View style={[styles.banner, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]} accessible accessibilityRole="alert" accessibilityLabel="Install Wanderkind app for the best experience">
         {/* Dismiss X */}
         <TouchableOpacity
           style={styles.bannerDismiss}
           onPress={handleDismiss}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss install banner"
         >
           <Ionicons name="close" size={16} color={colors.ink3} />
         </TouchableOpacity>
 
         <View style={styles.bannerIcon}>
-          <Ionicons name="download-outline" size={20} color="#fff" />
+          <Ionicons name="download-outline" size={20} color={colors.surface} />
         </View>
         <View style={styles.bannerContent}>
           <Text style={styles.bannerTitle}>Install Wanderkind</Text>
@@ -232,7 +241,7 @@ export function InstallBanner({ mode = 'banner' }: { mode?: 'banner' | 'fullscre
               : 'Get the full app — no app store needed'}
           </Text>
         </View>
-        <TouchableOpacity style={styles.bannerButton} onPress={handleInstall} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.bannerButton} onPress={handleInstall} activeOpacity={0.8} disabled={installing} accessibilityRole="button" accessibilityLabel="Install Wanderkind">
           <Text style={styles.bannerButtonText}>INSTALL</Text>
         </TouchableOpacity>
 
@@ -273,7 +282,7 @@ export function InstallBanner({ mode = 'banner' }: { mode?: 'banner' | 'fullscre
           </View>
 
           <TouchableOpacity style={styles.fullscreenButton} onPress={handleInstall} activeOpacity={0.85}>
-            <Ionicons name="download-outline" size={20} color="#fff" />
+            <Ionicons name="download-outline" size={20} color={colors.surface} />
             <Text style={styles.fullscreenButtonText}>
               {isIOS ? 'Show Me How' : 'Install Wanderkind'}
             </Text>
