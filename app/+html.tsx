@@ -3,7 +3,7 @@ import type { PropsWithChildren } from 'react';
 
 /**
  * Custom HTML document for Expo Router web export.
- * Adds PWA manifest, Apple meta tags, and theme color for standalone mode.
+ * Full PWA support: manifest, service worker registration, Apple + Android + Chrome meta tags.
  */
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -16,20 +16,30 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, shrink-to-fit=no, viewport-fit=cover"
         />
 
-        {/* PWA Manifest */}
+        {/* PWA Manifest — required by all browsers */}
         <link rel="manifest" href="/manifest.json" />
 
-        {/* Theme color — matches Wanderkind amber */}
+        {/* Theme color — Chrome uses this for address bar + splash screen */}
         <meta name="theme-color" content="#C8762A" />
 
-        {/* Apple PWA meta tags — CRITICAL for iOS standalone mode */}
+        {/* Chrome / Android PWA meta tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="Wanderkind" />
+
+        {/* Apple / iOS PWA meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Wanderkind" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-        {/* Standard favicon */}
+        {/* Microsoft / Windows PWA meta tags */}
+        <meta name="msapplication-TileColor" content="#C8762A" />
+        <meta name="msapplication-TileImage" content="/icon-144.png" />
+
+        {/* Standard favicons */}
         <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/icon-96.png" />
 
         {/* Prevent body scrolling + full-height layout */}
         <ScrollViewStyleReset />
@@ -40,7 +50,18 @@ export default function Root({ children }: PropsWithChildren) {
           #root { display: flex; height: 100%; flex: 1; }
         `}} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+
+        {/* Register service worker — CRITICAL for Chrome/Android install prompt */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').catch(function() {});
+            });
+          }
+        `}} />
+      </body>
     </html>
   );
 }
