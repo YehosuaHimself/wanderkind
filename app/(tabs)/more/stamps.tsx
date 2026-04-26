@@ -202,6 +202,22 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
         data={stamps}
         renderItem={renderStamp}
         keyExtractor={item => item.id}
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={styles.myStampCard}
+            onPress={() => router.push('/(tabs)/more/stamps/my-stamp' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.myStampIcon}>
+              <Ionicons name="finger-print-outline" size={28} color={colors.amber} />
+            </View>
+            <View style={styles.myStampInfo}>
+              <Text style={styles.myStampTitle}>My Wanderkind Stamp</Text>
+              <Text style={styles.myStampSub}>Design your personal stamp to share</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.ink3} />
+          </TouchableOpacity>
+        }
         ListEmptyComponent={renderEmpty}
         numColumns={3}
         columnWrapperStyle={styles.row}
@@ -213,13 +229,13 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
         initialNumToRender={15}
       />
 
-      {/* FAB — Create or Scan Stamp */}
+      {/* FAB — Scan Stamp (single core action) */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setShowFabMenu(true)}
         activeOpacity={0.85}
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="scan-outline" size={24} color="#fff" />
       </TouchableOpacity>
 
       {/* FAB Menu Modal */}
@@ -239,21 +255,6 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
               style={styles.fabMenuItem}
               onPress={() => {
                 setShowFabMenu(false);
-                router.push('/(tabs)/more/stamps/give' as any);
-              }}
-            >
-              <View style={[styles.fabMenuIcon, { backgroundColor: colors.amberBg }]}>
-                <Ionicons name="create-outline" size={20} color={colors.amber} />
-              </View>
-              <View style={styles.fabMenuInfo}>
-                <Text style={styles.fabMenuTitle}>Create Stamp</Text>
-                <Text style={styles.fabMenuSub}>Add a stamp manually</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              onPress={() => {
-                setShowFabMenu(false);
                 router.push('/(tabs)/more/scan' as any);
               }}
             >
@@ -262,7 +263,22 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
               </View>
               <View style={styles.fabMenuInfo}>
                 <Text style={styles.fabMenuTitle}>Scan Stamp</Text>
-                <Text style={styles.fabMenuSub}>Scan a QR code from a host</Text>
+                <Text style={styles.fabMenuSub}>Scan a QR code to collect a stamp</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.fabMenuItem}
+              onPress={() => {
+                setShowFabMenu(false);
+                router.push('/(tabs)/more/stamps/my-stamp' as any);
+              }}
+            >
+              <View style={[styles.fabMenuIcon, { backgroundColor: colors.amberBg }]}>
+                <Ionicons name="finger-print-outline" size={20} color={colors.amber} />
+              </View>
+              <View style={styles.fabMenuInfo}>
+                <Text style={styles.fabMenuTitle}>My Wanderkind Stamp</Text>
+                <Text style={styles.fabMenuSub}>Design and share your personal stamp</Text>
               </View>
             </TouchableOpacity>
             {stamps.length > 0 && (
@@ -380,6 +396,38 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { ...typography.h3, color: colors.ink, marginTop: 12, textAlign: 'center' },
   emptyText: { ...typography.bodySm, color: colors.ink2, marginTop: 6, textAlign: 'center' },
+
+  // My Stamp Card
+  myStampCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.amberBg,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: `${colors.amber}25`,
+  },
+  myStampIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${colors.amber}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  myStampInfo: { flex: 1 },
+  myStampTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.amber,
+  },
+  myStampSub: {
+    fontSize: 11,
+    color: colors.ink2,
+    marginTop: 2,
+  },
 
   // FAB
   fab: {
