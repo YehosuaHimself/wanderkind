@@ -196,16 +196,9 @@ function WebMapComponent({
   onWalkerPress: (id: string) => void;
   layers: LayerState;
 }) {
-  const iframeRef = useRef<any>(null);
-
-  // Build filtered hosts list
-  const filteredHosts = layers.hosts ? hosts.filter(h => {
-    if (filter === 'free') return h.host_type === 'free';
-    if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
-    return true;
-  }) : [];
-
-  const visibleWalkers = layers.wanderkinder ? walkers : [];
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const prevDataRef = useRef<string>('');
 
   // Map host type to marker color
   const getMarkerColor = (type: string): string => {
@@ -214,19 +207,74 @@ function WebMapComponent({
     return config.color;
   };
 
-  const markerColorMap: Record<string, string> = {};
-  filteredHosts.forEach(h => {
-    markerColorMap[h.id] = getMarkerColor(h.host_type);
-  });
+  // Send layer visibility updates to iframe via postMessage (no re-mount!)
+  useEffect(() => {
+    if (!mapReady || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage({
+      type: 'update-layers',
+      layers,
+    }, '*');
+  }, [layers, mapReady]);
 
-  // Build HTML with Leaflet map
-  const html = `<!DOCTYPE html>
+  // Send filter updates via postMessage
+  useEffect(() => {
+    if (!mapReady || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage({
+      type: 'update-filter',
+      filter,
+    }, '*');
+  }, [filter, mapReady]);
+
+  // Send host data updates via postMessage when hosts change
+  useEffect(() => {
+    if (!mapReady || !iframeRef.current?.contentWindow) return;
+    const hostData = hosts.map(h => ({
+      id: h.id, name: h.name, lat: h.lat, lng: h.lng,
+      host_type: h.host_type, color: getMarkerColor(h.host_type),
+    }));
+    const dataKey = JSON.stringify(hostData.map(h => h.id));
+    if (dataKey === prevDataRef.current) return;
+    prevDataRef.current = dataKey;
+    iframeRef.current.contentWindow.postMessage({
+      type: 'update-hosts',
+      hosts: hostData,
+    }, '*');
+  }, [hosts, mapReady]);
+
+  // Send walker data updates via postMessage
+  useEffect(() => {
+    if (!mapReady || !iframeRef.current?.contentWindow) return;
+    const walkerData = walkers.map(w => ({
+      id: w.id, trail_name: w.trail_name,
+      lat: (w as any).lat, lng: (w as any).lng,
+      is_walking: w.is_walking,
+    }));
+    iframeRef.current.contentWindow.postMessage({
+      type: 'update-walkers',
+      walkers: walkerData,
+    }, '*');
+  }, [walkers, mapReady]);
+
+  // Build stable HTML — all layer toggling happens via postMessage
+  const html = React.useMemo(() => {
+    // Pre-compute initial data for embedding
+    const initialHosts = hosts.map(h => ({
+      id: h.id, name: h.name, lat: h.lat, lng: h.lng,
+      host_type: h.host_type, color: getMarkerColor(h.host_type),
+    }));
+    const initialWalkers = walkers.map(w => ({
+      id: w.id, trail_name: w.trail_name,
+      lat: (w as any).lat, lng: (w as any).lng,
+      is_walking: w.is_walking,
+    }));
+
+    return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -249,66 +297,92 @@ function WebMapComponent({
       maxZoom: 19
     }).addTo(map);
 
-    // === HOSTS (slim payload for map markers) ===
-    var hosts = ${JSON.stringify(filteredHosts.map(h => ({ id: h.id, name: h.name, lat: h.lat, lng: h.lng, host_type: h.host_type })))};
-    var markerColorMap = ${JSON.stringify(markerColorMap)};
-    hosts.forEach(function(host) {
-      var mc = markerColorMap[host.id] || '#999';
-      L.circleMarker([host.lat, host.lng], {
-        radius: 7, fillColor: mc, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
-      })
-      .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + host.name + '</strong><br/><span style="color:' + mc + ';font-size:10px;text-transform:uppercase;">' + host.host_type + '</span></div>')
-      .on('click', function() {
-        window.parent.postMessage({ type: 'host-click', hostId: host.id }, '*');
-      })
-      .addTo(map);
-    });
+    // === LAYER GROUPS (toggled via postMessage — no iframe re-mount) ===
+    var hostGroup = L.layerGroup().addTo(map);
+    var walkerGroup = L.layerGroup().addTo(map);
+    var routeGroup = L.layerGroup().addTo(map);
+    var parishGroup = L.layerGroup();
+    var churchGroup = L.layerGroup();
+    var wifiGroup = L.layerGroup();
+    var mountainGroup = L.layerGroup();
 
-    // === WANDERKINDER (orange circle with rotating W in Helvetica Neue) ===
-    var walkers = ${JSON.stringify(visibleWalkers.map(w => ({ id: w.id, trail_name: w.trail_name, lat: (w as any).lat, lng: (w as any).lng, is_walking: w.is_walking })))};
-    walkers.forEach(function(w) {
-      var isWalking = w.is_walking;
-      var walkClass = isWalking ? ' wk-walking' : '';
-      var icon = L.divIcon({
-        className: '',
-        html: '<div class="wk-icon' + walkClass + '" style="width:32px;height:32px;background:#C8762A;border:2.5px solid #fff;position:relative;perspective:200px;">'
-          + '<span class="wk-w" style="color:#fff;font-weight:800;font-size:15px;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;letter-spacing:-0.5px;text-transform:uppercase;">W</span>'
-          + '</div>',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-      });
-      var marker = L.marker([w.lat, w.lng], { icon: icon })
-        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.trail_name + '</strong><br/><span style="color:#C8762A;font-size:10px;">' + (isWalking ? 'Currently walking' : 'Wanderkind') + '</span></div>')
-        .on('click', function() {
-          window.parent.postMessage({ type: 'walker-click', profileId: w.id }, '*');
+    var currentFilter = '${filter}';
+    var currentLayers = ${JSON.stringify(layers)};
+    var walkIntervals = [];
+
+    // === HOST RENDERING ===
+    var allHosts = ${JSON.stringify(initialHosts)};
+
+    function renderHosts() {
+      hostGroup.clearLayers();
+      if (!currentLayers.hosts) return;
+      allHosts.forEach(function(host) {
+        if (currentFilter === 'free' && host.host_type !== 'free') return;
+        if (currentFilter === 'donativo' && host.host_type !== 'free' && host.host_type !== 'donativo') return;
+        var mc = host.color || '#999';
+        L.circleMarker([host.lat, host.lng], {
+          radius: 7, fillColor: mc, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
         })
-        .addTo(map);
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + host.name + '</strong><br/><span style="color:' + mc + ';font-size:10px;text-transform:uppercase;">' + host.host_type + '</span></div>')
+        .on('click', function() {
+          window.parent.postMessage({ type: 'host-click', hostId: host.id }, '*');
+        })
+        .addTo(hostGroup);
+      });
+    }
 
-      // Simulate realistic walking movement for actively walking users (~5km/h ≈ 0.00001° per update)
-      if (isWalking) {
-        var baseLat = w.lat;
-        var baseLng = w.lng;
-        var walkAngle = Math.random() * Math.PI * 2;
-        var walkStep = 0;
-        var walkInterval = setInterval(function() {
-          walkStep++;
-          var drift = 0.00003 * walkStep;
-          var newLat = baseLat + Math.sin(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
-          var newLng = baseLng + Math.cos(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
-          marker.setLatLng([newLat, newLng]);
-          // Occasionally shift direction slightly (simulating path curves)
-          if (walkStep % 10 === 0) walkAngle += (Math.random() - 0.5) * 0.3;
-          // Reset after 100 steps to prevent drift too far from origin
-          if (walkStep > 100) { walkStep = 0; baseLat = newLat; baseLng = newLng; }
-        }, 4000);
-        // Store for cleanup
-        if (!window._wkWalkIntervals) window._wkWalkIntervals = [];
-        window._wkWalkIntervals.push(walkInterval);
-      }
-    });
+    // === WANDERKINDER RENDERING ===
+    var allWalkers = ${JSON.stringify(initialWalkers)};
 
-    // === POI: PARISHES (Pfarreien) ===
-    var parishes = ${layers.parishes ? JSON.stringify(POI_DATA.parishes) : '[]'};
+    function clearWalkIntervals() {
+      walkIntervals.forEach(function(iv) { clearInterval(iv); });
+      walkIntervals = [];
+    }
+
+    function renderWalkers() {
+      walkerGroup.clearLayers();
+      clearWalkIntervals();
+      if (!currentLayers.wanderkinder) return;
+      allWalkers.forEach(function(w) {
+        if (!w.lat || !w.lng) return;
+        var isWalking = w.is_walking;
+        var walkClass = isWalking ? ' wk-walking' : '';
+        var icon = L.divIcon({
+          className: '',
+          html: '<div class="wk-icon' + walkClass + '" style="width:32px;height:32px;background:#C8762A;border:2.5px solid #fff;position:relative;perspective:200px;">'
+            + '<span class="wk-w" style="color:#fff;font-weight:800;font-size:15px;font-family:\\'Helvetica Neue\\',Helvetica,Arial,sans-serif;letter-spacing:-0.5px;text-transform:uppercase;">W</span>'
+            + '</div>',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+        var marker = L.marker([w.lat, w.lng], { icon: icon })
+          .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.trail_name + '</strong><br/><span style="color:#C8762A;font-size:10px;">' + (isWalking ? 'Currently walking' : 'Wanderkind') + '</span></div>')
+          .on('click', function() {
+            window.parent.postMessage({ type: 'walker-click', profileId: w.id }, '*');
+          })
+          .addTo(walkerGroup);
+
+        if (isWalking) {
+          var baseLat = w.lat;
+          var baseLng = w.lng;
+          var walkAngle = Math.random() * Math.PI * 2;
+          var walkStep = 0;
+          var iv = setInterval(function() {
+            walkStep++;
+            var drift = 0.00003 * walkStep;
+            var newLat = baseLat + Math.sin(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
+            var newLng = baseLng + Math.cos(walkAngle) * drift + (Math.random() - 0.5) * 0.00005;
+            marker.setLatLng([newLat, newLng]);
+            if (walkStep % 10 === 0) walkAngle += (Math.random() - 0.5) * 0.3;
+            if (walkStep > 100) { walkStep = 0; baseLat = newLat; baseLng = newLng; }
+          }, 4000);
+          walkIntervals.push(iv);
+        }
+      });
+    }
+
+    // === POI RENDERING (static data, toggled via layer groups) ===
+    var parishes = ${JSON.stringify(POI_DATA.parishes)};
     parishes.forEach(function(p) {
       var icon = L.divIcon({
         className: '',
@@ -317,11 +391,10 @@ function WebMapComponent({
       });
       L.marker([p.lat, p.lng], { icon: icon })
         .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + p.name + '</strong><br/><span style="color:#6B21A8;font-size:10px;">Parish (Pfarrei)</span></div>')
-        .addTo(map);
+        .addTo(parishGroup);
     });
 
-    // === POI: CHURCHES ===
-    var churches = ${layers.churches ? JSON.stringify(POI_DATA.churches) : '[]'};
+    var churches = ${JSON.stringify(POI_DATA.churches)};
     churches.forEach(function(c) {
       var icon = L.divIcon({
         className: '',
@@ -330,11 +403,10 @@ function WebMapComponent({
       });
       L.marker([c.lat, c.lng], { icon: icon })
         .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + c.name + '</strong><br/><span style="color:#8B4513;font-size:10px;">Church</span></div>')
-        .addTo(map);
+        .addTo(churchGroup);
     });
 
-    // === POI: WIFI ===
-    var wifis = ${layers.wifi ? JSON.stringify(POI_DATA.wifi) : '[]'};
+    var wifis = ${JSON.stringify(POI_DATA.wifi)};
     wifis.forEach(function(w) {
       var icon = L.divIcon({
         className: '',
@@ -343,11 +415,10 @@ function WebMapComponent({
       });
       L.marker([w.lat, w.lng], { icon: icon })
         .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + w.name + '</strong><br/><span style="color:#0ea5e9;font-size:10px;">Free WiFi</span></div>')
-        .addTo(map);
+        .addTo(wifiGroup);
     });
 
-    // === POI: MOUNTAINS ===
-    var mountains = ${layers.mountains ? JSON.stringify(POI_DATA.mountains) : '[]'};
+    var mountains = ${JSON.stringify(POI_DATA.mountains)};
     mountains.forEach(function(m) {
       var icon = L.divIcon({
         className: '',
@@ -356,11 +427,11 @@ function WebMapComponent({
       });
       L.marker([m.lat, m.lng], { icon: icon })
         .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + m.name + '</strong><br/><span style="color:#6B7280;font-size:10px;">Mountain</span></div>')
-        .addTo(map);
+        .addTo(mountainGroup);
     });
 
-    // === ROUTE POLYLINES (The Ways) ===
-    var routes = ${layers.ways ? JSON.stringify(ROUTE_LINES) : '[]'};
+    // === ROUTE POLYLINES ===
+    var routes = ${JSON.stringify(ROUTE_LINES)};
     routes.forEach(function(route) {
       var latlngs = route.coords.map(function(c) { return [c[0], c[1]]; });
       L.polyline(latlngs, {
@@ -372,23 +443,70 @@ function WebMapComponent({
         lineJoin: 'round'
       })
       .bindPopup('<div style="font-size:13px;text-align:center;font-weight:600;color:' + route.color + ';">' + route.name + '</div>')
-      .addTo(map);
+      .addTo(routeGroup);
     });
+
+    // === LAYER TOGGLE HANDLER (instant, no reload) ===
+    function applyLayers(ly) {
+      currentLayers = ly;
+      // Hosts and walkers re-render (they respect currentLayers internally)
+      renderHosts();
+      renderWalkers();
+      // POI layers: add/remove from map
+      if (ly.ways && !map.hasLayer(routeGroup)) map.addLayer(routeGroup);
+      if (!ly.ways && map.hasLayer(routeGroup)) map.removeLayer(routeGroup);
+      if (ly.parishes && !map.hasLayer(parishGroup)) map.addLayer(parishGroup);
+      if (!ly.parishes && map.hasLayer(parishGroup)) map.removeLayer(parishGroup);
+      if (ly.churches && !map.hasLayer(churchGroup)) map.addLayer(churchGroup);
+      if (!ly.churches && map.hasLayer(churchGroup)) map.removeLayer(churchGroup);
+      if (ly.wifi && !map.hasLayer(wifiGroup)) map.addLayer(wifiGroup);
+      if (!ly.wifi && map.hasLayer(wifiGroup)) map.removeLayer(wifiGroup);
+      if (ly.mountains && !map.hasLayer(mountainGroup)) map.addLayer(mountainGroup);
+      if (!ly.mountains && map.hasLayer(mountainGroup)) map.removeLayer(mountainGroup);
+    }
+
+    // Initial render
+    renderHosts();
+    renderWalkers();
+    applyLayers(currentLayers);
 
     // Handle messages from parent
     window.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'center-on-location') {
-        map.setView([event.data.lat, event.data.lng], 10, { animate: true, duration: 1 });
+      if (!event.data || !event.data.type) return;
+      switch (event.data.type) {
+        case 'center-on-location':
+          map.setView([event.data.lat, event.data.lng], 10, { animate: true, duration: 1 });
+          break;
+        case 'update-layers':
+          applyLayers(event.data.layers);
+          break;
+        case 'update-filter':
+          currentFilter = event.data.filter;
+          renderHosts();
+          break;
+        case 'update-hosts':
+          allHosts = event.data.hosts;
+          renderHosts();
+          break;
+        case 'update-walkers':
+          allWalkers = event.data.walkers;
+          renderWalkers();
+          break;
       }
     });
-  </script>
+
+    // Signal ready to parent
+    window.parent.postMessage({ type: 'map-ready' }, '*');
+  <\/script>
 </body>
 </html>`;
+  }, []); // Stable — never re-generates HTML
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'host-click') onHostPress(event.data.hostId);
       if (event.data?.type === 'walker-click') onWalkerPress(event.data.profileId);
+      if (event.data?.type === 'map-ready') setMapReady(true);
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -397,14 +515,20 @@ function WebMapComponent({
   return (
     <View style={styles.map}>
       {Platform.OS === 'web' && (
-        // @ts-ignore — key forces re-mount when layers change
-        <iframe
-          ref={iframeRef}
-          key={`map-${layers.hosts}-${layers.wanderkinder}-${layers.ways}-${layers.wifi}-${layers.churches}-${layers.parishes}-${layers.mountains}-${filter}`}
-          srcDoc={html}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: 'none', width: '100%', height: '100%' }}
-          sandbox="allow-scripts allow-same-origin"
-        />
+        <>
+          {!mapReady && (
+            <View style={styles.mapLoading}>
+              <Text style={styles.mapLoadingText}>Loading map...</Text>
+            </View>
+          )}
+          {/* @ts-ignore — stable iframe, no key-based re-mount */}
+          <iframe
+            ref={iframeRef}
+            srcDoc={html}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: 'none', width: '100%', height: '100%' }}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </>
       )}
     </View>
   );
@@ -1012,6 +1136,24 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f0',
+    zIndex: 5,
+  },
+  mapLoadingText: {
+    fontFamily: 'Courier New',
+    fontSize: 12,
+    letterSpacing: 1,
+    color: colors.ink3,
+    fontWeight: '600',
   },
   topOverlay: {
     position: 'absolute',
