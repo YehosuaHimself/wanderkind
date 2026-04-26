@@ -23,8 +23,8 @@ export async function isBlocked(blockerId: string, blockedId: string): Promise<b
     .select('id')
     .eq('blocker_id', blockerId)
     .eq('blocked_id', blockedId)
-    .single();
-  return !!data;
+    .maybeSingle();
+  return !!data?.id;
 }
 
 export async function getBlockedUsers(userId: string) {

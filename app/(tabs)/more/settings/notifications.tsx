@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useSettings } from '../../../../src/stores/settings';
 
 type NotificationSetting = {
   key: string;
@@ -18,12 +19,7 @@ export default function NotificationsScreen() {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
 
-  const [notifications, setNotifications] = useState({
-    messages: true,
-    bookingRequests: true,
-    moments: true,
-    systemUpdates: false,
-  });
+  const { notifications, setNotification } = useSettings();
 
   const settings: NotificationSetting[] = [
     {
@@ -52,13 +48,6 @@ export default function NotificationsScreen() {
     },
   ];
 
-  const toggleNotification = (key: keyof typeof notifications) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Notifications" showBack />
@@ -70,36 +59,34 @@ export default function NotificationsScreen() {
         <View style={styles.section}>
           <Text style={[typography.label, styles.sectionLabel]}>Notification Types</Text>
           <View style={styles.settingsList}>
-            {settings.map((setting) => (
-              <View
-                key={setting.key}
-                style={styles.settingRow}
-              >
-                <View style={styles.settingIcon}>
-                  <Ionicons
-                    name={setting.icon as any}
-                    size={18}
-                    color={colors.amber}
+            {settings.map((setting) => {
+              const key = setting.key as keyof typeof notifications;
+              const isOn = notifications[key];
+              return (
+                <View
+                  key={setting.key}
+                  style={styles.settingRow}
+                >
+                  <View style={styles.settingIcon}>
+                    <Ionicons
+                      name={setting.icon as any}
+                      size={18}
+                      color={colors.amber}
+                    />
+                  </View>
+                  <View style={styles.settingContent}>
+                    <Text style={styles.settingLabel}>{setting.label}</Text>
+                    <Text style={styles.settingSubtitle}>{setting.subtitle}</Text>
+                  </View>
+                  <Switch
+                    value={isOn}
+                    onValueChange={(val) => setNotification(key, val)}
+                    trackColor={{ false: colors.border, true: colors.amberBg }}
+                    thumbColor={isOn ? colors.amber : colors.ink3}
                   />
                 </View>
-                <View style={styles.settingContent}>
-                  <Text style={styles.settingLabel}>{setting.label}</Text>
-                  <Text style={styles.settingSubtitle}>{setting.subtitle}</Text>
-                </View>
-                <Switch
-                  value={notifications[setting.key as keyof typeof notifications]}
-                  onValueChange={() =>
-                    toggleNotification(setting.key as keyof typeof notifications)
-                  }
-                  trackColor={{ false: colors.border, true: colors.amberBg }}
-                  thumbColor={
-                    notifications[setting.key as keyof typeof notifications]
-                      ? colors.amber
-                      : colors.ink3
-                  }
-                />
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 

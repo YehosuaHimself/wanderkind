@@ -85,10 +85,16 @@ export async function encryptMessage(
 ): Promise<string> {
   try {
     const crypto = getCrypto();
-    if (!crypto?.subtle) return plaintext; // Fallback: send unencrypted
+    if (!crypto?.subtle) {
+      console.warn('[E2E] Web Crypto API not available — message sent without encryption');
+      return plaintext;
+    }
 
     const key = await getThreadKey(threadId, participantIds);
-    if (!key) return plaintext;
+    if (!key) {
+      console.warn('[E2E] Could not derive thread key — message sent without encryption');
+      return plaintext;
+    }
 
     const encoder = new TextEncoder();
     const iv = crypto.getRandomValues(new Uint8Array(12));

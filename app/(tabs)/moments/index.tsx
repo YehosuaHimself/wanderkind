@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Modal, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -249,26 +249,32 @@ export default function MomentsFeed() {
     if (storyGroups.length === 0) return null;
 
     return (
-      <View style={styles.storyBar}>
-        {/* Your story */}
-        <StoryRing
-          imageUri={profile?.avatar_url}
-          name="Your story"
-          size={64}
-          isAdd
-          onPress={() => router.push('/(tabs)/moments/create-story')}
-        />
-        {/* Other users' stories */}
-        {storyGroups.map(group => (
+      <View style={styles.storyBarContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.storyBar}
+        >
+          {/* Your story */}
           <StoryRing
-            key={group.authorId}
-            imageUri={group.authorAvatar}
-            name={group.authorName}
+            imageUri={profile?.avatar_url}
+            name="Your story"
             size={64}
-            hasUnseenStories
-            onPress={() => setViewingStory(group)}
+            isAdd
+            onPress={() => router.push('/(tabs)/moments/create-story')}
           />
-        ))}
+          {/* Other users' stories */}
+          {storyGroups.map(group => (
+            <StoryRing
+              key={group.authorId}
+              imageUri={group.authorAvatar}
+              name={group.authorName}
+              size={64}
+              hasUnseenStories
+              onPress={() => setViewingStory(group)}
+            />
+          ))}
+        </ScrollView>
       </View>
     );
   }, [storyGroups, profile, router]);
@@ -525,13 +531,15 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   // Story bar
+  storyBarContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
   storyBar: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,
     gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
   },
   // Filter tabs
   filterBar: {

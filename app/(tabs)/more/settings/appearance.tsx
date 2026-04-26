@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,15 +6,18 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useSettings, AppTheme } from '../../../../src/stores/settings';
 
 export default function AppearanceScreen() {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
 
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [textSize, setTextSize] = useState(1);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const [highContrast, setHighContrast] = useState(false);
+  const {
+    theme, setTheme,
+    textSize, setTextSize,
+    reduceMotion, setReduceMotion,
+    highContrast, setHighContrast,
+  } = useSettings();
 
   const themes = [
     { id: 'light', label: 'Light', icon: 'sunny-outline' as const },
@@ -40,7 +43,7 @@ export default function AppearanceScreen() {
                   styles.themeButton,
                   theme === t.id && styles.themeButtonSelected,
                 ]}
-                onPress={() => setTheme(t.id as 'light' | 'dark')}
+                onPress={() => setTheme(t.id as AppTheme)}
                 activeOpacity={0.7}
               >
                 <Ionicons

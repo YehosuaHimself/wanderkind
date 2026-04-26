@@ -3,12 +3,14 @@
  * Prevents XSS, enforces limits, sanitizes user-generated content.
  */
 
-/** Strip HTML tags to prevent XSS when rendering user content */
+/** Strip HTML tags and entities to prevent XSS when rendering user content */
 export function sanitizeText(input: string): string {
   return input
     .replace(/<[^>]*>/g, '') // Strip HTML tags
     .replace(/javascript:/gi, '') // Strip JS protocol
     .replace(/on\w+\s*=/gi, '') // Strip event handlers
+    .replace(/&(?:#x?[0-9a-f]+|[a-z]+);/gi, '') // Strip HTML entities
+    .replace(/data:/gi, '') // Strip data: URIs
     .trim();
 }
 
@@ -64,11 +66,21 @@ export const LIMITS = {
 
 /** Rate limiter — prevents rapid-fire submissions */
 const lastAction: Record<string, number> = {};
+const MAX_ACTION_KEYS = 100;
 
 export function canPerformAction(key: string, cooldownMs = 2000): boolean {
   const now = Date.now();
   const last = lastAction[key] || 0;
   if (now - last < cooldownMs) return false;
   lastAction[key] = now;
+
+  // Prevent unbounded memory growth — prune stale entries
+  const keys = Object.keys(lastAction);
+  if (keys.length > MAX_ACTION_KEYS) {
+    const staleThreshold = now - 60000; // 1 minute
+    for (const k of keys) {
+      if (lastAction[k] < staleThreshold) delete lastAction[k];
+    }
+  }
   return true;
 }

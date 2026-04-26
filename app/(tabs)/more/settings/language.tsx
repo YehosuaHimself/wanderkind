@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useSettings, AppLanguage } from '../../../../src/stores/settings';
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -31,11 +32,10 @@ export default function LanguageScreen() {
   if (isLoading) return null;
 
   const router = useRouter();
-  const [selected, setSelected] = useState('en');
+  const { language: selected, setLanguage } = useSettings();
 
   const handleSelect = (code: string) => {
-    setSelected(code);
-    // Update language in store/settings
+    setLanguage(code as AppLanguage);
     setTimeout(() => router.back(), 300);
   };
 

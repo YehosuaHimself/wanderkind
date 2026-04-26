@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -43,16 +43,19 @@ const mockGroupWalks: GroupWalk[] = [
   },
 ];
 
-export default function GroupWalkScreen() {
+export default function GroupWalkScreen({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  if (isLoading && !embedded) return null;
 
   const router = useRouter();
   const [myGroups, setMyGroups] = useState<GroupWalk[]>([]);
 
+  const Wrapper = embedded ? View : SafeAreaView;
+  const wrapperProps = embedded ? { style: styles.container } : { style: styles.container, edges: ['top'] as const };
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Group Walks" showBack />
+    <Wrapper {...(wrapperProps as any)}>
+      {!embedded && <WKHeader title="WanderGroups" showBack />}
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -136,7 +139,7 @@ export default function GroupWalkScreen() {
 
                   <WKButton
                     title="Join Group"
-                    onPress={() => {}}
+                    onPress={() => router.push(`/(tabs)/more/group-walk/${group.id}` as any)}
                     variant="secondary"
                     size="sm"
                     fullWidth
@@ -159,7 +162,7 @@ export default function GroupWalkScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Wrapper>
   );
 }
 

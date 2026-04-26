@@ -1,25 +1,24 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions,
+  FlatList, NativeSyntheticEvent, NativeScrollEvent,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { haptic } from '../../../src/lib/haptics';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-import { useAuth } from '../../../src/stores/auth';
-import { toast } from '../../../src/lib/toast';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const GRID_GAP = 8;
-const GRID_PADDING = 12;
+const GRID_GAP = 10;
+const GRID_PADDING = 14;
 const TILE_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
-// Header ~60px + tab bar ~84px (iOS) / ~64px (web) + safe area ~50px = ~194px overhead
 const TAB_BAR_H = Platform.OS === 'ios' ? 84 : Platform.OS === 'web' ? 64 : 62;
-const HEADER_H = 60;
+const HEADER_H = 68;
 const SAFE_AREA_TOP = Platform.OS === 'ios' ? 50 : 0;
-const ROWS = 7; // 13 tiles = 7 rows (last row has 1)
-const AVAILABLE_H = SCREEN_HEIGHT - HEADER_H - TAB_BAR_H - SAFE_AREA_TOP - GRID_PADDING * 2;
-const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS - 1)) / ROWS);
+const DOTS_H = 32;
+const AVAILABLE_H = SCREEN_HEIGHT - HEADER_H - TAB_BAR_H - SAFE_AREA_TOP - GRID_PADDING * 2 - DOTS_H;
 
 type AppTile = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -29,7 +28,8 @@ type AppTile = {
   bgTint?: string;
 };
 
-const appTiles: AppTile[] = [
+// PAGE 1: Core features — identity, credentials, journey
+const page1Tiles: AppTile[] = [
   {
     icon: 'home',
     title: 'WanderHost',
@@ -39,23 +39,24 @@ const appTiles: AppTile[] = [
   },
   {
     icon: 'document-text',
-    title: 'Pass & Stamps',
-    route: '/(tabs)/me/passes',
+    title: 'Wanderkind Pass',
+    route: '/(tabs)/more/passes',
     accent: colors.amber,
     bgTint: `${colors.amber}12`,
   },
   {
-    icon: 'compass',
-    title: 'The Ways',
-    route: '/(tabs)/more/ways',
+    icon: 'footsteps',
+    title: 'Wanderkind Journey',
+    route: '/(tabs)/more/journey',
     accent: '#2D6A4F',
     bgTint: 'rgba(45,106,79,0.08)',
   },
   {
-    icon: 'create',
-    title: 'Writing',
-    route: '/(tabs)/more/book',
-    accent: colors.ink2,
+    icon: 'ribbon',
+    title: 'Stamps & Visas',
+    route: '/(tabs)/more/stamps',
+    accent: '#6B21A8',
+    bgTint: 'rgba(107,33,168,0.06)',
   },
   {
     icon: 'bag-check',
@@ -65,18 +66,21 @@ const appTiles: AppTile[] = [
     bgTint: `${colors.green}12`,
   },
   {
-    icon: 'thumbs-up',
-    title: 'Hitchhike',
-    route: '/(tabs)/map/tramp-mode',
-    accent: '#E67E22',
-    bgTint: 'rgba(230,126,34,0.08)',
+    icon: 'create',
+    title: 'Write',
+    route: '/(tabs)/more/book',
+    accent: colors.ink2,
   },
+];
+
+// PAGE 2: Safety, verification, admin
+const page2Tiles: AppTile[] = [
   {
-    icon: 'people',
-    title: 'WanderGroups',
-    route: '/(tabs)/more/group-walk',
-    accent: colors.blue,
-    bgTint: `${colors.blue}12`,
+    icon: 'shield-checkmark',
+    title: 'Verification',
+    route: '/(tabs)/more/verification',
+    accent: '#22863A',
+    bgTint: 'rgba(34,134,58,0.08)',
   },
   {
     icon: 'warning',
@@ -86,14 +90,7 @@ const appTiles: AppTile[] = [
     bgTint: colors.redBg,
   },
   {
-    icon: 'ribbon',
-    title: 'Verification',
-    route: '/(tabs)/more/verification',
-    accent: '#22863A',
-    bgTint: 'rgba(34,134,58,0.08)',
-  },
-  {
-    icon: 'shield-checkmark',
+    icon: 'settings',
     title: 'Trust & Settings',
     route: '/(tabs)/more/settings',
     accent: colors.ink2,
@@ -113,47 +110,38 @@ const appTiles: AppTile[] = [
   },
 ];
 
+const PAGES = [
+  { key: 'features', label: 'WANDERKIND', tiles: page1Tiles },
+  { key: 'settings', label: 'SETTINGS & ADMIN', tiles: page2Tiles },
+];
+
 export default function MoreScreen() {
   const { user, isLoading } = useAuthGuard();
-  const { signOut } = useAuth();
+  const [activePage, setActivePage] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
   if (isLoading) return null;
 
   const router = useRouter();
+  const ROWS_PER_PAGE = 3;
+  const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS_PER_PAGE - 1)) / ROWS_PER_PAGE);
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast.success('Signed out');
-      router.replace('/(auth)/login' as any);
-    } catch {
-      toast.error('Could not sign out');
-    }
-  };
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    setActivePage(page);
+  }, []);
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerLabel}>
-          <View style={styles.headerDot} />
-          <Text style={styles.headerLabelText}>MORE</Text>
-        </View>
-        <Text style={styles.headerTitle}>Everything Else</Text>
-      </View>
-
+  const renderPage = useCallback(({ item }: { item: typeof PAGES[0] }) => (
+    <View style={[styles.pageContainer, { width: SCREEN_WIDTH }]}>
       <View style={styles.grid}>
-        {appTiles.map((tile) => (
+        {item.tiles.map((tile) => (
           <TouchableOpacity
             key={tile.route + tile.title}
-            style={[styles.tile, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
+            style={[styles.tile, { height: TILE_HEIGHT }, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
             onPress={() => { haptic.light(); router.push(tile.route as any); }}
             activeOpacity={0.7}
           >
             <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>
-              <Ionicons
-                name={tile.icon as any}
-                size={20}
-                color={tile.accent ?? colors.ink2}
-              />
+              <Ionicons name={tile.icon as any} size={22} color={tile.accent ?? colors.ink2} />
             </View>
             <Text style={[styles.tileTitle, tile.accent ? { color: tile.accent } : null]} numberOfLines={2}>
               {tile.title}
@@ -161,17 +149,50 @@ export default function MoreScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* Logout tile — always last */}
-        <TouchableOpacity
-          style={[styles.tile, { backgroundColor: 'rgba(192,57,43,0.06)' }]}
-          onPress={handleLogout}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.tileIconCircle, { backgroundColor: 'rgba(192,57,43,0.12)' }]}>
-            <Ionicons name="log-out-outline" size={20} color={colors.red} />
-          </View>
-          <Text style={[styles.tileTitle, { color: colors.red }]}>Log Out</Text>
-        </TouchableOpacity>
+      </View>
+    </View>
+  ), [router, TILE_HEIGHT]);
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header with title + page label */}
+      <View style={styles.header}>
+        <View style={styles.headerLabel}>
+          <View style={styles.headerDot} />
+          <Text style={styles.headerLabelText}>MORE</Text>
+        </View>
+        <Text style={styles.headerTitle}>{PAGES[activePage].label}</Text>
+      </View>
+
+      {/* Swipeable pages */}
+      <FlatList
+        ref={flatListRef}
+        data={PAGES}
+        renderItem={renderPage}
+        keyExtractor={(item) => item.key}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        bounces={false}
+        style={styles.pager}
+      />
+
+      {/* Nav dots */}
+      <View style={styles.dotsRow}>
+        {PAGES.map((page, i) => (
+          <TouchableOpacity
+            key={page.key}
+            onPress={() => {
+              flatListRef.current?.scrollToIndex({ index: i, animated: true });
+              setActivePage(i);
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={[styles.dot, activePage === i && styles.dotActive]} />
+          </TouchableOpacity>
+        ))}
       </View>
     </SafeAreaView>
   );
@@ -181,8 +202,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLt,
   },
@@ -190,7 +211,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 4,
   },
   headerDot: {
     width: 6,
@@ -209,19 +229,25 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.ink,
   },
+  pager: {
+    flex: 1,
+  },
+  pageContainer: {
+    flex: 1,
+    paddingHorizontal: GRID_PADDING,
+    paddingVertical: GRID_PADDING,
+  },
   grid: {
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: GRID_PADDING,
     gap: GRID_GAP,
   },
   tile: {
     width: TILE_WIDTH,
-    height: TILE_HEIGHT,
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 10,
+    borderRadius: 14,
+    padding: 14,
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: colors.borderLt,
@@ -232,17 +258,36 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   tileIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   tileTitle: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.ink,
     letterSpacing: 0.2,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    height: DOTS_H,
+    paddingBottom: 4,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  dotActive: {
+    backgroundColor: colors.amber,
+    width: 20,
+    borderRadius: 4,
   },
 });

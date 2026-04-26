@@ -7,9 +7,9 @@ import { haptic } from '../../../src/lib/haptics';
 
 // Direct imports instead of React.lazy — fixes rendering issues
 import WaysContent from '../more/ways';
-import JourneyContent from './journey';
+import GroupWalkContent from '../more/group-walk';
 
-type TabMode = 'ways' | 'journey';
+type TabMode = 'ways' | 'groups';
 
 export default function MyWayScreen() {
   const [activeTab, setActiveTab] = useState<TabMode>('ways');
@@ -23,7 +23,7 @@ export default function MyWayScreen() {
           <Text style={styles.headerLabelText}>MY WAY</Text>
         </View>
         <Text style={styles.headerTitle}>
-          {activeTab === 'ways' ? 'Walking Routes' : 'My Journey'}
+          {activeTab === 'ways' ? 'Walking Routes' : 'WanderGroups'}
         </Text>
       </View>
 
@@ -44,24 +44,24 @@ export default function MyWayScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'journey' && styles.tabActive]}
-          onPress={() => { haptic.selection(); setActiveTab('journey'); }}
+          style={[styles.tab, activeTab === 'groups' && styles.tabActive]}
+          onPress={() => { haptic.selection(); setActiveTab('groups'); }}
           activeOpacity={0.7}
         >
           <Ionicons
-            name="footsteps-outline"
+            name="people-outline"
             size={16}
-            color={activeTab === 'journey' ? colors.amber : colors.ink3}
+            color={activeTab === 'groups' ? colors.amber : colors.ink3}
           />
-          <Text style={[styles.tabText, activeTab === 'journey' && styles.tabTextActive]}>
-            My Journey
+          <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>
+            WanderGroups
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content — direct rendering, no lazy load */}
       <View style={styles.content}>
-        {activeTab === 'ways' ? <WaysContent embedded /> : <JourneyContent embedded />}
+        {activeTab === 'ways' ? <WaysContent embedded /> : <GroupWalkContent embedded />}
       </View>
     </SafeAreaView>
   );

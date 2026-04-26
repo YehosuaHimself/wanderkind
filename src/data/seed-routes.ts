@@ -11,7 +11,7 @@ export const SEED_ROUTES = [
     name: 'The King\'s Way (Königsweg)',
     description: 'The grand alpine pilgrimage route from Berchtesgaden in the Alps through Austria, Germany, Switzerland, France and Spain to Tarifa on the Mediterranean coast. One of Europe\'s most challenging and rewarding long-distance walks.',
     country: 'Austria',
-    countries: ['Austria', 'Germany', 'Switzerland', 'France', 'Spain'],
+    countries: ['Austria', 'Germany', 'Switzerland', 'Italy', 'France', 'UK', 'Spain'],
     distance_km: 4200,
     duration_days: 175,
     difficulty: 'expert',

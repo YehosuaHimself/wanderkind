@@ -32,10 +32,15 @@ export const TIER_THRESHOLDS: Record<TierLevel, number> = {
 
 export type VerificationLevel =
   | 'none'
-  | 'self'        // Self-declared: profile photo + bio + real name
-  | 'community'   // 3+ hosted confirmations
-  | 'association'  // Confraternity / trail org
-  | 'wanderkind';  // Personal visit by WK team
+  | 'self'              // Legacy: Self-declared
+  | 'community'         // Legacy: 3+ hosted confirmations
+  | 'association'       // Legacy: Confraternity / trail org
+  | 'wanderkind'        // Legacy: Personal visit by WK team
+  | 'email'             // Stage 1: Email verified
+  | 'biometric_pending' // Stage 2: Biometric under review
+  | 'biometric'         // Stage 2: Biometric verified
+  | 'document_pending'  // Stage 3: Document under review
+  | 'document';         // Stage 3: Document verified (full)
 
 export type EmergencyContact = {
   name: string;

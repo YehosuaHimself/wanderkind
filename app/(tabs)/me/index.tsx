@@ -18,7 +18,7 @@ import { QRCode } from '../../../src/components/ui/QRCode';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type ContentTab = 'posts' | 'stamps';
+type ContentTab = 'posts';
 
 export default function MeScreen() {
   useAuthGuard();
@@ -30,13 +30,14 @@ export default function MeScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [moments, setMoments] = useState<any[]>([]);
-  const [stamps, setStamps] = useState<any[]>([]);
   const [showQrModal, setShowQrModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ContentTab>('posts');
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     if (profile) {
       setIsWalking(profile.is_walking ?? false);
+      setShowStats((profile as any).show_stats !== false);
     }
   }, [profile]);
 
@@ -55,15 +56,6 @@ export default function MeScreen() {
         .order('created_at', { ascending: false })
         .limit(20);
       setMoments(momentsData || []);
-
-      // Fetch stamps for profile display
-      const { data: stampsData } = await supabase
-        .from('stamps')
-        .select('*')
-        .eq('walker_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(12);
-      setStamps(stampsData || []);
     } catch (err) {
       console.error('Failed to fetch content:', err);
       toast.error('Could not load your content');
@@ -282,7 +274,7 @@ export default function MeScreen() {
           {/* Name + Handle + WK-ID */}
           <View style={styles.nameSection}>
             <Text style={styles.trailName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
-            <Text style={styles.handle}>@{(profile?.trail_name ?? 'wanderkind').toLowerCase().replace(/\s+/g, '.')} · {profile?.wanderkind_id ?? 'WK-0000'}</Text>
+            <Text style={styles.handle}>@{(profile?.trail_name || 'wanderkind').toLowerCase().replace(/\s+/g, '.')} · {profile?.wanderkind_id ?? 'WK-0000'}</Text>
 
             {!isQuietMode && (
               <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
@@ -362,49 +354,50 @@ export default function MeScreen() {
         {/* ===== STATS ===== */}
         {!isQuietMode && (
           <>
-            <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>STATS</Text>
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Text style={styles.statValue}>{moments.length || profile?.nights_walked || 0}</Text>
-                <Text style={styles.statLabel}>NIGHTS</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <TouchableOpacity style={styles.stat}>
-                <Text style={styles.statValue}>{profile?.stamps_count ?? 0}</Text>
-                <Text style={styles.statLabel}>STAMPS</Text>
-              </TouchableOpacity>
-              <View style={styles.statDivider} />
-              <TouchableOpacity style={styles.stat}>
-                <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
-                <Text style={styles.statLabel}>HOSTED</Text>
+            <View style={styles.statsTitleRow}>
+              <Text style={[styles.sectionTitle, { paddingHorizontal: 0, marginBottom: 0 }]}>STATS</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowStats(!showStats);
+                  // Persist to profile
+                  storeUpdateProfile({ show_stats: !showStats } as any);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={showStats ? 'eye-outline' : 'eye-off-outline'}
+                  size={16}
+                  color={colors.ink3}
+                />
               </TouchableOpacity>
             </View>
+            {showStats && (
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{profile?.nights_walked ?? 0}</Text>
+                  <Text style={styles.statLabel}>NIGHTS</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{profile?.stamps_count ?? 0}</Text>
+                  <Text style={styles.statLabel}>STAMPS</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
+                  <Text style={styles.statLabel}>HOSTED</Text>
+                </View>
+              </View>
+            )}
           </>
         )}
 
-        {/* ===== POSTS | STAMPS — two-fold activity section ===== */}
+        {/* ===== POSTS ===== */}
         <View style={styles.activityTabBar}>
-          <TouchableOpacity
-            style={[styles.activityTab, activeTab === 'posts' && styles.activityTabActive]}
-            onPress={() => setActiveTab('posts')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="grid-outline" size={16} color={activeTab === 'posts' ? colors.amber : colors.ink3} />
-            <Text style={[styles.activityTabText, activeTab === 'posts' && styles.activityTabTextActive]}>Posts</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.activityTab, activeTab === 'stamps' && styles.activityTabActive]}
-            onPress={() => setActiveTab('stamps')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="ribbon-outline" size={16} color={activeTab === 'stamps' ? colors.amber : colors.ink3} />
-            <Text style={[styles.activityTabText, activeTab === 'stamps' && styles.activityTabTextActive]}>Stamps & Visas</Text>
-            {stamps.length > 0 && (
-              <View style={styles.activityTabBadge}>
-                <Text style={styles.activityTabBadgeText}>{stamps.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <View style={[styles.activityTab, styles.activityTabActive]}>
+            <Ionicons name="grid-outline" size={16} color={colors.amber} />
+            <Text style={[styles.activityTabText, styles.activityTabTextActive]}>Posts</Text>
+          </View>
         </View>
 
         {/* Posts tab content */}
@@ -438,66 +431,6 @@ export default function MeScreen() {
                   onPress={() => router.push('/(tabs)/moments/create' as any)}
                 >
                   <Text style={styles.emptyTabActionText}>Create Post</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Stamps tab content */}
-        {activeTab === 'stamps' && (
-          <View style={styles.contentGrid}>
-            {stamps.length > 0 ? (
-              <View style={styles.stampsStack}>
-                {stamps.map((stamp: any, idx: number) => (
-                  <TouchableOpacity
-                    key={stamp.id || idx}
-                    style={styles.stampItem}
-                    onPress={() => router.push(`/(tabs)/more/stamps/${stamp.id}` as any)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.stampCircle, { backgroundColor: `${colors.amber}15` }]}>
-                      {stamp.photo_url ? (
-                        <Image source={{ uri: stamp.photo_url }} style={styles.stampCircleImg} />
-                      ) : (
-                        <Ionicons name="ribbon" size={16} color={colors.amber} />
-                      )}
-                    </View>
-                    <View style={styles.stampItemInfo}>
-                      <Text style={styles.stampItemName} numberOfLines={1}>{stamp.place_name || stamp.category || 'Stamp'}</Text>
-                      <Text style={styles.stampItemDate}>{new Date(stamp.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
-                  </TouchableOpacity>
-                ))}
-                <View style={styles.stampActions}>
-                  <TouchableOpacity
-                    style={styles.stampActionBtn}
-                    onPress={() => router.push('/(tabs)/more/stamps/create' as any)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="add-circle-outline" size={16} color={colors.amber} />
-                    <Text style={styles.stampActionText}>Create Stamp</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.viewAllStamps}
-                    onPress={() => router.push('/(tabs)/more/stamps' as any)}
-                  >
-                    <Text style={styles.viewAllStampsText}>View Full Collection</Text>
-                    <Ionicons name="arrow-forward" size={14} color={colors.amber} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.emptyTab}>
-                <Ionicons name="ribbon-outline" size={36} color={colors.ink3} />
-                <Text style={styles.emptyTabTitle}>No stamps yet</Text>
-                <Text style={styles.emptyTabText}>Collect stamps at hosts and landmarks along your way.</Text>
-                <TouchableOpacity
-                  style={styles.emptyTabAction}
-                  onPress={() => router.push('/(tabs)/more/stamps/create' as any)}
-                >
-                  <Text style={styles.emptyTabActionText}>Create Stamp</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -756,6 +689,13 @@ const styles = StyleSheet.create({
   },
 
   // === STATS ===
+  statsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 4,
+  },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -977,38 +917,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.amber,
   },
-  stampActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
-  },
-  stampActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    backgroundColor: `${colors.amber}12`,
-    borderRadius: 8,
-  },
-  stampActionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.amber,
-  },
-  viewAllStamps: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-  },
-  viewAllStampsText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.amber,
-  },
 
   // === CONTENT GRID ===
   contentGrid: {
@@ -1074,36 +982,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // === STAMPS LIST ===
-  stampsStack: {
-    gap: 4,
-  },
-  stampItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.borderLt,
-    gap: 10,
-  },
-  stampCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  stampCircleImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  stampItemInfo: { flex: 1 },
-  stampItemName: { fontSize: 13, fontWeight: '600', color: colors.ink },
-  stampItemDate: { fontSize: 10, color: colors.ink3, marginTop: 1 },
 
 });

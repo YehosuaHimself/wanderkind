@@ -3,6 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { Platform, AppState } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types/database';
+import { useSettings } from './settings';
 
 type AuthState = {
   session: Session | null;
@@ -193,6 +194,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (data) {
         set({ profile: data as Profile, isOnboarded: true });
+        // Load user settings from profile
+        useSettings.getState().loadFromProfile(data);
       }
     } catch (err) {
       console.error('Profile fetch error:', err);

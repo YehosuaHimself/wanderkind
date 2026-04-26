@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,13 +9,21 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useSettings } from '../../../src/stores/settings';
+
+const LANG_NAMES: Record<string, string> = {
+  en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español',
+  it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski',
+  cz: 'Čeština', sk: 'Slovenčina', hu: 'Magyar', ro: 'Română',
+  sv: 'Svenska', no: 'Norsk', da: 'Dansk', el: 'Ελληνικά',
+};
 
 export default function SettingsScreen() {
   useAuthGuard();
 
   const router = useRouter();
   const { signOut, profile } = useAuth();
-  const [notifications, setNotifications] = useState(true);
+  const { language, theme } = useSettings();
 
   const handleSignOut = async () => {
     await signOut();
@@ -25,7 +33,7 @@ export default function SettingsScreen() {
   const settingRows = [
     {
       label: 'Language',
-      subtitle: 'English',
+      subtitle: LANG_NAMES[language] || 'English',
       icon: 'globe-outline' as const,
       onPress: () => router.push('/(tabs)/more/settings/language' as any),
     },
@@ -37,7 +45,7 @@ export default function SettingsScreen() {
     },
     {
       label: 'Appearance',
-      subtitle: 'Theme & text size',
+      subtitle: `${theme === 'dark' ? 'Dark' : 'Light'} theme`,
       icon: 'contrast-outline' as const,
       onPress: () => router.push('/(tabs)/more/settings/appearance' as any),
     },
@@ -45,7 +53,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Settings" showBack />
+      <WKHeader title="Trust & Settings" showBack />
 
       <ScrollView
         contentContainerStyle={styles.content}

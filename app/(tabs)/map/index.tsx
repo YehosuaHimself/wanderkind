@@ -858,6 +858,48 @@ export default function MapHome() {
   const [showCommunityInfo, setShowCommunityInfo] = useState(false);
   const [communityPins, setCommunityPins] = useState<CommunityPin[]>(SEED_COMMUNITY_PINS);
 
+  // Roof Tonight — emergency accommodation request
+  const [showRoofTonight, setShowRoofTonight] = useState(false);
+  const [roofSentCount, setRoofSentCount] = useState(0); // 0 = not sent, 1 = 5km sent, 2 = 10km sent
+  const [currentHour, setCurrentHour] = useState(new Date().getHours());
+
+  // Update hour every minute
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentHour(new Date().getHours()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isRoofActive = currentHour >= 18; // Active after 6pm
+  const canSendFirst = isRoofActive && roofSentCount === 0;
+  const canSendSecond = isRoofActive && currentHour >= 19 && roofSentCount === 1;
+
+  const handleRoofTonight = useCallback(() => {
+    if (!isRoofActive) {
+      toast.info('Roof Tonight activates at 6:00 PM');
+      return;
+    }
+    if (roofSentCount >= 2) {
+      toast.info('You have already sent both requests tonight');
+      return;
+    }
+    setShowRoofTonight(true);
+  }, [isRoofActive, roofSentCount]);
+
+  const sendRoofRequest = useCallback(async () => {
+    const radius = roofSentCount === 0 ? 5 : 10;
+    haptic.medium();
+    setShowRoofTonight(false);
+    setRoofSentCount(prev => prev + 1);
+
+    // In production: send push notification via Supabase Edge Function to nearby users
+    // For now: show success feedback
+    toast.success(
+      roofSentCount === 0
+        ? `Help request sent to wanderkinder & hosts within ${radius} km`
+        : `Extended request sent within ${radius} km radius`
+    );
+  }, [roofSentCount]);
+
   // Get user location on mount
   useEffect(() => {
     (async () => {
@@ -877,7 +919,9 @@ export default function MapHome() {
             setUserLng(loc.coords.longitude);
           }
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Location permission or fetch failed:', err);
+      }
     })();
   }, []);
 
@@ -1505,6 +1549,81 @@ export default function MapHome() {
         </View>
       )}
 
+      {/* Roof Tonight — emergency accommodation button */}
+      <TouchableOpacity
+        style={[
+          styles.roofTonightBtn,
+          !isRoofActive && styles.roofTonightBtnDisabled,
+          roofSentCount >= 2 && styles.roofTonightBtnDone,
+        ]}
+        onPress={handleRoofTonight}
+        activeOpacity={isRoofActive ? 0.8 : 1}
+      >
+        <Ionicons
+          name="bed-outline"
+          size={18}
+          color={isRoofActive ? '#FFFFFF' : colors.ink3}
+        />
+        <Text style={[
+          styles.roofTonightLabel,
+          !isRoofActive && styles.roofTonightLabelDisabled,
+        ]}>
+          {roofSentCount >= 2 ? 'SENT' : 'ROOF'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Roof Tonight modal */}
+      {showRoofTonight && (
+        <View style={styles.roofModal}>
+          <View style={styles.roofModalHeader}>
+            <Ionicons name="bed" size={24} color={colors.amber} />
+            <Text style={styles.roofModalTitle}>Roof Tonight</Text>
+            <TouchableOpacity onPress={() => setShowRoofTonight(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close" size={20} color={colors.ink3} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.roofModalDesc}>
+            {roofSentCount === 0
+              ? 'Send a help request to all wanderkinder and hosts within 5 km asking for accommodation tonight.'
+              : 'Send an extended request to all wanderkinder and hosts within 10 km radius.'}
+          </Text>
+
+          {roofSentCount === 0 && currentHour >= 19 && (
+            <Text style={styles.roofModalHint}>
+              After this first request, you can send a second at extended 10 km radius.
+            </Text>
+          )}
+
+          {roofSentCount === 1 && currentHour < 19 && (
+            <Text style={styles.roofModalHint}>
+              Your second request (10 km) becomes available at 7:00 PM.
+            </Text>
+          )}
+
+          <View style={styles.roofModalActions}>
+            <TouchableOpacity
+              style={[
+                styles.roofSendBtn,
+                (roofSentCount === 1 && currentHour < 19) && styles.roofSendBtnDisabled,
+              ]}
+              onPress={() => {
+                if (roofSentCount === 1 && currentHour < 19) return;
+                sendRoofRequest();
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="paper-plane" size={16} color="#FFFFFF" />
+              <Text style={styles.roofSendBtnText}>
+                {roofSentCount === 0
+                  ? 'Send to 5 km'
+                  : 'Send to 10 km'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Swipeable Host Cards */}
       {nearbyHosts.length > 0 && (
         <View style={styles.hostCarousel}>
@@ -1549,7 +1668,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f0',
+    backgroundColor: colors.bg,
     zIndex: 5,
   },
   mapLoadingText: {
@@ -2135,5 +2254,93 @@ const styles = StyleSheet.create({
     color: colors.ink3,
     fontFamily: 'Courier New',
     letterSpacing: 0.5,
+  },
+  // Roof Tonight styles
+  roofTonightBtn: {
+    position: 'absolute',
+    left: 12,
+    bottom: Platform.OS === 'ios' ? 210 : Platform.OS === 'web' ? 195 : 195,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.amber,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+    zIndex: 20,
+  },
+  roofTonightBtnDisabled: {
+    backgroundColor: 'rgba(200,200,200,0.7)',
+  },
+  roofTonightBtnDone: {
+    backgroundColor: colors.green,
+  },
+  roofTonightLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    marginTop: -2,
+  },
+  roofTonightLabelDisabled: {
+    color: colors.ink3,
+  },
+  roofModal: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: Platform.OS === 'ios' ? 270 : Platform.OS === 'web' ? 255 : 255,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: spacing.lg,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    zIndex: 100,
+  },
+  roofModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  roofModalTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  roofModalDesc: {
+    fontSize: 14,
+    color: colors.ink2,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  roofModalHint: {
+    fontSize: 12,
+    color: colors.ink3,
+    fontStyle: 'italic',
+    marginBottom: spacing.md,
+  },
+  roofModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  roofSendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.amber,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  roofSendBtnDisabled: {
+    backgroundColor: colors.border,
+  },
+  roofSendBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

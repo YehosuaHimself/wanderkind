@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   TextInput,
   ScrollView,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -157,31 +156,15 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
         onPress={() => { haptic.light(); router.push(`/(tabs)/more/ways/${item.id}`); }}
         activeOpacity={0.85}
       >
-        {item.hero_image ? (
-          <Image
-            source={{ uri: item.hero_image }}
-            style={styles.wayCardImage}
-            resizeMode="cover"
-          />
-        ) : null}
-        <View style={styles.wayCardOverlay}>
-          <Text style={styles.wayName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.wayMeta}>
-            {item.distance_km.toLocaleString()}km  ·  {getDifficultyLabel(item.difficulty)}  ·  {item.walker_count.toLocaleString()} walking
+        <View style={styles.wayCardContent}>
+          <Text style={styles.wayName} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.wayCountry} numberOfLines={1}>
+            {item.countries.join(', ')}
           </Text>
-          <View style={styles.wayCardStats}>
-            <View style={styles.wayCardStat}>
-              <Ionicons name="time-outline" size={11} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.wayCardStatText}>{item.duration_days} days</Text>
-            </View>
-            <View style={styles.wayCardStat}>
-              <Ionicons name="home-outline" size={11} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.wayCardStatText}>{item.free_host_count} free hosts</Text>
-            </View>
-            <View style={styles.wayCardStat}>
-              <Ionicons name="flag-outline" size={11} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.wayCardStatText}>{item.countries.length} {item.countries.length === 1 ? 'country' : 'countries'}</Text>
-            </View>
+          <View style={styles.wayCardBottom}>
+            <Text style={styles.wayMeta}>
+              {item.distance_km.toLocaleString()}km  ·  {item.duration_days} days
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -440,50 +423,35 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginVertical: 5,
     borderRadius: 14,
-    height: 140,
+    height: 110,
     overflow: 'hidden',
-    position: 'relative' as const,
   },
-  wayCardImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  } as any,
-  wayCardOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: 18,
+  wayCardContent: {
+    flex: 1,
+    paddingHorizontal: 20,
     paddingVertical: 16,
-    justifyContent: 'flex-end' as const,
+    justifyContent: 'center' as const,
   },
-  wayCardStats: {
-    flexDirection: 'row' as const,
-    gap: 12,
+  wayCardBottom: {
     marginTop: 6,
   },
-  wayCardStat: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-  },
-  wayCardStatText: {
-    fontSize: 10,
-    fontWeight: '600' as const,
-    color: 'rgba(255,255,255,0.75)',
-  },
   wayName: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 3,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 26,
   },
-  wayMeta: {
+  wayCountry: {
     fontSize: 12,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  wayMeta: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
     letterSpacing: 0.3,
   },
   emptyState: {
