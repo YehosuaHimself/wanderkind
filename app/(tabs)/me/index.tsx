@@ -251,21 +251,41 @@ export default function MeScreen() {
               )}
             </TouchableOpacity>
 
-            {/* QR Code — orange CI frame, tap for fullscreen */}
-            <TouchableOpacity
-              style={styles.miniQr}
-              onPress={() => setShowQrModal(true)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.qrOrangeFrame}>
-                <QRCode
-                  value={`https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`}
-                  size={44}
-                  color={colors.amber}
-                />
+            {/* QR Code + mini action buttons */}
+            <View style={styles.qrActionCol}>
+              <TouchableOpacity
+                style={styles.miniQr}
+                onPress={() => setShowQrModal(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.qrOrangeFrame}>
+                  <QRCode
+                    value={`https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`}
+                    size={44}
+                    color={colors.amber}
+                  />
+                </View>
+                <Text style={styles.miniQrLabel}>SCAN ME</Text>
+              </TouchableOpacity>
+              <View style={styles.miniActionRow}>
+                <TouchableOpacity
+                  style={styles.miniActionBtn}
+                  onPress={() => router.push('/(tabs)/me/edit-profile' as any)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="create-outline" size={12} color={colors.ink2} />
+                  <Text style={styles.miniActionText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.miniActionBtn}
+                  onPress={() => router.push('/(tabs)/more/share-profile' as any)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="share-outline" size={12} color={colors.ink2} />
+                  <Text style={styles.miniActionText}>Share</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.miniQrLabel}>SCAN ME</Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
           {/* Name + Handle + WK-ID */}
@@ -291,6 +311,40 @@ export default function MeScreen() {
               <Text style={styles.bioPlaceholder}>Add a bio to let others know your story...</Text>
             </TouchableOpacity>
           )}
+
+          {/* Profile Images — horizontal scroll right below bio */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.profileImagesRow}
+            style={styles.profileImagesScroll}
+          >
+            {Array.from({ length: 7 }).map((_, i) => {
+              const photo = galleryPhotos[i];
+              if (photo) {
+                return (
+                  <TouchableOpacity
+                    key={`pi-${i}`}
+                    style={styles.profileImageSlot}
+                    onPress={() => router.push('/(tabs)/me/gallery' as any)}
+                    activeOpacity={0.8}
+                  >
+                    <Image source={{ uri: photo }} style={styles.profileImageThumb} />
+                  </TouchableOpacity>
+                );
+              }
+              return (
+                <TouchableOpacity
+                  key={`pi-${i}`}
+                  style={styles.profileImageEmpty}
+                  onPress={() => router.push('/(tabs)/me/gallery' as any)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={20} color={colors.ink3} />
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* Walking toggle */}
           <View style={styles.walkingToggle}>
@@ -336,61 +390,6 @@ export default function MeScreen() {
             </View>
           </>
         )}
-
-        {/* ===== ACTIONS ===== */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => router.push('/(tabs)/me/edit-profile' as any)}
-          >
-            <Ionicons name="create-outline" size={16} color={colors.ink} />
-            <Text style={styles.actionBtnText}>Edit Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => router.push('/(tabs)/more/share-profile' as any)}
-          >
-            <Ionicons name="share-outline" size={16} color={colors.ink} />
-            <Text style={styles.actionBtnText}>Share</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== PROFILE IMAGES ===== */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>PROFILE IMAGES</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.profileImagesRow}
-          style={styles.profileImagesScroll}
-        >
-          {Array.from({ length: 7 }).map((_, i) => {
-            const photo = galleryPhotos[i];
-            if (photo) {
-              return (
-                <TouchableOpacity
-                  key={`pi-${i}`}
-                  style={styles.profileImageSlot}
-                  onPress={() => router.push('/(tabs)/me/gallery' as any)}
-                  activeOpacity={0.8}
-                >
-                  <Image source={{ uri: photo }} style={styles.profileImageThumb} />
-                </TouchableOpacity>
-              );
-            }
-            return (
-              <TouchableOpacity
-                key={`pi-${i}`}
-                style={styles.profileImageEmpty}
-                onPress={() => router.push('/(tabs)/me/gallery' as any)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={22} color={colors.ink3} />
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
 
         {/* ===== POSTS | STAMPS — two-fold activity section ===== */}
         <View style={styles.activityTabBar}>
@@ -669,7 +668,7 @@ const styles = StyleSheet.create({
   // === SECTION TITLES ===
   sectionBlock: {
     paddingHorizontal: 20,
-    marginTop: 24,
+    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 11,
@@ -681,7 +680,7 @@ const styles = StyleSheet.create({
   },
 
   nameSection: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   trailName: {
     fontSize: 22,
@@ -719,13 +718,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.ink2,
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   bioPlaceholder: {
     fontSize: 14,
     color: colors.ink3,
     fontStyle: 'italic',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   walkingToggle: {
     flexDirection: 'row',
@@ -789,7 +788,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+  qrActionCol: {
+    alignItems: 'center',
+    gap: 6,
   },
   miniQr: {
     alignItems: 'center',
@@ -811,6 +814,26 @@ const styles = StyleSheet.create({
     color: colors.amber,
     fontWeight: '700',
     marginTop: 3,
+  },
+  miniActionRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  miniActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  miniActionText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.ink2,
   },
 
   // QR Fullscreen Modal
@@ -874,44 +897,21 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // === ACTION BUTTONS ===
-  actionRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 8,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-
-  // === PROFILE IMAGES (horizontal scroll) ===
+  // === PROFILE IMAGES (horizontal scroll, inside profileHeader) ===
   profileImagesScroll: {
-    marginBottom: 4,
+    marginTop: 10,
+    marginBottom: 10,
+    marginHorizontal: -20,
   },
   profileImagesRow: {
     paddingHorizontal: 20,
-    gap: 8,
-    paddingVertical: 4,
+    gap: 7,
+    paddingVertical: 2,
   },
   profileImageSlot: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: colors.surfaceAlt,
   },
@@ -920,9 +920,9 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   profileImageEmpty: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: colors.border,
