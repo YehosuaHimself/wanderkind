@@ -19,6 +19,7 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { generatePassNumber } from '../../../src/lib/pass-number';
 import { QRCode } from '../../../src/components/ui/QRCode';
+import { getPassProgression, getVerificationBadgeText } from '../../../src/lib/pass-progression';
 
 const DARK_BG = '#0B0705';
 const DARK_INK = '#1A120A';
@@ -344,6 +345,33 @@ export default function WanderkindPassScreen() {
               The road is the oldest teacher. To walk is to remember what the body has always known — that transformation begins with a single step, and the journey itself is the destination.
             </Text>
           </View>
+
+          {/* Milestone Badges — PS-07 Visual Progression */}
+          {(() => {
+            const progression = getPassProgression(
+              profile?.nights_walked ?? 0,
+              profile?.verification_level ?? 'self'
+            );
+            if (progression.milestones.length === 0) return null;
+            return (
+              <View style={styles.milestonesSection}>
+                <Text style={styles.milestonesLabel}>MILESTONES</Text>
+                <View style={styles.milestonesRow}>
+                  {progression.milestones.map((m, i) => (
+                    <View key={i} style={styles.milestoneBadge}>
+                      <Ionicons name={m.icon as any} size={14} color={m.color} />
+                      <Text style={[styles.milestoneText, { color: m.color }]}>{m.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {getVerificationBadgeText(profile?.verification_level ?? 'self') ? (
+                  <Text style={styles.verBadgeText}>
+                    {getVerificationBadgeText(profile?.verification_level ?? 'self')}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })()}
 
           {/* QR Code Section */}
           <View style={styles.qrSection}>
@@ -679,6 +707,50 @@ const styles = StyleSheet.create({
   charterValue: {
     fontSize: 11,
     color: colors.amber,
+  },
+  milestonesSection: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderTopWidth: 0.5,
+    borderTopColor: `${colors.amber}33`,
+  },
+  milestonesLabel: {
+    fontSize: 7,
+    letterSpacing: 2,
+    color: colors.amber,
+    fontWeight: '700',
+    opacity: 0.6,
+    marginBottom: 8,
+  },
+  milestonesRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  milestoneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: 'rgba(212,160,23,0.08)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(212,160,23,0.2)',
+  },
+  milestoneText: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  verBadgeText: {
+    fontSize: 8,
+    letterSpacing: 1.5,
+    color: colors.amber,
+    fontWeight: '600',
+    opacity: 0.5,
+    marginTop: 8,
   },
   qrSection: {
     alignItems: 'center',

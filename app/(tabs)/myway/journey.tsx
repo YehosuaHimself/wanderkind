@@ -9,20 +9,20 @@ import { useAuth } from '../../../src/stores/auth';
  * The 13 tiers of the Wanderkind journey (0-12).
  * Each tier requires a specific duration of walking.
  */
-const TIERS = [
-  { level: 0, name: 'Wanderkind', requirement: 'Always', daysNeeded: 0 },
-  { level: 1, name: 'Wunderkind', requirement: '1 night · 2 days', daysNeeded: 2 },
-  { level: 2, name: 'Wandersmann', requirement: '2 nights · 3 days', daysNeeded: 3 },
-  { level: 3, name: 'Ehrenmann', requirement: '3 nights · 4 days', daysNeeded: 4 },
-  { level: 4, name: 'Wundermann', requirement: '7 nights · 8 days', daysNeeded: 8 },
-  { level: 5, name: 'Pilger', requirement: '11 days', daysNeeded: 11 },
-  { level: 6, name: 'Apostel', requirement: '15 days', daysNeeded: 15 },
-  { level: 7, name: 'Bergapostel', requirement: '1 month, 1 day', daysNeeded: 32 },
-  { level: 8, name: 'Lehrer', requirement: '3 months, 3 days', daysNeeded: 93 },
-  { level: 9, name: 'Meister', requirement: '7 months, 7 days', daysNeeded: 217 },
-  { level: 10, name: 'Grossmeister', requirement: '1 year, 1 day', daysNeeded: 366 },
-  { level: 11, name: 'Legende', requirement: '2 years, 2 days', daysNeeded: 732 },
-  { level: 12, name: 'König', requirement: '3 years, 3 days+', daysNeeded: 1098 },
+const TIERS: { level: number; name: string; requirement: string; daysNeeded: number; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { level: 0, name: 'Wanderkind', requirement: 'Always', daysNeeded: 0, icon: 'footsteps-outline' },
+  { level: 1, name: 'Wunderkind', requirement: '1 night · 2 days', daysNeeded: 2, icon: 'sparkles-outline' },
+  { level: 2, name: 'Wandersmann', requirement: '2 nights · 3 days', daysNeeded: 3, icon: 'walk-outline' },
+  { level: 3, name: 'Ehrenmann', requirement: '3 nights · 4 days', daysNeeded: 4, icon: 'ribbon-outline' },
+  { level: 4, name: 'Wundermann', requirement: '7 nights · 8 days', daysNeeded: 8, icon: 'compass-outline' },
+  { level: 5, name: 'Pilger', requirement: '11 days', daysNeeded: 11, icon: 'map-outline' },
+  { level: 6, name: 'Apostel', requirement: '15 days', daysNeeded: 15, icon: 'flame-outline' },
+  { level: 7, name: 'Bergapostel', requirement: '1 month, 1 day', daysNeeded: 32, icon: 'trail-sign-outline' },
+  { level: 8, name: 'Lehrer', requirement: '3 months, 3 days', daysNeeded: 93, icon: 'book-outline' },
+  { level: 9, name: 'Meister', requirement: '7 months, 7 days', daysNeeded: 217, icon: 'shield-checkmark-outline' },
+  { level: 10, name: 'Grossmeister', requirement: '1 year, 1 day', daysNeeded: 366, icon: 'diamond-outline' },
+  { level: 11, name: 'Legende', requirement: '2 years, 2 days', daysNeeded: 732, icon: 'star-outline' },
+  { level: 12, name: 'König', requirement: '3 years, 3 days+', daysNeeded: 1098, icon: 'trophy-outline' },
 ];
 
 interface JourneyContentProps {
@@ -85,16 +85,16 @@ export default function JourneyContent({ embedded }: JourneyContentProps) {
                 </Text>
                 <Text style={styles.tierRequirement}>{tier.requirement}</Text>
               </View>
-              {isCurrent && (
+              {isCurrent ? (
                 <View style={styles.currentBadge}>
                   <Text style={styles.currentBadgeText}>YOU</Text>
                 </View>
-              )}
-              {isReached && !isCurrent && (
-                <Ionicons name="checkmark-circle" size={18} color={colors.green} />
-              )}
-              {!isReached && (
-                <Ionicons name="lock-closed-outline" size={16} color={colors.ink3} />
+              ) : (
+                <Ionicons
+                  name={isReached ? 'checkmark-circle' : tier.icon}
+                  size={isReached ? 18 : 16}
+                  color={isReached ? colors.green : colors.ink3}
+                />
               )}
             </View>
 

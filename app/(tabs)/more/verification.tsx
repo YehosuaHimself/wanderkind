@@ -7,36 +7,89 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
-const VERIFICATION_STEPS = [
+/**
+ * DR-09: SELF Verification — Clear Meaning & Upgrade Path
+ *
+ * Four verification levels with concrete requirements:
+ * 1. Self-Declared: profile photo + bio + real name
+ * 2. Community: 3+ stamps from different hosts
+ * 3. Association: endorsed by a pilgrimage confraternity or trail org
+ * 4. Wanderkind: personal verification by the Wanderkind team
+ */
+
+type LevelId = 'self' | 'community' | 'association' | 'wanderkind';
+
+interface VerificationLevelConfig {
+  id: LevelId;
+  label: string;
+  displayName: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  bg: string;
+  requirements: string[];
+  description: string;
+}
+
+const LEVELS: VerificationLevelConfig[] = [
   {
-    id: 'email',
-    icon: 'mail-outline' as const,
-    title: 'Email Verified',
-    desc: 'Confirm your email address',
-    color: '#22C55E',
+    id: 'self',
+    label: 'SELF-DECLARED',
+    displayName: 'Self-Declared',
+    icon: 'person-circle-outline',
+    color: '#C8762A',
+    bg: '#C8762A12',
+    description: "You've completed your profile with real information and a photo.",
+    requirements: [
+      'Profile photo uploaded',
+      'Real name (trail name) set',
+      'Bio written (at least 20 characters)',
+    ],
   },
   {
-    id: 'phone',
-    icon: 'call-outline' as const,
-    title: 'Phone Number',
-    desc: 'Add and verify your phone number',
-    color: '#3B82F6',
+    id: 'community',
+    label: 'COMMUNITY',
+    displayName: 'Community Verified',
+    icon: 'people-circle-outline',
+    color: '#22863A',
+    bg: '#22863A12',
+    description: 'Other hosts and walkers have confirmed your identity through real-world encounters.',
+    requirements: [
+      '3+ stamps from different hosts',
+      'At least 3 nights walked',
+      'No reports or warnings on file',
+    ],
   },
   {
-    id: 'id',
-    icon: 'card-outline' as const,
-    title: 'ID Verification',
-    desc: 'Upload a government-issued ID',
-    color: '#D97706',
+    id: 'association',
+    label: 'ASSOCIATION',
+    displayName: 'Association Endorsed',
+    icon: 'ribbon-outline',
+    color: '#6B21A8',
+    bg: '#6B21A812',
+    description: 'Endorsed by a pilgrimage confraternity, trail organization, or walking association.',
+    requirements: [
+      'Member of a recognized confraternity',
+      'Endorsed by trail organization',
+      'Active in organized walking community',
+    ],
   },
   {
-    id: 'references',
-    icon: 'people-outline' as const,
-    title: 'References',
-    desc: 'Get verified by other Wanderkinder',
-    color: '#7C3AED',
+    id: 'wanderkind',
+    label: 'WANDERKIND',
+    displayName: 'Wanderkind Verified',
+    icon: 'shield-checkmark',
+    color: '#D4A017',
+    bg: '#D4A01715',
+    description: 'Personally verified by the Wanderkind team — the highest level of trust.',
+    requirements: [
+      'Personal verification by Wanderkind team',
+      'In-person or video identity confirmation',
+      'Long-standing community member',
+    ],
   },
 ];
+
+const LEVEL_ORDER: LevelId[] = ['self', 'community', 'association', 'wanderkind'];
 
 export default function VerificationScreen() {
   const { user, isLoading } = useAuthGuard();
@@ -44,7 +97,14 @@ export default function VerificationScreen() {
 
   const router = useRouter();
   const { profile } = useAuth();
-  const verLevel = profile?.verification_level ?? 'basic';
+  const currentLevel = (profile?.verification_level as LevelId) ?? 'self';
+  const currentIdx = LEVEL_ORDER.indexOf(currentLevel);
+
+  // Calculate which requirements are "met" for current user (simplified check)
+  const hasPhoto = !!profile?.avatar_url;
+  const hasName = !!profile?.trail_name && profile.trail_name.length > 1;
+  const hasBio = !!profile?.bio && profile.bio.length >= 20;
+  const selfMet = [hasPhoto, hasName, hasBio];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -60,29 +120,117 @@ export default function VerificationScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.infoCard}>
-          <Ionicons name="shield-checkmark" size={28} color={colors.gold} />
-          <Text style={styles.infoTitle}>Build Trust on the Road</Text>
-          <Text style={styles.infoText}>
-            Verification helps hosts and walkers feel safe. Complete steps below to increase your trust level.
+        {/* Current Level Card */}
+        <View style={styles.currentCard}>
+          <View style={styles.currentTop}>
+            <Ionicons
+              name={LEVELS[currentIdx]?.icon ?? 'shield-checkmark'}
+              size={36}
+              color={LEVELS[currentIdx]?.color ?? colors.amber}
+            />
+            <View style={styles.currentInfo}>
+              <Text style={styles.currentLabel}>YOUR LEVEL</Text>
+              <Text style={[styles.currentName, { color: LEVELS[currentIdx]?.color ?? colors.amber }]}>
+                {LEVELS[currentIdx]?.displayName ?? 'Self-Declared'}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.currentDesc}>
+            {LEVELS[currentIdx]?.description ?? ''}
           </Text>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>{verLevel.toUpperCase()}</Text>
+
+          {/* Progress bar */}
+          <View style={styles.progressRow}>
+            {LEVEL_ORDER.map((lvl, i) => {
+              const reached = i <= currentIdx;
+              const lvlConfig = LEVELS[i];
+              return (
+                <View key={lvl} style={styles.progressStep}>
+                  <View style={[
+                    styles.progressDot,
+                    reached && { backgroundColor: lvlConfig.color },
+                  ]}>
+                    {reached && <Ionicons name="checkmark" size={10} color="#fff" />}
+                  </View>
+                  <Text style={[styles.progressLabel, reached && { color: lvlConfig.color }]}>
+                    {lvl === 'self' ? 'Self' : lvl === 'community' ? 'Comm' : lvl === 'association' ? 'Assoc' : 'WK'}
+                  </Text>
+                  {i < LEVEL_ORDER.length - 1 && (
+                    <View style={[styles.progressLine, reached && { backgroundColor: lvlConfig.color }]} />
+                  )}
+                </View>
+              );
+            })}
           </View>
         </View>
 
-        {VERIFICATION_STEPS.map((step) => (
-          <TouchableOpacity key={step.id} style={styles.stepCard} activeOpacity={0.7}>
-            <View style={[styles.stepIcon, { backgroundColor: `${step.color}15` }]}>
-              <Ionicons name={step.icon} size={22} color={step.color} />
+        {/* All Levels */}
+        {LEVELS.map((level, idx) => {
+          const isReached = idx <= currentIdx;
+          const isCurrent = idx === currentIdx;
+          const isNext = idx === currentIdx + 1;
+
+          return (
+            <View
+              key={level.id}
+              style={[
+                styles.levelCard,
+                isCurrent && { borderColor: level.color, borderWidth: 1.5 },
+                !isReached && !isNext && styles.levelLocked,
+              ]}
+            >
+              <View style={styles.levelHeader}>
+                <View style={[styles.levelIcon, { backgroundColor: level.bg }]}>
+                  <Ionicons name={level.icon} size={22} color={level.color} />
+                </View>
+                <View style={styles.levelInfo}>
+                  <View style={styles.levelNameRow}>
+                    <Text style={[styles.levelName, { color: isReached ? level.color : colors.ink3 }]}>
+                      {level.displayName}
+                    </Text>
+                    {isCurrent && (
+                      <View style={[styles.youBadge, { backgroundColor: level.color }]}>
+                        <Text style={styles.youBadgeText}>YOU</Text>
+                      </View>
+                    )}
+                    {isReached && !isCurrent && (
+                      <Ionicons name="checkmark-circle" size={16} color={level.color} />
+                    )}
+                    {!isReached && (
+                      <Ionicons name="lock-closed-outline" size={14} color={colors.ink3} />
+                    )}
+                  </View>
+                  <Text style={styles.levelDesc}>{level.description}</Text>
+                </View>
+              </View>
+
+              {/* Requirements checklist */}
+              <View style={styles.reqList}>
+                {level.requirements.map((req, ri) => {
+                  // For self-declared, show actual completion status
+                  const met = level.id === 'self' ? selfMet[ri] : isReached;
+                  return (
+                    <View key={ri} style={styles.reqRow}>
+                      <Ionicons
+                        name={met ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={16}
+                        color={met ? level.color : colors.ink3}
+                      />
+                      <Text style={[styles.reqText, met && { color: colors.ink }]}>{req}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
-            <View style={styles.stepInfo}>
-              <Text style={styles.stepTitle}>{step.title}</Text>
-              <Text style={styles.stepDesc}>{step.desc}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-          </TouchableOpacity>
-        ))}
+          );
+        })}
+
+        <View style={styles.tipCard}>
+          <Ionicons name="information-circle" size={18} color={colors.amber} />
+          <Text style={styles.tipText}>
+            Each verification level builds trust within the community. Walk more, collect stamps from hosts, and your trust grows naturally.
+          </Text>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -110,61 +258,161 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.h3, color: colors.ink },
   scrollContent: { padding: spacing.lg },
-  infoCard: {
-    alignItems: 'center',
+
+  // Current level card
+  currentCard: {
     backgroundColor: colors.surface,
     borderRadius: 14,
-    padding: 24,
+    padding: 20,
     borderWidth: 1,
     borderColor: colors.amberLine,
     marginBottom: 20,
   },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.ink,
-    marginTop: 10,
-  },
-  infoText: {
-    fontSize: 13,
-    color: colors.ink2,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 8,
-  },
-  levelBadge: {
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: colors.amberBg,
-  },
-  levelText: {
-    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
-    fontSize: 10,
-    letterSpacing: 2,
-    color: colors.amber,
-    fontWeight: '700',
-  },
-  stepCard: {
+  currentTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 14,
+    marginBottom: 10,
+  },
+  currentInfo: { flex: 1 },
+  currentLabel: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 8,
+    letterSpacing: 2,
+    color: colors.ink3,
+    fontWeight: '600',
+  },
+  currentName: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  currentDesc: {
+    fontSize: 13,
+    color: colors.ink2,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+
+  // Progress bar
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  progressStep: {
+    alignItems: 'center',
+    flex: 1,
+    position: 'relative',
+  },
+  progressDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  progressLabel: {
+    fontSize: 8,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    color: colors.ink3,
+  },
+  progressLine: {
+    position: 'absolute',
+    top: 10,
+    left: '60%',
+    right: '-40%',
+    height: 2,
+    backgroundColor: colors.border,
+    zIndex: -1,
+  },
+
+  // Level cards
+  levelCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
-    gap: 12,
     borderWidth: 1,
     borderColor: colors.borderLt,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  stepIcon: {
+  levelLocked: {
+    opacity: 0.45,
+  },
+  levelHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 10,
+  },
+  levelIcon: {
     width: 42,
     height: 42,
     borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepInfo: { flex: 1 },
-  stepTitle: { fontSize: 14, fontWeight: '600', color: colors.ink, marginBottom: 2 },
-  stepDesc: { fontSize: 12, color: colors.ink3 },
+  levelInfo: { flex: 1 },
+  levelNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 3,
+  },
+  levelName: {
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+  },
+  levelDesc: {
+    fontSize: 12,
+    color: colors.ink3,
+    lineHeight: 16,
+  },
+  youBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  youBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 1,
+  },
+
+  // Requirements
+  reqList: {
+    gap: 6,
+    paddingLeft: 54,
+  },
+  reqRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reqText: {
+    fontSize: 12,
+    color: colors.ink3,
+    flex: 1,
+  },
+
+  // Tip card
+  tipCard: {
+    flexDirection: 'row',
+    backgroundColor: `${colors.amber}10`,
+    borderRadius: 10,
+    padding: 12,
+    gap: 8,
+    alignItems: 'flex-start',
+    marginTop: 6,
+  },
+  tipText: {
+    ...typography.bodySm,
+    color: colors.ink2,
+    flex: 1,
+    lineHeight: 18,
+  },
 });

@@ -32,7 +32,7 @@ export const TIER_THRESHOLDS: Record<TierLevel, number> = {
 
 export type VerificationLevel =
   | 'none'
-  | 'self'        // Photo + ID match
+  | 'self'        // Self-declared: profile photo + bio + real name
   | 'community'   // 3+ hosted confirmations
   | 'association'  // Confraternity / trail org
   | 'wanderkind';  // Personal visit by WK team

@@ -82,6 +82,13 @@ const appTiles: AppTile[] = [
     accent: colors.ink2,
   },
   {
+    icon: 'business',
+    title: 'Org Login',
+    route: '/(tabs)/more/org-login',
+    accent: '#6B21A8',
+    bgTint: 'rgba(107,33,168,0.06)',
+  },
+  {
     icon: 'information-circle',
     title: 'About',
     route: '/(tabs)/more/about',

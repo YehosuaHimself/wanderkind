@@ -430,6 +430,27 @@ function WebMapComponent({
         .addTo(mountainGroup);
     });
 
+    // === ISRAEL BLANK OVERLAY ===
+    // Grey polygon covering Israel — no names, no features, just blank
+    var israelCoords = [
+      [33.35, 34.25], [33.10, 35.65], [33.00, 35.85], [32.75, 35.80],
+      [32.55, 35.55], [32.35, 35.56], [32.10, 35.55], [31.80, 35.50],
+      [31.50, 35.47], [31.35, 35.40], [31.25, 35.20], [31.10, 35.00],
+      [30.90, 35.15], [30.50, 35.00], [30.30, 35.15], [29.95, 35.00],
+      [29.55, 34.95], [29.50, 34.90], [29.49, 34.27], [30.10, 34.30],
+      [30.50, 34.35], [31.00, 34.20], [31.50, 34.25], [31.80, 34.40],
+      [32.00, 34.45], [32.30, 34.55], [32.50, 34.65], [32.80, 34.70],
+      [32.95, 35.05], [33.10, 35.10], [33.28, 35.20], [33.35, 34.25],
+    ];
+    L.polygon(israelCoords, {
+      color: '#d5d5d0',
+      fillColor: '#e8e8e3',
+      fillOpacity: 1,
+      weight: 1,
+      opacity: 0.6,
+      interactive: false,
+    }).addTo(map);
+
     // === ROUTE POLYLINES ===
     var routes = ${JSON.stringify(ROUTE_LINES)};
     routes.forEach(function(route) {
