@@ -36,6 +36,8 @@ interface LayerState {
   mountains: boolean;
 }
 
+type MapMode = 'normal' | 'greyscale' | 'explorer';
+
 // Dynamically import native-only modules (these crash on web)
 let MapView: any, Marker: any, PROVIDER_GOOGLE: any, Location: any;
 if (Platform.OS !== 'web') {
@@ -187,7 +189,7 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, filter, onHostPress, walkers, onWalkerPress, layers
+  hosts, filter, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange
 }: {
   hosts: Host[];
   filter: FilterMode;
@@ -195,6 +197,8 @@ function WebMapComponent({
   walkers: typeof walkingSeedProfiles;
   onWalkerPress: (id: string) => void;
   layers: LayerState;
+  mapMode: MapMode;
+  onMapModeChange: (mode: MapMode) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -255,6 +259,15 @@ function WebMapComponent({
     }, '*');
   }, [walkers, mapReady]);
 
+  // Send map mode (tile layer) updates via postMessage
+  useEffect(() => {
+    if (!mapReady || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage({
+      type: 'update-tiles',
+      mode: mapMode,
+    }, '*');
+  }, [mapMode, mapReady]);
+
   // Build stable HTML — all layer toggling happens via postMessage
   const html = React.useMemo(() => {
     // Pre-compute initial data for embedding
@@ -295,11 +308,29 @@ function WebMapComponent({
   <div id="map"></div>
   <script>
     var map = L.map('map').setView([47.0, 4.0], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '\\u00a9 OSM',
-      attributionControl: true,
-      maxZoom: 19
-    }).addTo(map);
+
+    // Tile layer URLs for each mode
+    var tileUrls = {
+      normal: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      greyscale: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      explorer: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg'
+    };
+
+    var currentTileLayer = null;
+
+    function setTileLayer(mode) {
+      if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+      }
+      currentTileLayer = L.tileLayer(tileUrls[mode], {
+        attribution: '\\u00a9 OSM',
+        attributionControl: true,
+        maxZoom: 19
+      }).addTo(map);
+    }
+
+    // Initialize with normal mode
+    setTileLayer('normal');
 
     // === LAYER GROUPS (toggled via postMessage — no iframe re-mount) ===
     var hostGroup = L.layerGroup().addTo(map);
@@ -520,6 +551,9 @@ function WebMapComponent({
           allWalkers = event.data.walkers;
           renderWalkers();
           break;
+        case 'update-tiles':
+          setTileLayer(event.data.mode);
+          break;
       }
     });
 
@@ -558,6 +592,52 @@ function WebMapComponent({
           />
         </>
       )}
+    </View>
+  );
+}
+
+// Map modes panel overlay
+function MapModesPanel({ mapMode, onModeChange, onClose }: {
+  mapMode: MapMode;
+  onModeChange: (mode: MapMode) => void;
+  onClose: () => void;
+}) {
+  const modes: { id: MapMode; label: string; description: string; icon: string }[] = [
+    { id: 'normal', label: 'Normal', description: 'OpenStreetMap (Default)', icon: 'map' },
+    { id: 'greyscale', label: 'Grey/Orange', description: 'CartoDB Positron - Clean', icon: 'contrast' },
+    { id: 'explorer', label: 'Explorer', description: 'Watercolor - Old-World', icon: 'brush' },
+  ];
+
+  return (
+    <View style={styles.mapModesPanel}>
+      <View style={styles.mapModesPanelHeader}>
+        <Text style={styles.mapModesPanelTitle}>MAP STYLE</Text>
+        <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Ionicons name="close" size={20} color={colors.ink} />
+        </TouchableOpacity>
+      </View>
+      {modes.map(({ id, label, description, icon }) => (
+        <TouchableOpacity
+          key={id}
+          style={[styles.mapModeRow, mapMode === id && styles.mapModeRowActive]}
+          onPress={() => {
+            onModeChange(id);
+            onClose();
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.mapModeIcon, mapMode === id && { backgroundColor: colors.amberBg }]}>
+            <Ionicons name={icon as any} size={16} color={mapMode === id ? colors.amber : colors.ink3} />
+          </View>
+          <View style={styles.mapModeInfo}>
+            <Text style={[styles.mapModeLabel, mapMode !== id && { color: colors.ink3 }]}>{label}</Text>
+            <Text style={styles.mapModeDescription}>{description}</Text>
+          </View>
+          {mapMode === id && (
+            <Ionicons name="checkmark-circle" size={20} color={colors.amber} />
+          )}
+        </TouchableOpacity>
+      ))}
     </View>
   );
 }
@@ -635,9 +715,11 @@ export default function MapHome() {
   const [showLayers, setShowLayers] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showPastStays, setShowPastStays] = useState(false);
+  const [showMapModes, setShowMapModes] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [liveWalkers, setLiveWalkers] = useState<typeof walkingSeedProfiles>([]);
+  const [mapMode, setMapMode] = useState<MapMode>('normal');
   const hostListRef = useRef<FlatList>(null);
   const [layers, setLayers] = useState<LayerState>({
     hosts: true,
@@ -1071,6 +1153,8 @@ export default function MapHome() {
           walkers={[...walkingSeedProfiles, ...liveWalkers.filter(lw => !walkingSeedProfiles.some(sp => sp.id === lw.id))]}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
           layers={layers}
+          mapMode={mapMode}
+          onMapModeChange={setMapMode}
         />
       ) : (
         <MapView
@@ -1109,12 +1193,27 @@ export default function MapHome() {
           ))}
           <TouchableOpacity
             style={styles.iconButton}
+            onPress={() => setShowMapModes(!showMapModes)}
+          >
+            <Ionicons name="map" size={18} color={colors.amber} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconButton}
             onPress={() => setShowLayers(!showLayers)}
           >
             <Ionicons name="layers" size={18} color={colors.amber} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {/* Map modes panel */}
+      {showMapModes && (
+        <MapModesPanel
+          mapMode={mapMode}
+          onModeChange={setMapMode}
+          onClose={() => setShowMapModes(false)}
+        />
+      )}
 
       {/* Layers panel */}
       {showLayers && (
@@ -1689,5 +1788,70 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.ink2,
     fontWeight: '500',
+  },
+  // Map modes panel
+  mapModesPanel: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 56 : 100,
+    right: spacing.md,
+    width: 280,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: spacing.md,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    zIndex: 100,
+  },
+  mapModesPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  mapModesPanelTitle: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  mapModeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: spacing.sm,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  mapModeRowActive: {
+    backgroundColor: colors.amberBg,
+  },
+  mapModeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(200,118,42,0.06)',
+  },
+  mapModeInfo: {
+    flex: 1,
+  },
+  mapModeLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink,
+    marginBottom: 2,
+  },
+  mapModeDescription: {
+    fontSize: 10,
+    color: colors.ink3,
+    fontFamily: 'Courier New',
+    letterSpacing: 0.5,
   },
 });

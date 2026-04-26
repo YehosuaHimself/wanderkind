@@ -255,7 +255,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.ink3,
     textAlign: 'center',
-    fontStyle: 'italic',
     marginTop: spacing.sm,
   },
 });

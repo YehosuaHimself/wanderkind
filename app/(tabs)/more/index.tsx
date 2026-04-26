@@ -9,8 +9,8 @@ import { useAuth } from '../../../src/stores/auth';
 import { toast } from '../../../src/lib/toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_GAP = 10;
-const GRID_PADDING = 16;
+const GRID_GAP = 8;
+const GRID_PADDING = 12;
 const TILE_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
 type AppTile = {
@@ -125,10 +125,7 @@ export default function MoreScreen() {
         <Text style={styles.headerTitle}>Everything Else</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.grid}>
         {appTiles.map((tile) => (
           <TouchableOpacity
             key={tile.route + tile.title}
@@ -139,7 +136,7 @@ export default function MoreScreen() {
             <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>
               <Ionicons
                 name={tile.icon as any}
-                size={24}
+                size={20}
                 color={tile.accent ?? colors.ink2}
               />
             </View>
@@ -156,11 +153,11 @@ export default function MoreScreen() {
           activeOpacity={0.7}
         >
           <View style={[styles.tileIconCircle, { backgroundColor: 'rgba(192,57,43,0.12)' }]}>
-            <Ionicons name="log-out-outline" size={24} color={colors.red} />
+            <Ionicons name="log-out-outline" size={20} color={colors.red} />
           </View>
           <Text style={[styles.tileTitle, { color: colors.red }]}>Log Out</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -168,9 +165,9 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 4,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLt,
   },
@@ -198,18 +195,18 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   grid: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: GRID_PADDING,
     gap: GRID_GAP,
-    paddingBottom: 40,
   },
   tile: {
     width: TILE_WIDTH,
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    minHeight: 110,
+    borderRadius: 12,
+    padding: 10,
+    minHeight: 76,
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: colors.borderLt,
@@ -220,17 +217,17 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   tileIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   tileTitle: {
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.ink,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 });

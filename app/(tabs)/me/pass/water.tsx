@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   bioValue: { ...typography.body, color: ACCENT, fontWeight: '500', fontSize: 11 },
   charterSection: { marginBottom: spacing.sm },
   charterTitle: { ...typography.caption, color: ACCENT, letterSpacing: 2, marginBottom: spacing.xs, opacity: 0.6, fontSize: 8 },
-  charterText: { ...typography.bodySm, color: ACCENT, opacity: 0.5, lineHeight: 16, fontStyle: 'italic', fontSize: 9 },
+  charterText: { ...typography.bodySm, color: ACCENT, opacity: 0.5, lineHeight: 16, fontSize: 9 },
   verifiedBadge: {
     alignItems: 'center',
     paddingVertical: spacing.sm,

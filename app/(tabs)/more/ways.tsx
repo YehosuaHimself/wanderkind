@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   freeHostText: { fontSize: 11, fontWeight: '600', color: colors.green },
-  walkerCount: { ...typography.caption, color: colors.ink3, fontStyle: 'italic' },
+  walkerCount: { ...typography.caption, color: colors.ink3 },
   emptyState: {
     flex: 1,
     justifyContent: 'center',

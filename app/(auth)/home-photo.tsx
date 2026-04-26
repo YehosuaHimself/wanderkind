@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,6 +8,7 @@ import { WKHeader } from '../../src/components/ui/WKHeader';
 import { WKButton } from '../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/stores/auth';
+import { supabase } from '../../src/lib/supabase';
 
 export default function HomePhotoScreen() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function HomePhotoScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { updateProfile } = useAuthStore();
+  const { updateProfile, user } = useAuthStore();
 
   const pickImage = async () => {
     try {
@@ -62,15 +63,34 @@ export default function HomePhotoScreen() {
   };
 
   const handleContinue = async () => {
-    if (!photo) {
+    if (!photo || !user) {
       setError('Please select or take a photo of your home');
       return;
     }
 
     setLoading(true);
     try {
+      // Upload photo to Supabase Storage
+      const response = await fetch(photo);
+      const blob = await response.blob();
+      const filename = `host_cover_${user.id}_${Date.now()}.jpg`;
+
+      const file = Platform.OS === 'web'
+        ? new File([blob], filename, { type: 'image/jpeg' })
+        : blob;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filename);
+
       const { error: updateError } = await updateProfile({
-        host_cover_url: photo,
+        host_cover_url: publicData.publicUrl,
       });
 
       if (updateError) {
@@ -80,7 +100,7 @@ export default function HomePhotoScreen() {
 
       router.push('/(auth)/permissions');
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

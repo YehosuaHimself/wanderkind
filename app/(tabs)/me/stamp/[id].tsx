@@ -428,7 +428,6 @@ const styles = StyleSheet.create({
   reflectionText: {
     ...typography.body,
     color: colors.ink2,
-    fontStyle: 'italic',
     lineHeight: 24,
   },
   trustCard: {
@@ -506,7 +505,6 @@ const styles = StyleSheet.create({
   trustFooterText: {
     ...typography.caption,
     color: colors.ink3,
-    fontStyle: 'italic',
     flex: 1,
   },
 });

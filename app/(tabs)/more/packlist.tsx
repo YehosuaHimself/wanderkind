@@ -470,7 +470,6 @@ const styles = StyleSheet.create({
     color: colors.ink3,
     marginTop: 8,
     textAlign: 'right',
-    fontStyle: 'italic',
   },
 
   categorySection: { marginBottom: 12 },
@@ -597,7 +596,6 @@ const styles = StyleSheet.create({
   tipAuthorRole: {
     fontSize: 11,
     color: colors.ink3,
-    fontStyle: 'italic',
   },
 
   tipQuoteBox: {
@@ -617,7 +615,6 @@ const styles = StyleSheet.create({
   tipQuoteText: {
     flex: 1,
     fontSize: 14,
-    fontStyle: 'italic',
     color: colors.ink,
     lineHeight: 20,
     fontWeight: '500',

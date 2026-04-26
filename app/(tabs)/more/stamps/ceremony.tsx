@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.amber,
   },
-  blessingText: { ...typography.bodySm, color: colors.ink, textAlign: 'center', fontStyle: 'italic', lineHeight: 20 },
+  blessingText: { ...typography.bodySm, color: colors.ink, textAlign: 'center', lineHeight: 20 },
   reflectionBox: {
     width: '100%',
     marginTop: spacing.lg,
@@ -256,7 +256,6 @@ const styles = StyleSheet.create({
   reflectionHint: {
     ...typography.caption,
     color: colors.ink3,
-    fontStyle: 'italic',
   },
   shareToggleRow: {
     flexDirection: 'row',

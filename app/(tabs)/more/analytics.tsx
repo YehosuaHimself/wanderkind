@@ -414,6 +414,5 @@ const styles = StyleSheet.create({
     color: colors.ink3,
     textAlign: 'center',
     marginTop: spacing.lg,
-    fontStyle: 'italic',
   },
 });

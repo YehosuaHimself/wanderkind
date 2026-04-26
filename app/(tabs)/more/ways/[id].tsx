@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   availableBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   availableText: { fontSize: 10, color: colors.green, fontWeight: '500' },
   hostType: { fontSize: 10, letterSpacing: 1.5, color: colors.amber, fontWeight: '600' },
-  moreHosts: { ...typography.bodySm, color: colors.ink3, fontStyle: 'italic', marginTop: spacing.md },
+  moreHosts: { ...typography.bodySm, color: colors.ink3, marginTop: spacing.md },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',

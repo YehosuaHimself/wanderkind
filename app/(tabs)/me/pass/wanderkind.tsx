@@ -593,7 +593,6 @@ const styles = StyleSheet.create({
   signatureValue: {
     fontSize: 11,
     color: colors.amber,
-    fontStyle: 'italic',
     marginTop: spacing.xs,
   },
   verifiedBadge: {
@@ -683,7 +682,6 @@ const styles = StyleSheet.create({
     color: colors.amber,
     opacity: 0.6,
     lineHeight: 16,
-    fontStyle: 'italic',
   },
   charterGrid: {
     flexDirection: 'row',

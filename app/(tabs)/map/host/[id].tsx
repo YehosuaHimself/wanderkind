@@ -691,7 +691,6 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.ink2,
     marginTop: spacing.md,
-    fontStyle: 'italic',
   },
   guestbookList: {
     gap: spacing.md,

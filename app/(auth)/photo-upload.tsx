@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,6 +8,7 @@ import { WKHeader } from '../../src/components/ui/WKHeader';
 import { WKButton } from '../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/stores/auth';
+import { supabase } from '../../src/lib/supabase';
 
 export default function PhotoUploadScreen() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function PhotoUploadScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { updateProfile } = useAuthStore();
+  const { updateProfile, user } = useAuthStore();
 
   const pickImage = async () => {
     try {
@@ -65,16 +66,33 @@ export default function PhotoUploadScreen() {
   };
 
   const handleContinue = async () => {
-    if (!photo) {
+    if (!photo || !user) {
       setError('Please select or take a photo');
       return;
     }
 
     setLoading(true);
     try {
-      // In a real app, you would upload the image to storage here
-      // For now, we'll just mark it as uploaded
-      const { error: updateError } = await updateProfile({ avatar_url: photo });
+      // Upload photo to Supabase Storage
+      const response = await fetch(photo);
+      const blob = await response.blob();
+      const filename = `avatar_${user.id}_${Date.now()}.jpg`;
+
+      const file = Platform.OS === 'web'
+        ? new File([blob], filename, { type: 'image/jpeg' })
+        : blob;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filename);
+
+      const { error: updateError } = await updateProfile({ avatar_url: publicData.publicUrl });
       if (updateError) {
         setError('Failed to save photo');
         return;
@@ -82,7 +100,7 @@ export default function PhotoUploadScreen() {
 
       router.push('/(auth)/host-setup');
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

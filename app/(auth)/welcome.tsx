@@ -207,6 +207,5 @@ const styles = StyleSheet.create({
     color: colors.ink3,
     textAlign: 'center',
     marginTop: 8,
-    fontStyle: 'italic',
   },
 });

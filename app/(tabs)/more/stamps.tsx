@@ -67,7 +67,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
       const date = new Date(s.created_at).toLocaleDateString('en-GB', {
         day: 'numeric', month: 'long', year: 'numeric',
       });
-      const reflection = (s as any).reflection ? `<p style="color:#6B5A3E;font-style:italic;margin:4px 0 0">"${(s as any).reflection}"</p>` : '';
+      const reflection = (s as any).reflection ? `<p style="color:#6B5A3E;margin:4px 0 0">"${(s as any).reflection}"</p>` : '';
       const verified = (s as any).host_verified
         ? '<span style="color:#27864A;font-size:10px;font-weight:700;letter-spacing:1px">HOST VERIFIED</span>'
         : '';

@@ -739,7 +739,6 @@ const styles = StyleSheet.create({
   bioPlaceholder: {
     fontSize: 14,
     color: colors.ink3,
-    fontStyle: 'italic',
     marginBottom: 4,
   },
   walkingToggle: {
