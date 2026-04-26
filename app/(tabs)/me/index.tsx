@@ -291,22 +291,35 @@ export default function MeScreen() {
           </View>
         </View>
 
-        {/* ===== STATS ROW ===== */}
+        {/* ===== CURRENTLY WANDERING ===== */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>CURRENTLY</Text>
+        </View>
+
+        {/* ===== STATS ===== */}
         {!isQuietMode && (
-          <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{moments.length || profile?.nights_walked || 0}</Text>
-              <Text style={styles.statLabel}>NIGHTS</Text>
+          <>
+            <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>STATS</Text>
+            <View style={styles.statsRow}>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{moments.length || profile?.nights_walked || 0}</Text>
+                <Text style={styles.statLabel}>NIGHTS</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <TouchableOpacity style={styles.stat}>
+                <Text style={styles.statValue}>{profile?.stamps_count ?? 0}</Text>
+                <Text style={styles.statLabel}>STAMPS</Text>
+              </TouchableOpacity>
+              <View style={styles.statDivider} />
+              <TouchableOpacity style={styles.stat}>
+                <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
+                <Text style={styles.statLabel}>HOSTED</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.statDivider} />
-            <TouchableOpacity style={styles.stat}>
-              <Text style={styles.statValue}>{profile?.total_hosted ?? 0}</Text>
-              <Text style={styles.statLabel}>HOSTED</Text>
-            </TouchableOpacity>
-          </View>
+          </>
         )}
 
-        {/* ===== ACTION BUTTONS ===== */}
+        {/* ===== ACTIONS ===== */}
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.actionBtn}
@@ -324,7 +337,15 @@ export default function MeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ===== SWIPEABLE IMAGE CAROUSEL (up to 7 photos) ===== */}
+        {/* ===== QR CODE ===== */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>QR CODE</Text>
+        </View>
+
+        {/* ===== GALLERY ===== */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>GALLERY</Text>
+        </View>
         {(galleryPhotos.length > 0) ? (
           <View style={styles.carouselSection}>
             <FlatList
@@ -344,7 +365,6 @@ export default function MeScreen() {
                 <View key={i} style={styles.carouselDot} />
               ))}
             </View>
-            {/* Add more photos indicator */}
             {galleryPhotos.length < 7 && (
               <TouchableOpacity
                 style={styles.addPhotoOverlay}
@@ -365,20 +385,10 @@ export default function MeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* ===== PASSES QUICK ACCESS ===== */}
-        <TouchableOpacity
-          style={styles.passesRow}
-          onPress={() => router.push('/(tabs)/me/passes' as any)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.passesIcon}>
-            <Ionicons name="document-text" size={16} color={colors.amber} />
-          </View>
-          <Text style={styles.passesText}>Your Passes</Text>
-          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-        </TouchableOpacity>
-
-        {/* ===== POSTS GRID ===== */}
+        {/* ===== MY POSTS ===== */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>MY POSTS</Text>
+        </View>
         <View style={styles.contentGrid}>
           {moments.length > 0 ? (
             <View style={styles.photoGrid}>
@@ -413,6 +423,37 @@ export default function MeScreen() {
           )}
         </View>
 
+        {/* ===== PASSES ===== */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>PASSES</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.passesRow}
+          onPress={() => router.push('/(tabs)/me/passes' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.passesIcon}>
+            <Ionicons name="document-text" size={16} color={colors.amber} />
+          </View>
+          <Text style={styles.passesText}>Your Passes</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
+        </TouchableOpacity>
+
+        {/* ===== MY WAY ===== */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>MY WAY</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.passesRow}
+          onPress={() => router.push('/(tabs)/me/journey' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.passesIcon}>
+            <Ionicons name="trail-sign-outline" size={16} color={colors.amber} />
+          </View>
+          <Text style={styles.passesText}>Journey & Progression</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
+        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -519,6 +560,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
     fontFamily: Platform.OS === 'web' ? 'Georgia, serif' : 'serif',
+  },
+
+  // === SECTION TITLES ===
+  sectionBlock: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    color: colors.ink3,
+    marginBottom: 10,
+    textTransform: 'uppercase' as const,
   },
 
   nameSection: {
