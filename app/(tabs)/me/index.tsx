@@ -6,8 +6,8 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, shadows, tierColors } from '../../../src/lib/theme';
+import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 import { toast } from '../../../src/lib/toast';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
@@ -117,18 +117,15 @@ export default function MeScreen() {
     return publicData.publicUrl;
   };
 
+  const avatarPicker = useWKImagePicker({ aspect: [1, 1] });
+  const coverPicker = useWKImagePicker({ aspect: [16, 9] });
+
   const pickAndUploadAvatar = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (result.canceled || !result.assets[0] || !user) return;
+      const imageUri = await avatarPicker.pickFromLibrary();
+      if (!imageUri || !user) return;
 
       setUploadingAvatar(true);
-      const imageUri = result.assets[0].uri;
       const filename = `avatar_${user.id}_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
@@ -150,16 +147,10 @@ export default function MeScreen() {
 
   const pickAndUploadCover = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
-      if (result.canceled || !result.assets[0] || !user) return;
+      const imageUri = await coverPicker.pickFromLibrary();
+      if (!imageUri || !user) return;
 
       setUploadingCover(true);
-      const imageUri = result.assets[0].uri;
       const filename = `cover_${user.id}_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 

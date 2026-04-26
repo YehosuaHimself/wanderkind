@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, radii, shadows } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useWKImagePicker } from '../../../../src/hooks/useWKImagePicker';
 
 const MOCK_PHOTOS = [
   { id: '1', uri: 'https://via.placeholder.com/300x300?text=Living+Room' },
@@ -31,16 +31,12 @@ export default function PhotosScreen() {
   const [photos, setPhotos] = useState(MOCK_PHOTOS);
   const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+  const { pickFromLibrary } = useWKImagePicker({ aspect: [1, 1] });
 
-    if (!result.canceled && result.assets[0]) {
-      setPhotos([...photos, { id: Date.now().toString(), uri: result.assets[0].uri }]);
+  const pickImage = async () => {
+    const uri = await pickFromLibrary();
+    if (uri) {
+      setPhotos([...photos, { id: Date.now().toString(), uri }]);
     }
   };
 

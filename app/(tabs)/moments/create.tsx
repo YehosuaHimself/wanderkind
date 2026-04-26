@@ -13,12 +13,12 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 let FileSystem: any = null;
 if (Platform.OS !== 'web') {
   try { FileSystem = require('expo-file-system'); } catch {}
 }
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 import { showAlert } from '../../../src/lib/alert';
 import { toast } from '../../../src/lib/toast';
 import { sanitizeText, enforceMaxLength, validatePhoto, canPerformAction, LIMITS } from '../../../src/lib/validate';
@@ -37,29 +37,16 @@ export default function CreateMoment() {
   const [locationName, setLocationName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const pickPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+  const { pickFromLibrary, takeWithCamera } = useWKImagePicker({ aspect: [4, 3] });
 
-    if (!result.canceled) {
-      setPhotoUrl(result.assets[0].uri);
-    }
+  const pickPhoto = async () => {
+    const uri = await pickFromLibrary();
+    if (uri) setPhotoUrl(uri);
   };
 
   const takePhoto = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setPhotoUrl(result.assets[0].uri);
-    }
+    const uri = await takeWithCamera();
+    if (uri) setPhotoUrl(uri);
   };
 
   const validatePhotoFile = async (uri: string): Promise<boolean> => {

@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList }
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 
 interface GalleryPhoto {
   id: string;
@@ -38,6 +38,8 @@ export default function GalleryScreen() {
     }
   }, [profile]);
 
+  const { pickFromLibrary } = useWKImagePicker({ aspect: [1, 1] });
+
   const pickAndAddImage = async () => {
     if (photos.length >= 7) {
       setError('Maximum 7 photos allowed');
@@ -45,16 +47,10 @@ export default function GalleryScreen() {
     }
 
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0] && user) {
+      const uri = await pickFromLibrary();
+      if (uri && user) {
         setLoading(true);
-        const response = await fetch(result.assets[0].uri);
+        const response = await fetch(uri);
         const blob = await response.blob();
         const filename = `gallery_${user.id}_${Date.now()}.jpg`;
 

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../src/components/ui/WKHeader';
 import { WKButton } from '../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/stores/auth';
 import { supabase } from '../../src/lib/supabase';
+import { useWKImagePicker } from '../../src/hooks/useWKImagePicker';
 
 export default function PhotoUploadScreen() {
   const router = useRouter();
@@ -17,52 +17,16 @@ export default function PhotoUploadScreen() {
   const [error, setError] = useState('');
 
   const { updateProfile, user } = useAuthStore();
+  const { pickFromLibrary, takeWithCamera } = useWKImagePicker({ aspect: [1, 1] });
 
   const pickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Permission to access camera roll is required');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-        setError('');
-      }
-    } catch (err) {
-      setError('Failed to pick image');
-    }
+    const uri = await pickFromLibrary();
+    if (uri) { setPhoto(uri); setError(''); }
   };
 
   const takePicture = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Permission to access camera is required');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-        setError('');
-      }
-    } catch (err) {
-      setError('Failed to take photo');
-    }
+    const uri = await takeWithCamera();
+    if (uri) { setPhoto(uri); setError(''); }
   };
 
   const handleContinue = async () => {

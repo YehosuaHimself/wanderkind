@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIn
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 
 export default function EditCoverScreen() {
   useAuthGuard();
@@ -21,22 +21,11 @@ export default function EditCoverScreen() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
+  const { pickFromLibrary } = useWKImagePicker({ aspect: [16, 9] });
 
-      if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
-        setError('');
-      }
-    } catch (err) {
-      setError('Failed to pick image');
-    }
+  const pickImage = async () => {
+    const uri = await pickFromLibrary();
+    if (uri) { setSelectedImage(uri); setError(''); }
   };
 
   const handleUpload = async () => {

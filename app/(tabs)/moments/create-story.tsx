@@ -11,14 +11,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import * as Camera from 'expo-camera';
 let FileSystem: any = null;
 if (Platform.OS !== 'web') {
   try { FileSystem = require('expo-file-system'); } catch {}
 }
 
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 import { showAlert } from '../../../src/lib/alert';
 import { toast } from '../../../src/lib/toast';
 import { sanitizeText, enforceMaxLength, validatePhoto, canPerformAction, LIMITS } from '../../../src/lib/validate';
@@ -38,48 +37,16 @@ export default function CreateStory() {
   const [locationName, setLocationName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Open camera to capture photo
+  const { pickFromLibrary, takeWithCamera } = useWKImagePicker({ aspect: [1, 1] });
+
   const takeCameraPhoto = async () => {
-    try {
-      const { status } = await (Camera as any).requestCameraPermissionsAsync?.() ?? { status: 'granted' };
-      if (status !== 'granted') {
-        showAlert('Camera Permission', 'We need camera access to take a photo.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled) {
-        setPhotoUrl(result.assets[0].uri);
-      }
-    } catch (err) {
-      console.error('Camera error:', err);
-      showAlert('Camera Error', 'Unable to access the camera.');
-    }
+    const uri = await takeWithCamera();
+    if (uri) setPhotoUrl(uri);
   };
 
-  // Open image library to pick existing photo
   const pickPhotoFromLibrary = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled) {
-        setPhotoUrl(result.assets[0].uri);
-      }
-    } catch (err) {
-      console.error('Image picker error:', err);
-      showAlert('Error', 'Unable to access your photo library.');
-    }
+    const uri = await pickFromLibrary();
+    if (uri) setPhotoUrl(uri);
   };
 
   const validatePhotoFile = async (uri: string): Promise<boolean> => {

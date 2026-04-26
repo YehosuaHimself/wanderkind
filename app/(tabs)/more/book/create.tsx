@@ -12,7 +12,6 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { showAlert } from '../../../../src/lib/alert';
 import { toast } from '../../../../src/lib/toast';
@@ -20,6 +19,7 @@ import { sanitizeText, isEmpty, enforceMaxLength, canPerformAction, LIMITS } fro
 import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useWKImagePicker } from '../../../../src/hooks/useWKImagePicker';
 
 export default function CreateBookEntry() {
   useAuthGuard();
@@ -34,17 +34,11 @@ export default function CreateBookEntry() {
   const [saving, setSaving] = useState(false);
   const autoSaveTimeout = React.useRef<NodeJS.Timeout | null>(null);
 
-  const pickCover = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+  const { pickFromLibrary } = useWKImagePicker({ aspect: [4, 3] });
 
-    if (!result.canceled) {
-      setCoverUrl(result.assets[0].uri);
-    }
+  const pickCover = async () => {
+    const uri = await pickFromLibrary();
+    if (uri) setCoverUrl(uri);
   };
 
   const handleAutoSave = () => {
