@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fix React Native Web blocking text inputs on mobile Safari */
+/* RNW applies user-select: none globally which prevents focus on some browsers */
+input, textarea, [contenteditable] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Ensure text inputs are tappable and focusable */
+input[type="text"], input[type="email"], input[type="password"],
+input[type="number"], input[type="tel"], input[type="url"],
+textarea {
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, AccessibilityInfo } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, AccessibilityInfo, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WKButton } from '../../src/components/ui/WKButton';
 import { InstallBanner } from '../../src/components/InstallBanner';
+import { useInstallPrompt } from '../../src/hooks/useInstallPrompt';
 import { colors, typography, spacing } from '../../src/lib/theme';
 import { supabase } from '../../src/lib/supabase';
 
@@ -11,6 +12,7 @@ const { width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { canInstall, isInstalled } = useInstallPrompt();
   const [stats, setStats] = useState({ hosts: 505, routes: 26, countries: 10 });
 
   useEffect(() => {
@@ -81,28 +83,54 @@ export default function WelcomeScreen() {
         </View>
       </View>
 
-      {/* Actions */}
+      {/* Actions — Install is the hero CTA when available */}
       <View style={styles.actions}>
-        {/* PWA Install Banner — appears above signup buttons */}
-        <InstallBanner mode="banner" />
+        {canInstall && !isInstalled ? (
+          <>
+            {/* Primary: Install banner takes center stage */}
+            <InstallBanner mode="banner" />
 
-        <WKButton
-          title="Begin Your Way"
-          onPress={() => router.push('/(auth)/role-select')}
-          variant="primary"
-          size="lg"
-          fullWidth
-        />
-        <WKButton
-          title="I Already Have a Pass"
-          onPress={() => router.push('/(auth)/signin')}
-          variant="outline"
-          size="md"
-          fullWidth
-        />
+            {/* Secondary: understated text links */}
+            <View style={styles.secondaryRow}>
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/role-select')}
+                activeOpacity={0.7}
+                style={styles.secondaryLink}
+              >
+                <Text style={styles.secondaryText}>Continue in Browser</Text>
+              </TouchableOpacity>
+              <Text style={styles.secondaryDot}>·</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/signin')}
+                activeOpacity={0.7}
+                style={styles.secondaryLink}
+              >
+                <Text style={styles.secondaryText}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* Persistent footer install link (shows after banner dismissed 3×) */}
-        <InstallBanner mode="footer" />
+            {/* Footer install link after 3 dismissals */}
+            <InstallBanner mode="footer" />
+          </>
+        ) : (
+          <>
+            {/* No install available — show regular CTAs */}
+            <WKButton
+              title="Begin Your Way"
+              onPress={() => router.push('/(auth)/role-select')}
+              variant="primary"
+              size="lg"
+              fullWidth
+            />
+            <WKButton
+              title="I Already Have a Pass"
+              onPress={() => router.push('/(auth)/signin')}
+              variant="outline"
+              size="md"
+              fullWidth
+            />
+          </>
+        )}
 
         <View style={styles.hostBanner}>
           <View style={styles.hostBannerLine} />
@@ -210,6 +238,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 32,
     gap: 12,
+  },
+  secondaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  secondaryLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  secondaryText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink3,
+  },
+  secondaryDot: {
+    fontSize: 13,
+    color: colors.ink3,
   },
   hostBanner: {
     flexDirection: 'row',
