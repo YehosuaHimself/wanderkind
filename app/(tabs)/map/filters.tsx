@@ -18,10 +18,10 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function Filters() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [hostType, setHostType] = useState<string[]>(['free', 'donativo']);
+
+  if (isLoading) return null;
   const [minBeds, setMinBeds] = useState(1);
   const [maxBeds, setMaxBeds] = useState(10);
   const [verification, setVerification] = useState<string[]>(['self', 'community', 'association', 'wanderkind']);

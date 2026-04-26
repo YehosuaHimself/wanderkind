@@ -41,8 +41,6 @@ interface RideEntry {
 
 export default function TrampMode() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const { profile } = useAuth();
 
@@ -61,6 +59,8 @@ export default function TrampMode() {
   // ── Animations ─────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.4)).current;
+
+  if (isLoading) return null;
 
   useEffect(() => {
     if (signalActive) {

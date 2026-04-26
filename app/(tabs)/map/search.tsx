@@ -35,11 +35,11 @@ const MOCK_ROUTES = [
 
 export default function Search() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('hosts');
+
+  if (isLoading) return null;
 
   const filteredHosts = useMemo(() => {
     if (!query) return MOCK_HOSTS;

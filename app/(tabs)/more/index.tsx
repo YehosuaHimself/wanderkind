@@ -119,11 +119,11 @@ export default function MoreScreen() {
   const { user, isLoading } = useAuthGuard();
   const [activePage, setActivePage] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  if (isLoading) return null;
-
   const router = useRouter();
   const ROWS_PER_PAGE = 3;
   const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS_PER_PAGE - 1)) / ROWS_PER_PAGE);
+
+  if (isLoading) return null;
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);

@@ -100,8 +100,6 @@ const DEFAULT_QUOTE = {
 
 export default function WayDetail() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { profile } = useAuth();

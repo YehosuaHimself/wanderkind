@@ -45,10 +45,10 @@ const mockGroupWalks: GroupWalk[] = [
 
 export default function GroupWalkScreen({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading && !embedded) return null;
-
   const router = useRouter();
   const [myGroups, setMyGroups] = useState<GroupWalk[]>([]);
+
+  if (isLoading && !embedded) return null;
 
   const Wrapper = embedded ? View : SafeAreaView;
   const wrapperProps = embedded ? { style: styles.container } : { style: styles.container, edges: ['top'] as const };

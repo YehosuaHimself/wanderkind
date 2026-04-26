@@ -26,11 +26,11 @@ interface NearbyWanderer extends Profile {
 
 export default function Wanderkinder() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [wanderers, setWanderers] = useState<NearbyWanderer[]>([]);
   const [loading, setLoading] = useState(true);
+
+  if (isLoading) return null;
 
   useEffect(() => {
     fetchNearbyWanderers();

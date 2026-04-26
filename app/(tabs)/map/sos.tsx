@@ -54,9 +54,9 @@ const EMERGENCIES: Record<string, Emergency> = {
 
 export default function SOS() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [userCountry, setUserCountry] = useState('ES'); // Default to Spain
+
+  if (isLoading) return null;
 
   const handleCall = (number: string) => {
     const cleanNumber = number.replace(/\D/g, '');

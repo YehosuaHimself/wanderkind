@@ -41,11 +41,11 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 export default function MomentsFeed() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const { profile } = useAuth();
   const [moments, setMoments] = useState<MomentWithAuthor[]>([]);
+
+  if (isLoading) return null;
   const [refreshing, setRefreshing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filter, setFilter] = useState<FeedFilter>('nearby');

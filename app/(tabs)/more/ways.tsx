@@ -72,9 +72,6 @@ const getDifficultyColor = (difficulty: string): string => {
 
 export default function WaysList({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading } = useAuthGuard();
-  // Don't block rendering when embedded — parent handles auth
-  if (isLoading && !embedded) return null;
-
   const router = useRouter();
   const [ways, setWays] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +82,9 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
   useEffect(() => {
     fetchWays();
   }, []);
+
+  // Don't block rendering when embedded — parent handles auth
+  if (isLoading && !embedded) return null;
 
   const fetchWays = async () => {
     try {
