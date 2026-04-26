@@ -20,31 +20,49 @@ function getProfileById(id: string) {
 // Stories created in the last 10 hours - recent timestamps
 const now = new Date('2026-04-25T18:00:00Z');
 
+// Generate timestamp helper — hours ago from now
+function hoursAgo(h: number): Date {
+  return new Date(now.getTime() - h * 60 * 60 * 1000);
+}
+
 const storyTimestamps = [
-  new Date(now.getTime() - 0 * 60 * 60 * 1000), // now
-  new Date(now.getTime() - 45 * 60 * 1000), // 45 min ago
-  new Date(now.getTime() - 1.5 * 60 * 60 * 1000), // 1.5h ago
-  new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2h ago
-  new Date(now.getTime() - 2.75 * 60 * 60 * 1000), // 2h 45min ago
-  new Date(now.getTime() - 3.5 * 60 * 60 * 1000), // 3.5h ago
-  new Date(now.getTime() - 4.25 * 60 * 60 * 1000), // 4.25h ago
-  new Date(now.getTime() - 5 * 60 * 60 * 1000), // 5h ago
-  new Date(now.getTime() - 6.33 * 60 * 60 * 1000), // 6.33h ago
-  new Date(now.getTime() - 7 * 60 * 60 * 1000), // 7h ago
-  new Date(now.getTime() - 8.5 * 60 * 60 * 1000), // 8.5h ago
-  new Date(now.getTime() - 9.5 * 60 * 60 * 1000), // 9.5h ago
-  new Date(now.getTime() - 0.25 * 60 * 60 * 1000), // 15 min ago
-  new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1h ago
-  new Date(now.getTime() - 1.75 * 60 * 60 * 1000), // 1h 45min ago
-  new Date(now.getTime() - 3 * 60 * 60 * 1000), // 3h ago
-  new Date(now.getTime() - 4.75 * 60 * 60 * 1000), // 4h 45min ago
-  new Date(now.getTime() - 5.5 * 60 * 60 * 1000), // 5.5h ago
-  new Date(now.getTime() - 6 * 60 * 60 * 1000), // 6h ago
-  new Date(now.getTime() - 7.5 * 60 * 60 * 1000), // 7.5h ago
-  new Date(now.getTime() - 8 * 60 * 60 * 1000), // 8h ago
-  new Date(now.getTime() - 9 * 60 * 60 * 1000), // 9h ago
-  new Date(now.getTime() - 10 * 60 * 60 * 1000), // 10h ago
-  new Date(now.getTime() - 10.5 * 60 * 60 * 1000), // 10.5h ago
+  hoursAgo(0),      // 0: now
+  hoursAgo(0.75),   // 1: 45 min ago
+  hoursAgo(1.5),    // 2: 1.5h ago
+  hoursAgo(2),      // 3: 2h ago
+  hoursAgo(2.75),   // 4: 2h 45min ago
+  hoursAgo(3.5),    // 5: 3.5h ago
+  hoursAgo(4.25),   // 6: 4.25h ago
+  hoursAgo(5),      // 7: 5h ago
+  hoursAgo(6.33),   // 8: 6.33h ago
+  hoursAgo(7),      // 9: 7h ago
+  hoursAgo(8.5),    // 10: 8.5h ago
+  hoursAgo(9.5),    // 11: 9.5h ago
+  hoursAgo(0.25),   // 12: 15 min ago
+  hoursAgo(1),      // 13: 1h ago
+  hoursAgo(1.75),   // 14: 1h 45min ago
+  hoursAgo(3),      // 15: 3h ago
+  hoursAgo(4.75),   // 16: 4h 45min ago
+  hoursAgo(5.5),    // 17: 5.5h ago
+  hoursAgo(6),      // 18: 6h ago
+  hoursAgo(7.5),    // 19: 7.5h ago
+  hoursAgo(8),      // 20: 8h ago
+  hoursAgo(9),      // 21: 9h ago
+  hoursAgo(10),     // 22: 10h ago
+  hoursAgo(10.5),   // 23: 10.5h ago
+  // New timestamps for stories 25-36
+  hoursAgo(0.1),    // 24: 6 min ago
+  hoursAgo(0.5),    // 25: 30 min ago
+  hoursAgo(1.25),   // 26: 1h 15min ago
+  hoursAgo(2.25),   // 27: 2h 15min ago
+  hoursAgo(3.25),   // 28: 3h 15min ago
+  hoursAgo(4.5),    // 29: 4.5h ago
+  hoursAgo(5.75),   // 30: 5h 45min ago
+  hoursAgo(6.5),    // 31: 6.5h ago
+  hoursAgo(7.25),   // 32: 7h 15min ago
+  hoursAgo(8.25),   // 33: 8h 15min ago
+  hoursAgo(9.25),   // 34: 9h 15min ago
+  hoursAgo(10.25),  // 35: 10h 15min ago
 ];
 
 export const SEED_STORIES = [
@@ -359,6 +377,163 @@ export const SEED_STORIES = [
     lng: -1.738,
     created_at: storyTimestamps[23].toISOString(),
     expires_at: addStoryExpiry(storyTimestamps[23].toISOString()),
+  },
+  // === STORIES 25-36: More routes, multi-story authors, diverse content ===
+  {
+    id: 'story-025',
+    author_id: 'p-001', // Second story from p-001 → multi-story group
+    author: getProfileById('p-001'),
+    photo_url:
+      'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Second sunrise in a row that stops me in my tracks. Will I ever get used to this?',
+    location_name: 'Camino Francés - Navarra',
+    lat: 42.812,
+    lng: -1.640,
+    created_at: storyTimestamps[24].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[24].toISOString()),
+  },
+  {
+    id: 'story-026',
+    author_id: 'p-003', // Second story from p-003
+    author: getProfileById('p-003'),
+    photo_url:
+      'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Walking meditation in the forest. Mind quiet, feet moving, heart open.',
+    location_name: 'Camino del Norte, Asturias',
+    lat: 43.362,
+    lng: -5.850,
+    created_at: storyTimestamps[25].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[25].toISOString()),
+  },
+  {
+    id: 'story-027',
+    author_id: 'p-010', // Second story from p-010
+    author: getProfileById('p-010'),
+    photo_url:
+      'https://images.unsplash.com/photo-1473181488821-2d23949a045a?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Shared dinner with the host family. Five languages at one table, one bread for all.',
+    location_name: 'Near Carrión de los Condes',
+    lat: 42.337,
+    lng: -4.602,
+    created_at: storyTimestamps[26].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[26].toISOString()),
+  },
+  {
+    id: 'story-028',
+    author_id: 'p-025',
+    author: getProfileById('p-025'),
+    photo_url:
+      'https://images.unsplash.com/photo-1499363536502-87642509e31b?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Via Francigena through Tuscany. Cypress trees lining the path like old friends waving.',
+    location_name: 'San Gimignano, Italy',
+    lat: 43.467,
+    lng: 11.043,
+    created_at: storyTimestamps[27].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[27].toISOString()),
+  },
+  {
+    id: 'story-029',
+    author_id: 'p-028',
+    author: getProfileById('p-028'),
+    photo_url:
+      'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: null,
+    location_name: 'Königsweg, near Berchtesgaden',
+    lat: 47.631,
+    lng: 13.001,
+    created_at: storyTimestamps[28].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[28].toISOString()),
+  },
+  {
+    id: 'story-030',
+    author_id: 'p-030',
+    author: getProfileById('p-030'),
+    photo_url:
+      'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Alpine dawn. The mountains do not care about your schedule. They just are.',
+    location_name: 'E5, Austrian Alps',
+    lat: 47.074,
+    lng: 12.695,
+    created_at: storyTimestamps[29].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[29].toISOString()),
+  },
+  {
+    id: 'story-031',
+    author_id: 'p-033',
+    author: getProfileById('p-033'),
+    photo_url:
+      'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Three weeks in. Lighter pack, heavier heart, clearer mind.',
+    location_name: 'Camino Portugués, Porto',
+    lat: 41.150,
+    lng: -8.610,
+    created_at: storyTimestamps[30].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[30].toISOString()),
+  },
+  {
+    id: 'story-032',
+    author_id: 'p-035',
+    author: getProfileById('p-035'),
+    photo_url:
+      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'The forest is the real cathedral. No walls needed, only trees.',
+    location_name: 'Black Forest, E1 trail',
+    lat: 48.030,
+    lng: 8.150,
+    created_at: storyTimestamps[31].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[31].toISOString()),
+  },
+  {
+    id: 'story-033',
+    author_id: 'p-040',
+    author: getProfileById('p-040'),
+    photo_url:
+      'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Sunset from Monte Amiata. The whole valley turns gold.',
+    location_name: 'Via Francigena, Tuscany',
+    lat: 42.890,
+    lng: 11.622,
+    created_at: storyTimestamps[32].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[32].toISOString()),
+  },
+  {
+    id: 'story-034',
+    author_id: 'p-045',
+    author: getProfileById('p-045'),
+    photo_url:
+      'https://images.unsplash.com/photo-1517760444937-f6397edcbbcd?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Found this tiny chapel open. Nobody around. Just me and the silence.',
+    location_name: 'Near Einsiedeln, Switzerland',
+    lat: 47.127,
+    lng: 8.754,
+    created_at: storyTimestamps[33].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[33].toISOString()),
+  },
+  {
+    id: 'story-035',
+    author_id: 'p-050',
+    author: getProfileById('p-050'),
+    photo_url:
+      'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Waterfall break. Cold water, hot coffee from the thermos. Perfection.',
+    location_name: 'Camino del Norte, Cantabria',
+    lat: 43.380,
+    lng: -4.450,
+    created_at: storyTimestamps[34].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[34].toISOString()),
+  },
+  {
+    id: 'story-036',
+    author_id: 'p-001', // Third story from p-001 → 3-story group!
+    author: getProfileById('p-001'),
+    photo_url:
+      'https://images.unsplash.com/photo-1414609245224-afa02bfb3fda?w=800&h=1200&fit=crop&fm=webp&q=60',
+    caption: 'Night walk under the stars. Only my headlamp and the sound of my steps.',
+    location_name: 'Meseta, after dark',
+    lat: 42.150,
+    lng: -4.100,
+    created_at: storyTimestamps[35].toISOString(),
+    expires_at: addStoryExpiry(storyTimestamps[35].toISOString()),
   },
 ];
 

@@ -429,7 +429,7 @@ export default function MomentsFeed() {
         <Ionicons name="add" size={24} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Story Viewer Modal */}
+      {/* Story Viewer Modal — with group navigation (swipe between users) */}
       {viewingStory && (
         <StoryViewer
           stories={viewingStory.stories}
@@ -438,6 +438,20 @@ export default function MomentsFeed() {
           authorId={viewingStory.authorId}
           visible={!!viewingStory}
           onClose={() => setViewingStory(null)}
+          onNextGroup={() => {
+            const idx = storyGroups.findIndex(g => g.authorId === viewingStory.authorId);
+            if (idx >= 0 && idx < storyGroups.length - 1) {
+              setViewingStory(storyGroups[idx + 1]);
+            } else {
+              setViewingStory(null); // end of all groups
+            }
+          }}
+          onPreviousGroup={() => {
+            const idx = storyGroups.findIndex(g => g.authorId === viewingStory.authorId);
+            if (idx > 0) {
+              setViewingStory(storyGroups[idx - 1]);
+            }
+          }}
         />
       )}
 
