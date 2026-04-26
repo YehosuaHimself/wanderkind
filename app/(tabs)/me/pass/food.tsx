@@ -181,7 +181,7 @@ export default function FoodPassScreen() {
           <View style={styles.charterSection}>
             <Text style={styles.charterTitle}>CHARTER</Text>
             <Text style={styles.charterText}>
-              Every meal shared is an act of communion. Honouring those who nourish fellow wanderers.
+              To break bread with a stranger is the oldest act of trust. Every shared meal is a bridge between worlds — the donativo spirit lives wherever a table is set with generosity.
             </Text>
           </View>
 

@@ -339,24 +339,9 @@ export default function WanderkindPassScreen() {
           {/* Charter Section */}
           <View style={styles.charterSection}>
             <Text style={styles.charterTitle}>WANDERKIND CHARTER</Text>
-            <View style={styles.charterGrid}>
-              <View style={styles.charterCell}>
-                <Text style={styles.charterLabel}>BASIS</Text>
-                <Text style={styles.charterValue}>Journey</Text>
-              </View>
-              <View style={styles.charterCell}>
-                <Text style={styles.charterLabel}>MOVEMENT</Text>
-                <Text style={styles.charterValue}>Open Path</Text>
-              </View>
-              <View style={styles.charterCell}>
-                <Text style={styles.charterLabel}>JURISDICTION</Text>
-                <Text style={styles.charterValue}>Global</Text>
-              </View>
-              <View style={styles.charterCell}>
-                <Text style={styles.charterLabel}>IMMUNITIES</Text>
-                <Text style={styles.charterValue}>Hospitality</Text>
-              </View>
-            </View>
+            <Text style={styles.charterText}>
+              The road is the oldest teacher. To walk is to remember what the body has always known — that transformation begins with a single step, and the journey itself is the destination.
+            </Text>
           </View>
 
           {/* QR Code Section */}
@@ -661,6 +646,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     opacity: 0.7,
     fontWeight: '600',
+  },
+  charterText: {
+    fontSize: 10,
+    color: colors.amber,
+    opacity: 0.6,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   charterGrid: {
     flexDirection: 'row',

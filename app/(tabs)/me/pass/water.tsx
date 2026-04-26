@@ -187,7 +187,7 @@ export default function WaterPassScreen() {
           <View style={styles.charterSection}>
             <Text style={styles.charterTitle}>WATER CHARTER</Text>
             <Text style={styles.charterText}>
-              Water is life. The Water Pass honours stewards who map fountains and share sources.
+              Water is life's first gift and the walker's constant companion. Those who map springs and share sources guard something precious — the knowledge that sustains every journey.
             </Text>
           </View>
 

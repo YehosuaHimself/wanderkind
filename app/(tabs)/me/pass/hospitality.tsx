@@ -195,7 +195,7 @@ export default function HospitalityPassScreen() {
           <View style={styles.charterSection}>
             <Text style={styles.charterTitle}>HOSPITALITY CHARTER</Text>
             <Text style={styles.charterText}>
-              To open one's door is an ancient and sacred act. The Hospitality Pass recognizes those who welcome wanderers with shelter and warmth.
+              To open your door to a stranger is the most ancient act of grace. Every roof offered is a shelter for the soul — the sacred duty of hosting lives in those who welcome without condition.
             </Text>
           </View>
 
