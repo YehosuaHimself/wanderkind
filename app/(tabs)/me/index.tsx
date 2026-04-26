@@ -351,6 +351,16 @@ export default function MeScreen() {
         {/* ===== CURRENTLY WANDERING ===== */}
         <View style={styles.sectionBlock}>
           <Text style={styles.sectionTitle}>CURRENTLY</Text>
+          <View style={styles.currentlyCard}>
+            <Ionicons
+              name={isWalking ? 'footsteps-outline' : 'bed-outline'}
+              size={18}
+              color={isWalking ? colors.amber : colors.ink3}
+            />
+            <Text style={[styles.currentlyText, isWalking && { color: colors.amber }]}>
+              {isWalking ? 'On the road' : 'Resting at home'}
+            </Text>
+          </View>
         </View>
 
         {/* ===== STATS ===== */}
@@ -612,6 +622,21 @@ const styles = StyleSheet.create({
   sectionBlock: {
     paddingHorizontal: 20,
     marginTop: 16,
+  },
+  currentlyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 10,
+  },
+  currentlyText: {
+    fontSize: 14,
+    color: colors.ink2,
+    fontWeight: '500',
   },
   sectionTitle: {
     fontSize: 11,

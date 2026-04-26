@@ -7,7 +7,7 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
-import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useAuthStore } from '../../../src/stores/auth';
 
 type GroupWalk = {
   id: string;
@@ -44,7 +44,7 @@ const mockGroupWalks: GroupWalk[] = [
 ];
 
 export default function GroupWalkScreen({ embedded = false }: { embedded?: boolean }) {
-  const { user, isLoading } = useAuthGuard();
+  const { user, isLoading } = useAuthStore();
   const router = useRouter();
   const [myGroups, setMyGroups] = useState<GroupWalk[]>([]);
 

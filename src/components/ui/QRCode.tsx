@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, View, StyleSheet, ActivityIndicator } from 'react-native';
+import { Image, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import QRCodeLib from 'qrcode';
 
 interface QRCodeProps {
@@ -24,25 +24,31 @@ export function QRCode({
   backgroundColor = 'transparent',
 }: QRCodeProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    QRCodeLib.toDataURL(value, {
-      width: size * 2, // 2x for retina
-      margin: 0,
-      color: {
-        dark: color,
-        light: backgroundColor === 'transparent' ? '#00000000' : backgroundColor,
-      },
-      errorCorrectionLevel: 'M',
-    })
-      .then((url: string) => {
-        if (!cancelled) setDataUrl(url);
+    try {
+      QRCodeLib.toDataURL(value, {
+        width: size * 2, // 2x for retina
+        margin: 0,
+        color: {
+          dark: color,
+          light: backgroundColor === 'transparent' ? '#00000000' : backgroundColor,
+        },
+        errorCorrectionLevel: 'M',
       })
-      .catch((err: Error) => {
-        console.error('QR generation failed:', err);
-      });
+        .then((url: string) => {
+          if (!cancelled) setDataUrl(url);
+        })
+        .catch((err: Error) => {
+          console.warn('QR generation failed:', err?.message);
+          if (!cancelled) setFailed(true);
+        });
+    } catch (err: any) {
+      console.warn('QR library error:', err?.message);
+    }
 
     return () => {
       cancelled = true;
@@ -52,7 +58,11 @@ export function QRCode({
   if (!dataUrl) {
     return (
       <View style={[styles.placeholder, { width: size, height: size }]}>
-        <ActivityIndicator size="small" color={color} />
+        {failed ? (
+          <Text style={{ fontSize: 8, color, textAlign: 'center' }}>QR</Text>
+        ) : (
+          <ActivityIndicator size="small" color={color} />
+        )}
       </View>
     );
   }

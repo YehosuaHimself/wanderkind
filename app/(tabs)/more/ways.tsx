@@ -17,7 +17,7 @@ import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Route } from '../../../src/types/database';
 import { SEED_ROUTES } from '../../../src/data/seed-routes';
-import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useAuthStore } from '../../../src/stores/auth';
 
 /** Derive region from a route's countries list */
 const REGION_MAP: Record<string, string> = {
@@ -71,7 +71,7 @@ const getDifficultyColor = (difficulty: string): string => {
 };
 
 export default function WaysList({ embedded = false }: { embedded?: boolean }) {
-  const { user, isLoading } = useAuthGuard();
+  const { user, isLoading } = useAuthStore();
   const router = useRouter();
   const [ways, setWays] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
