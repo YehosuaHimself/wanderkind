@@ -151,19 +151,19 @@ export default function HospitalityPassScreen() {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>NIGHTS HOSTED</Text>
-              <Text style={styles.statValue}>{nightsHosted}</Text>
+              <Text style={[styles.statValue, nightsHosted === 0 && styles.statPlaceholder]}>{nightsHosted || '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>GUESTS</Text>
-              <Text style={styles.statValue}>{guestsWelcomed}</Text>
+              <Text style={[styles.statValue, guestsWelcomed === 0 && styles.statPlaceholder]}>{guestsWelcomed || '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>RATING</Text>
-              <Text style={styles.statValue}>{hostRating > 0 ? hostRating.toFixed(1) : '—'}</Text>
+              <Text style={[styles.statValue, hostRating === 0 && styles.statPlaceholder]}>{hostRating > 0 ? hostRating.toFixed(1) : '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>STATUS</Text>
-              <Text style={styles.statValue}>ACTIVE</Text>
+              <Text style={styles.statValue}>{nightsHosted > 0 ? 'ACTIVE' : 'AWAITING FIRST NIGHT'}</Text>
             </View>
           </View>
 
@@ -311,6 +311,7 @@ const styles = StyleSheet.create({
   },
   statLabel: { ...typography.caption, color: ACCENT, opacity: 0.6, marginBottom: 2, letterSpacing: 0.5, fontSize: 7 },
   statValue: { ...typography.body, color: ACCENT, fontSize: 12, fontWeight: '600' },
+  statPlaceholder: { opacity: 0.35 },
   bioGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm, gap: 6 },
   bioField: { width: '47%', paddingBottom: spacing.xs, borderBottomWidth: 0.5, borderBottomColor: `${ACCENT}33` },
   bioLabel: { ...typography.monoXs, color: ACCENT, opacity: 0.5, marginBottom: 2, letterSpacing: 0.5, fontSize: 7 },

@@ -143,19 +143,19 @@ export default function WaterPassScreen() {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>SOURCES</Text>
-              <Text style={styles.statValue}>{waterSources}</Text>
+              <Text style={[styles.statValue, waterSources === 0 && styles.statPlaceholder]}>{waterSources || '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>FOUNTAINS</Text>
-              <Text style={styles.statValue}>{fountainsMarked}</Text>
+              <Text style={[styles.statValue, fountainsMarked === 0 && styles.statPlaceholder]}>{fountainsMarked || '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>IMPACT</Text>
-              <Text style={styles.statValue}>{Math.floor((waterSources + fountainsMarked) / 10)}</Text>
+              <Text style={[styles.statValue, (waterSources + fountainsMarked) === 0 && styles.statPlaceholder]}>{(waterSources + fountainsMarked) > 0 ? Math.floor((waterSources + fountainsMarked) / 10) : '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>STATUS</Text>
-              <Text style={styles.statValue}>ACTIVE</Text>
+              <Text style={styles.statValue}>{waterSources > 0 ? 'ACTIVE' : 'AWAITING FIRST SOURCE'}</Text>
             </View>
           </View>
 
@@ -303,6 +303,7 @@ const styles = StyleSheet.create({
   },
   statLabel: { ...typography.caption, color: ACCENT, opacity: 0.6, marginBottom: 2, letterSpacing: 1, fontSize: 8 },
   statValue: { ...typography.body, color: ACCENT, fontSize: 12, fontWeight: '600' },
+  statPlaceholder: { opacity: 0.35 },
   bioGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm, gap: 6 },
   bioField: { width: '47%', paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: `${ACCENT}33` },
   bioLabel: { ...typography.monoXs, color: ACCENT, opacity: 0.5, marginBottom: 2, letterSpacing: 1, fontSize: 8 },
