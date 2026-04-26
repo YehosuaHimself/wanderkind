@@ -2,18 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fix React Native Web blocking text inputs on mobile Safari */
-/* RNW applies user-select: none globally which prevents focus on some browsers */
-input, textarea, [contenteditable] {
+/* ═══════════════════════════════════════════════════════════════════
+   Fix React Native Web blocking text inputs on mobile Safari/iOS
+   RNW applies user-select: none as INLINE styles globally.
+   We need maximum specificity + !important to override.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Nuclear option: override RNW's inline user-select: none on ALL inputs */
+input, textarea, select, [contenteditable] {
   user-select: text !important;
   -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
 }
 
-/* Ensure text inputs are tappable and focusable */
+/* Also target RNW's wrapper divs that contain inputs */
+div[data-focusable="true"],
+div[role="textbox"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure text inputs are tappable and focusable on iOS Safari */
 input[type="text"], input[type="email"], input[type="password"],
 input[type="number"], input[type="tel"], input[type="url"],
+input[type="search"], input:not([type]),
 textarea {
-  -webkit-appearance: none;
-  appearance: none;
-  touch-action: manipulation;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  touch-action: manipulation !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  pointer-events: auto !important;
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+}
+
+/* RNW sometimes wraps inputs in View divs — ensure they pass through events */
+[data-testid] input,
+[data-testid] textarea {
+  pointer-events: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }

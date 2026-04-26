@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { colors, typography, spacing, radii } from '../../lib/theme';
 
 type Props = TextInputProps & {
@@ -10,11 +10,37 @@ type Props = TextInputProps & {
 
 export function WKInput({ label, error, helper, style, ...rest }: Props) {
   const [focused, setFocused] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  // Web fix: ensure the underlying <input> element has correct styles
+  // RNW applies user-select: none as inline styles which blocks focus on iOS Safari
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !inputRef.current) return;
+    const node = inputRef.current as any;
+    // RNW exposes the DOM node via _node or through findDOMNode pattern
+    const el = node._node || node;
+    if (el && el.style) {
+      el.style.userSelect = 'text';
+      el.style.webkitUserSelect = 'text';
+      el.style.pointerEvents = 'auto';
+    }
+    // Also try to find the actual <input> inside
+    if (el && el.querySelector) {
+      const input = el.querySelector('input, textarea');
+      if (input) {
+        input.style.userSelect = 'text';
+        input.style.webkitUserSelect = 'text';
+        input.style.pointerEvents = 'auto';
+        input.style.fontSize = '16px'; // prevent iOS zoom
+      }
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
+        ref={inputRef}
         style={[
           styles.input,
           focused && styles.inputFocused,
