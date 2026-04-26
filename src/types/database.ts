@@ -239,7 +239,7 @@ export interface RouteRow {
   countries: string[];
   distance_km: number;
   duration_days: number;
-  difficulty: 'easy' | 'moderate' | 'challenging';
+  difficulty: 'easy' | 'moderate' | 'challenging' | 'expert';
   description: string;
   hero_image: string | null;
   gpx_url: string | null;

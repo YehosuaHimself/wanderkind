@@ -61,6 +61,7 @@ export default function WayDetail() {
       easy: 'Easy walking',
       moderate: 'Moderate challenge',
       challenging: 'Challenging terrain',
+      expert: 'Expert — multi-week expedition',
     };
     return labels[difficulty] || difficulty;
   };
