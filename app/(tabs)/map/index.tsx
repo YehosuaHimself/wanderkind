@@ -1085,7 +1085,9 @@ export default function MapHome() {
           longitudeDelta: 0.02,
         }, 800);
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[Map] Relocate failed:', err);
+    }
   };
 
   // Find route coords for user's active way
