@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
-  RefreshControl, Switch, FlatList, Dimensions, Platform, ActivityIndicator,
+  RefreshControl, Switch, FlatList, Dimensions, Platform, ActivityIndicator, Modal, Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +33,7 @@ export default function MeScreen() {
   const [moments, setMoments] = useState<any[]>([]);
   const [stamps, setStamps] = useState<any[]>([]);
   const [stampsExpanded, setStampsExpanded] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -251,17 +252,19 @@ export default function MeScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Real QR Code — links to this user's public profile */}
+            {/* QR Code — orange CI frame, tap for fullscreen */}
             <TouchableOpacity
               style={styles.miniQr}
-              onPress={() => router.push('/(tabs)/me/qr-code' as any)}
+              onPress={() => setShowQrModal(true)}
               activeOpacity={0.8}
             >
-              <QRCode
-                value={`https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`}
-                size={48}
-                color={colors.ink}
-              />
+              <View style={styles.qrOrangeFrame}>
+                <QRCode
+                  value={`https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`}
+                  size={44}
+                  color={colors.amber}
+                />
+              </View>
               <Text style={styles.miniQrLabel}>SCAN ME</Text>
             </TouchableOpacity>
           </View>
@@ -516,6 +519,62 @@ export default function MeScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* QR Fullscreen Modal — unfolds large on tap, no separate page */}
+      <Modal
+        visible={showQrModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQrModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.qrModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowQrModal(false)}
+        >
+          <View style={styles.qrModalCard}>
+            {/* Orange frame with creamy bg */}
+            <View style={styles.qrModalFrame}>
+              <QRCode
+                value={`https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`}
+                size={200}
+                color={colors.amber}
+              />
+            </View>
+
+            {/* Name + ID */}
+            <Text style={styles.qrModalName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
+            <Text style={styles.qrModalId}>{profile?.wanderkind_id ?? 'WK-0000'}</Text>
+            <Text style={styles.qrModalHint}>Scan to view profile</Text>
+
+            {/* Share button */}
+            <TouchableOpacity
+              style={styles.qrShareBtn}
+              onPress={async () => {
+                const url = `https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`;
+                try {
+                  if (Platform.OS === 'web') {
+                    if (navigator.share) {
+                      await navigator.share({ title: 'My Wanderkind Profile', url });
+                    } else {
+                      await navigator.clipboard.writeText(url);
+                      toast.success('Link copied');
+                    }
+                  } else {
+                    await Share.share({ message: `Check out my Wanderkind profile: ${url}` });
+                  }
+                } catch {
+                  // User cancelled share
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="share-outline" size={18} color="#fff" />
+              <Text style={styles.qrShareBtnText}>Share Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -753,19 +812,85 @@ const styles = StyleSheet.create({
   },
   miniQr: {
     alignItems: 'center',
-    padding: 8,
-    backgroundColor: colors.surface,
+    padding: 6,
+    backgroundColor: '#FFF9F0',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.borderLt,
+    borderWidth: 2,
+    borderColor: colors.amber,
+  },
+  qrOrangeFrame: {
+    padding: 4,
+    backgroundColor: '#FFF9F0',
+    borderRadius: 6,
   },
   miniQrLabel: {
     fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
     fontSize: 7,
     letterSpacing: 2,
+    color: colors.amber,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+
+  // QR Fullscreen Modal
+  qrModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrModalCard: {
+    width: 300,
+    backgroundColor: '#FFF9F0',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: colors.amber,
+    ...shadows.lg,
+  },
+  qrModalFrame: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: `${colors.amber}40`,
+    marginBottom: 20,
+  },
+  qrModalName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.ink,
+    marginBottom: 4,
+  },
+  qrModalId: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 12,
+    letterSpacing: 2,
+    color: colors.amber,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  qrModalHint: {
+    fontSize: 12,
     color: colors.ink3,
-    fontWeight: '600',
-    marginTop: 4,
+    marginBottom: 20,
+  },
+  qrShareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.amber,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    width: '100%',
+  },
+  qrShareBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
 
   // === ACTION BUTTONS ===
