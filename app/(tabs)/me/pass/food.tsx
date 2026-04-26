@@ -14,6 +14,7 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { generatePassNumber } from '../../../src/lib/pass-number';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passFood; // #27864A — deep green
@@ -80,6 +81,7 @@ export default function FoodPassScreen() {
     }
   };
 
+  const passNumber = generatePassNumber(profile?.id, 'food');
   const mealsShared = profile?.meals_shared ?? 0;
   const donativoCount = profile?.donativo_contributions ?? 0;
   const initials = profile?.trail_name
@@ -121,6 +123,7 @@ export default function FoodPassScreen() {
           <View style={styles.statusLine}>
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>ACTIVE</Text>
+            <Text style={styles.passNumberText}>{passNumber}</Text>
           </View>
 
           {/* Initials Circle */}
@@ -263,6 +266,7 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.green, opacity: 0.8 },
   statusText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600', fontSize: 9 },
+  passNumberText: { ...typography.monoXs, color: ACCENT, opacity: 0.6, letterSpacing: 1, fontSize: 8 },
   photoSection: { alignItems: 'center', marginBottom: spacing.sm },
   initialsCircle: {
     width: 56,

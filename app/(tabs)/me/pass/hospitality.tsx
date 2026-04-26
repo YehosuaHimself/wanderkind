@@ -14,6 +14,7 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { generatePassNumber } from '../../../src/lib/pass-number';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passHosp; // #8B1A2B — deep crimson
@@ -22,6 +23,7 @@ export default function HospitalityPassScreen() {
   useAuthGuard();
 
   const { profile } = useAuth();
+  const passNumber = generatePassNumber(profile?.id, 'hospitality');
   const textTrackAnimation = useRef(new Animated.Value(0)).current;
   const securityLineAnimation = useRef(new Animated.Value(0)).current;
   const [activeRoute, setActiveRoute] = React.useState<string | null>(null);
@@ -135,6 +137,7 @@ export default function HospitalityPassScreen() {
           <View style={styles.statusLine}>
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>VERIFIED WANDERHOST</Text>
+            <Text style={styles.passNumberText}>{passNumber}</Text>
           </View>
 
           {/* Initials Circle */}
@@ -284,6 +287,7 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.green, opacity: 0.8 },
   statusText: { ...typography.caption, color: colors.green, letterSpacing: 0.5, fontWeight: '600', fontSize: 8 },
+  passNumberText: { ...typography.monoXs, color: ACCENT, opacity: 0.6, letterSpacing: 1, fontSize: 8 },
   photoSection: { alignItems: 'center', marginBottom: spacing.sm },
   initialsCircle: {
     width: 56,

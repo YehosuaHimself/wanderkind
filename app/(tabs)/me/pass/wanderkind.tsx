@@ -17,20 +17,10 @@ import { toast } from '../../../src/lib/toast';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { generatePassNumber } from '../../../src/lib/pass-number';
 
 const DARK_BG = '#0B0705';
 const DARK_INK = '#1A120A';
-
-// Generate pass number from user ID
-const generatePassNumber = (userId?: string): string => {
-  if (!userId) return 'C4X8R2M7';
-  const hash = userId.substring(0, 8).toUpperCase();
-  let result = '';
-  for (let i = 0; i < hash.length; i++) {
-    result += i % 2 === 0 ? hash[i] : Math.random() > 0.5 ? hash[i] : String(Math.floor(Math.random() * 10));
-  }
-  return result.substring(0, 8);
-};
 
 // Generate MRZ line from profile data
 const generateMRZLine = (surname: string, givenNames: string): [string, string] => {
@@ -133,7 +123,7 @@ export default function WanderkindPassScreen() {
     }
   };
 
-  const passNumber = generatePassNumber(profile?.id);
+  const passNumber = generatePassNumber(profile?.id, 'wanderkind');
   const [mrz1, mrz2] = generateMRZLine(profile?.surname || '', profile?.given_names || '');
   const initials = getInitials(profile?.trail_name);
 
