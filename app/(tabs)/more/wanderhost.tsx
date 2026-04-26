@@ -335,6 +335,20 @@ export default function WanderHostScreen() {
           <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
         </TouchableOpacity>
 
+        {/* ===== LIABILITY DISCLAIMER ===== */}
+        <View style={styles.disclaimerCard}>
+          <View style={styles.disclaimerIcon}>
+            <Ionicons name="shield-outline" size={16} color={colors.ink3} />
+          </View>
+          <Text style={styles.disclaimerText}>
+            By hosting through Wanderkind, you agree that you are solely responsible for the safety and condition of your space. Wanderkind is a platform connecting walkers and hosts — we do not inspect properties, verify conditions, or assume liability for any incidents, damages, or injuries that may occur during a stay. You are responsible for ensuring your space meets local safety and legal requirements. Guests stay at their own risk. Please review our{' '}
+            <Text style={styles.disclaimerLink} onPress={() => router.push('/(tabs)/more/terms' as any)}>
+              Terms of Service
+            </Text>
+            {' '}for full details.
+          </Text>
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -549,6 +563,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 4,
+  },
+
+  // Liability Disclaimer
+  disclaimerCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 10,
+    padding: 14,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+  },
+  disclaimerIcon: {
+    marginTop: 2,
+  },
+  disclaimerText: {
+    flex: 1,
+    fontSize: 11,
+    color: colors.ink3,
+    lineHeight: 17,
+  },
+  disclaimerLink: {
+    color: colors.amber,
+    fontWeight: '600',
   },
 
   // Snooze Confirmation Modal

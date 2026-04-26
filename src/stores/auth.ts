@@ -99,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (error) return { error };
 
-    // Create profile
+    // Create full profile atomically with all required fields
     if (data.user) {
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
@@ -116,12 +116,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         stamps_count: 0,
         hosts_stayed: 0,
         is_walking: false,
+        is_hosting: role === 'host' || role === 'both',
         is_verified: false,
         verification_level: 'none',
         theme: 'light',
         ghost_presence: true,
         searchable: true,
         quiet_mode: false,
+        show_location: false,
+        show_walking_status: false,
+        show_stats: false,
+        show_on_map: true,
+        show_profile_public: true,
+        consent_analytics: false,
+        consent_marketing: false,
         skills: [],
         emergency_contacts: [],
       });

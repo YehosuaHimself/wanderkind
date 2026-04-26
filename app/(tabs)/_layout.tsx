@@ -82,7 +82,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="messages"
           options={{
-            title: 'M',
+            title: 'MSG',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="paper-plane-outline" size={size} color={color} />
             ),

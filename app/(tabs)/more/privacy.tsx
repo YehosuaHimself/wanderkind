@@ -12,12 +12,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { supabase } from '../../../src/lib/supabase';
 import { unblockUser } from '../../../src/lib/blocking';
 import { ProfileRow } from '../../../src/types/database';
 import { toast } from '../../../src/lib/toast';
+import { showAlert } from '../../../src/lib/alert';
 
 interface BlockedUserData {
   id: string;
@@ -31,10 +33,19 @@ type MessagePref = 'everyone' | 'verified' | 'nobody';
 
 export default function PrivacyScreen() {
   useAuthGuard();
+  const router = useRouter();
   const { profile, updateProfile } = useAuth();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUserData[]>([]);
   const [loadingBlocked, setLoadingBlocked] = useState(true);
   const [unblocking, setUnblocking] = useState<string | null>(null);
+
+  // ── Consent state ──────────────────────────────────────────────────
+  const [consent, setConsent] = useState({
+    essential: true,      // Always on, cannot be toggled
+    analytics: (profile as any)?.consent_analytics ?? false,
+    marketing: (profile as any)?.consent_marketing ?? false,
+  });
+  const [dataExportLoading, setDataExportLoading] = useState(false);
 
   // ── Privacy settings state ─────────────────────────────────────────
   const [settings, setSettings] = useState({
@@ -127,6 +138,57 @@ export default function PrivacyScreen() {
       setUnblocking(null);
     }
   };
+
+  const handleConsentToggle = useCallback(async (key: 'analytics' | 'marketing', value: boolean) => {
+    setConsent(prev => ({ ...prev, [key]: value }));
+    if (profile?.id) {
+      const field = `consent_${key}`;
+      const { error } = await updateProfile({ [field]: value } as any);
+      if (error) {
+        setConsent(prev => ({ ...prev, [key]: !value }));
+        toast.error('Could not update consent');
+      } else {
+        toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} consent ${value ? 'granted' : 'withdrawn'}`);
+      }
+    }
+  }, [profile, updateProfile]);
+
+  const handleDataExport = useCallback(async () => {
+    if (!profile?.id) return;
+    setDataExportLoading(true);
+    try {
+      // Gather all user data from relevant tables
+      const [profileData, stampsData, journalData, messagesData] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', profile.id).single(),
+        supabase.from('stamps').select('*').or(`walker_id.eq.${profile.id},host_id.eq.${profile.id}`),
+        supabase.from('journal_entries').select('*').eq('user_id', profile.id),
+        supabase.from('messages').select('*').or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`),
+      ]);
+
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        profile: profileData.data,
+        stamps: stampsData.data ?? [],
+        journal_entries: journalData.data ?? [],
+        messages: messagesData.data ?? [],
+      };
+
+      // Create downloadable JSON
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wanderkind-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Your data has been downloaded');
+    } catch (err) {
+      toast.error('Could not export data. Please try again.');
+    } finally {
+      setDataExportLoading(false);
+    }
+  }, [profile]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -326,18 +388,69 @@ export default function PrivacyScreen() {
           )}
         </View>
 
+        {/* ── Section: Consent ──────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>DATA CONSENT</Text>
+          <Text style={styles.sectionDesc}>
+            Choose what data you allow Wanderkind to collect. Essential data is required for the app to function.
+          </Text>
+          <View style={styles.settingsCard}>
+            <View style={[styles.settingRow]}>
+              <View style={styles.settingContent}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.settingLabel}>Essential</Text>
+                  <View style={styles.requiredBadge}>
+                    <Text style={styles.requiredBadgeText}>Required</Text>
+                  </View>
+                </View>
+                <Text style={styles.settingSubtitle}>Account, authentication, and core app functionality</Text>
+              </View>
+              <Switch
+                value={true}
+                disabled
+                trackColor={{ false: colors.borderLt, true: `${colors.amber}40` }}
+                thumbColor={colors.amber}
+              />
+            </View>
+            <PrivacyToggle
+              title="Analytics"
+              subtitle="Anonymous usage data to help us improve the walking experience"
+              value={consent.analytics}
+              onToggle={v => handleConsentToggle('analytics', v)}
+            />
+            <PrivacyToggle
+              title="Marketing"
+              subtitle="Occasional updates about new ways, community events, and features"
+              value={consent.marketing}
+              onToggle={v => handleConsentToggle('marketing', v)}
+              last
+            />
+          </View>
+        </View>
+
         {/* ── Data & Account ───────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>YOUR DATA</Text>
           <View style={styles.settingsCard}>
-            <TouchableOpacity style={styles.dataRow} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.dataRow}
+              activeOpacity={0.7}
+              onPress={handleDataExport}
+              disabled={dataExportLoading}
+            >
               <View style={styles.dataRowLeft}>
                 <Ionicons name="download-outline" size={18} color={colors.ink2} />
-                <Text style={styles.dataRowText}>Request my data</Text>
+                <Text style={styles.dataRowText}>
+                  {dataExportLoading ? 'Exporting...' : 'Download my data'}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.dataRow, styles.dataRowLast]} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={[styles.dataRow, styles.dataRowLast]}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(tabs)/me/delete-account' as any)}
+            >
               <View style={styles.dataRowLeft}>
                 <Ionicons name="trash-outline" size={18} color={colors.red} />
                 <Text style={[styles.dataRowText, { color: colors.red }]}>Delete my account</Text>
@@ -526,6 +639,21 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: colors.amber,
+  },
+
+  // Required badge
+  requiredBadge: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  requiredBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.ink3,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 
   // Data rows
