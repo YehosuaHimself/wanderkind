@@ -112,7 +112,7 @@ function getStageStatus(stageId: StageId, verificationLevel: string): StageStatu
 
 export default function VerificationScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const { profile, updateProfile } = useAuth();

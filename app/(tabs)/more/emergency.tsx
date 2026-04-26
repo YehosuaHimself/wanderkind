@@ -24,7 +24,7 @@ type Contact = {
 
 export default function EmergencyScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const [location, setLocation] = useState<string | null>(null);
   const { profile } = useAuth();

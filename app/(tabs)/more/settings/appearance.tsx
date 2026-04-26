@@ -10,7 +10,7 @@ import { useSettings, AppTheme } from '../../../../src/stores/settings';
 
 export default function AppearanceScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const {
     theme, setTheme,

@@ -10,7 +10,7 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function ContributeScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const openPayPal = () => {
     Linking.openURL('https://paypal.me/YehosuaHimself');

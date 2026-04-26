@@ -11,7 +11,7 @@ type Platform = 'ios' | 'android';
 
 export default function InstallGuideScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('ios');
 

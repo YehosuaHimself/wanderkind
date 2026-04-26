@@ -84,7 +84,7 @@ export const SEED_STORIES = [
     author_id: 'p-002',
     author: getProfileById('p-002'),
     photo_url:
-      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: null,
     location_name: 'Near León, Spain',
     lat: 42.556,
@@ -136,7 +136,7 @@ export const SEED_STORIES = [
     author_id: 'p-008',
     author: getProfileById('p-008'),
     photo_url:
-      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: null,
     location_name: 'Burgos province',
     lat: 42.345,
@@ -149,7 +149,7 @@ export const SEED_STORIES = [
     author_id: 'p-010',
     author: getProfileById('p-010'),
     photo_url:
-      'https://images.unsplash.com/photo-1502791081949-d2b7fdf17897?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: 'Found a walker with stories older than time itself. Sitting here for three hours. This is what it means to walk slowly.',
     location_name: 'Small village near Castrojeriz',
     lat: 42.243,
@@ -240,7 +240,7 @@ export const SEED_STORIES = [
     author_id: 'p-007',
     author: getProfileById('p-007'),
     photo_url:
-      'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: 'Hosted three wanderkinder tonight. The kitchen smells like home. Their stories fill the room.',
     location_name: 'Black Forest, Germany',
     lat: 48.030,
@@ -397,7 +397,7 @@ export const SEED_STORIES = [
     author_id: 'p-003', // Second story from p-003
     author: getProfileById('p-003'),
     photo_url:
-      'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1473181488821-2d23949a045a?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: 'Walking meditation in the forest. Mind quiet, feet moving, heart open.',
     location_name: 'Camino del Norte, Asturias',
     lat: 43.362,
@@ -475,7 +475,7 @@ export const SEED_STORIES = [
     author_id: 'p-035',
     author: getProfileById('p-035'),
     photo_url:
-      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1502791081949-d2b7fdf17897?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: 'The forest is the real cathedral. No walls needed, only trees.',
     location_name: 'Black Forest, E1 trail',
     lat: 48.030,
@@ -501,7 +501,7 @@ export const SEED_STORIES = [
     author_id: 'p-045',
     author: getProfileById('p-045'),
     photo_url:
-      'https://images.unsplash.com/photo-1517760444937-f6397edcbbcd?w=800&h=1200&fit=crop&fm=webp&q=60',
+      'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&h=1200&fit=crop&fm=webp&q=60',
     caption: 'Found this tiny chapel open. Nobody around. Just me and the silence.',
     location_name: 'Near Einsiedeln, Switzerland',
     lat: 47.127,

@@ -11,7 +11,7 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function AboutScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const [founderOpen, setFounderOpen] = useState(false);

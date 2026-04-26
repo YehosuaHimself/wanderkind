@@ -139,7 +139,7 @@ function WebScanFallback() {
 
 export default function ScanScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   // On web, show fallback immediately
   if (Platform.OS === 'web') {

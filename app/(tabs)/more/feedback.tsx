@@ -19,7 +19,7 @@ const categories = [
 
 export default function FeedbackScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const [category, setCategory] = useState('feedback');

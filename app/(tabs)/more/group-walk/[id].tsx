@@ -18,7 +18,7 @@ type Member = {
 
 export default function GroupWalkDetailScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const { id } = useLocalSearchParams();

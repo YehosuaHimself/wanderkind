@@ -17,7 +17,7 @@ type NotificationSetting = {
 
 export default function NotificationsScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const { notifications, setNotification } = useSettings();
 

@@ -29,7 +29,7 @@ const languages = [
 
 export default function LanguageScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const { language: selected, setLanguage } = useSettings();

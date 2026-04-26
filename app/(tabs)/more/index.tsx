@@ -70,6 +70,13 @@ const page1Tiles: AppTile[] = [
     route: '/(tabs)/more/book',
     accent: colors.ink2,
   },
+  {
+    icon: 'car',
+    title: 'Hitchhike',
+    route: '/(tabs)/more/tramp-mode',
+    accent: '#E67E22',
+    bgTint: 'rgba(230,126,34,0.08)',
+  },
 ];
 
 // PAGE 2: Safety, verification, admin
@@ -118,7 +125,7 @@ export default function MoreScreen() {
   const [activePage, setActivePage] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
-  const ROWS_PER_PAGE = 3;
+  const ROWS_PER_PAGE = 4;
   const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS_PER_PAGE - 1)) / ROWS_PER_PAGE);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {

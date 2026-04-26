@@ -9,7 +9,7 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function StampCeremony() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const { hostName, stampId } = useLocalSearchParams();

@@ -97,7 +97,7 @@ And welcome to the walking life.`,
 
 export default function PacklistScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<PackTab>('packlist');

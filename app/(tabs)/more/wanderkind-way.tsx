@@ -23,7 +23,7 @@ const TIERS = [
 
 export default function WanderkindWayScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const { profile } = useAuth();

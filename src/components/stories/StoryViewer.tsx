@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Modal,
@@ -60,6 +60,13 @@ export const StoryViewer = ({
 
   const currentStory = stories[currentIndex];
 
+  // Use refs for handlers so PanResponder always calls the latest version
+  const handleNextRef = useRef<() => void>(() => {});
+  const handlePreviousRef = useRef<() => void>(() => {});
+  const onCloseRef = useRef(onClose);
+  const onNextGroupRef = useRef(onNextGroup);
+  const onPreviousGroupRef = useRef(onPreviousGroup);
+
   // Reset index when stories change (new group)
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -99,7 +106,14 @@ export const StoryViewer = ({
     }
   }, [currentIndex, onPreviousGroup]);
 
-  // Progress bar animation
+  // Keep refs updated so PanResponder always has fresh handlers
+  handleNextRef.current = handleNext;
+  handlePreviousRef.current = handlePrevious;
+  onCloseRef.current = onClose;
+  onNextGroupRef.current = onNextGroup;
+  onPreviousGroupRef.current = onPreviousGroup;
+
+  // Progress bar animation — include handleNext in deps
   useEffect(() => {
     if (!visible || !currentStory) return;
 
@@ -113,7 +127,7 @@ export const StoryViewer = ({
 
     animation.start(({ finished }) => {
       if (finished) {
-        handleNext();
+        handleNextRef.current();
       }
     });
 
@@ -122,12 +136,11 @@ export const StoryViewer = ({
     };
   }, [currentIndex, visible, stories.length, progressAnim]);
 
-  // PanResponder for swipe + tap detection
-  const panResponder = useRef(
+  // PanResponder — uses refs so it never captures stale closures
+  const panResponder = useMemo(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only claim if horizontal movement exceeds threshold
         return Math.abs(gestureState.dx) > 10;
       },
       onPanResponderRelease: (evt, gestureState) => {
@@ -137,19 +150,16 @@ export const StoryViewer = ({
 
         // Vertical swipe down = close
         if (dy > 100 && absDy > absDx) {
-          onClose();
+          onCloseRef.current();
           return;
         }
 
-        // Horizontal swipe
+        // Horizontal swipe — advance stories (not just groups)
         if (absDx > SWIPE_THRESHOLD && absDx > absDy) {
           if (dx < 0) {
-            // Swiped left — next group
-            if (onNextGroup) onNextGroup();
-            else onClose();
+            handleNextRef.current();
           } else {
-            // Swiped right — previous group
-            if (onPreviousGroup) onPreviousGroup();
+            handlePreviousRef.current();
           }
           return;
         }
@@ -159,14 +169,13 @@ export const StoryViewer = ({
         const tapZone = locationX / SCREEN_WIDTH;
 
         if (tapZone < 0.35) {
-          handlePrevious();
+          handlePreviousRef.current();
         } else {
-          // Tap on right 65% = next (generous zone for easy progression)
-          handleNext();
+          handleNextRef.current();
         }
       },
-    })
-  ).current;
+    }),
+  []);
 
   if (!visible || stories.length === 0 || !currentStory) {
     return null;

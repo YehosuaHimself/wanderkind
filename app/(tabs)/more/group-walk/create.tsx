@@ -13,7 +13,7 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function CreateGroupWalkScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  // Never block rendering — content is always accessible
 
   const router = useRouter();
   const [name, setName] = useState('');

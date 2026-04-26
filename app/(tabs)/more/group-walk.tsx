@@ -48,7 +48,7 @@ export default function GroupWalkScreen({ embedded = false }: { embedded?: boole
   const router = useRouter();
   const [myGroups, setMyGroups] = useState<GroupWalk[]>([]);
 
-  if (isLoading && !embedded) return null;
+  // Never block rendering — content is always accessible
 
   const Wrapper = embedded ? View : SafeAreaView;
   const wrapperProps = embedded ? { style: styles.container } : { style: styles.container, edges: ['top'] as const };
