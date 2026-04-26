@@ -92,7 +92,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
     .hero .count-label{font-size:10px;letter-spacing:3px;color:#9B8E7E;text-transform:uppercase}
     table{width:100%;border-collapse:collapse;margin-top:24px}
     .footer{text-align:center;padding:24px 0;margin-top:32px;border-top:1px solid #E8DFD0;color:#9B8E7E;font-size:10px;letter-spacing:2px}
-    @media print{body{padding:12px}}</style></head>
+    @media print{body{padding:12px} .no-print{display:none!important}}</style></head>
     <body>
     <div class="hero">
       <h1>${userName}</h1>
@@ -102,6 +102,10 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
     </div>
     <table>${stampRows}</table>
     <div class="footer">WANDERKIND EMBASSY &middot; ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+    <div class="no-print" style="text-align:center;margin-top:24px">
+      <button onclick="window.print()" style="background:#C8762A;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Save as PDF</button>
+    </div>
+    <script>window.onload=function(){setTimeout(function(){window.print()},600)}</script>
     </body></html>`;
 
     if (Platform.OS === 'web') {
@@ -109,7 +113,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      toast.success('Your collection opened — use Print to save as PDF');
+      toast.success('Generating your stamp collection PDF...');
     } else {
       // On native, share as text
       try {

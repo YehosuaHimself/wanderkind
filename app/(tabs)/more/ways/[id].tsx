@@ -109,6 +109,7 @@ export default function WayDetail() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(true);
   const [colorIdx, setColorIdx] = useState(0);
+  const [transportMode, setTransportMode] = useState<'walking' | 'cycling'>('walking');
 
   useEffect(() => {
     fetchWayDetail();
@@ -235,8 +236,10 @@ export default function WayDetail() {
                 <Text style={styles.statLabel}>KM</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{way.duration_days}</Text>
-                <Text style={styles.statLabel}>STAGES</Text>
+                <Text style={styles.statValue}>
+                  {transportMode === 'cycling' ? Math.max(Math.ceil(way.duration_days / 3), 2) : way.duration_days}
+                </Text>
+                <Text style={styles.statLabel}>{transportMode === 'cycling' ? 'DAYS (BIKE)' : 'STAGES'}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statValue}>{way.free_host_count}</Text>
@@ -269,6 +272,35 @@ export default function WayDetail() {
             {isCurrentWay ? 'You Are Walking This Way' : 'Start This Way'}
           </Text>
         </TouchableOpacity>
+
+        {/* ═══ TRANSPORT MODE TOGGLE ═══ */}
+        <View style={styles.transportToggle}>
+          <TouchableOpacity
+            style={[styles.transportOption, transportMode === 'walking' && styles.transportOptionActive]}
+            onPress={() => setTransportMode('walking')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="walk-outline" size={18} color={transportMode === 'walking' ? '#fff' : colors.ink3} />
+            <Text style={[styles.transportLabel, transportMode === 'walking' && styles.transportLabelActive]}>Walking</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.transportOption, transportMode === 'cycling' && styles.transportOptionActive]}
+            onPress={() => setTransportMode('cycling')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="bicycle-outline" size={18} color={transportMode === 'cycling' ? '#fff' : colors.ink3} />
+            <Text style={[styles.transportLabel, transportMode === 'cycling' && styles.transportLabelActive]}>Cycling</Text>
+          </TouchableOpacity>
+        </View>
+
+        {transportMode === 'cycling' && (
+          <View style={styles.cyclingNote}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.amber} />
+            <Text style={styles.cyclingNoteText}>
+              Estimated cycling duration: ~{Math.max(Math.ceil(way.duration_days / 3), 2)} days. Check local regulations — some trail sections may restrict cycling.
+            </Text>
+          </View>
+        )}
 
         {/* ═══ ABOUT THIS WAY ═══ */}
         <View style={styles.section}>
@@ -398,6 +430,25 @@ export default function WayDetail() {
           <Text style={styles.bottomNote}>
             This will set {way.name} as your active way on your profile and passes.
           </Text>
+
+          {/* Share on Social */}
+          <TouchableOpacity
+            style={styles.shareBtn}
+            onPress={() => router.push({
+              pathname: '/(tabs)/more/social-share' as any,
+              params: {
+                type: 'way',
+                wayName: way.name,
+                wayImage: way.hero_image || '',
+                countries: way.countries.join(', '),
+                days: String(way.duration_days),
+              },
+            })}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-social-outline" size={16} color={colors.amber} />
+            <Text style={styles.shareBtnText}>Share on Social Media</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 40 }} />
@@ -710,5 +761,70 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 20,
     lineHeight: 16,
+  },
+  // Transport mode toggle
+  transportToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 10,
+    padding: 4,
+    marginHorizontal: spacing.lg,
+    marginTop: 16,
+    gap: 4,
+  },
+  transportOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  transportOptionActive: {
+    backgroundColor: colors.amber,
+  },
+  transportLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink3,
+  },
+  transportLabelActive: {
+    color: '#fff',
+  },
+  cyclingNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginHorizontal: spacing.lg,
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: colors.amberBg,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.amber,
+  },
+  cyclingNoteText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.ink2,
+    lineHeight: 18,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.amberLine,
+    backgroundColor: colors.surface,
+  },
+  shareBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.amber,
   },
 });
