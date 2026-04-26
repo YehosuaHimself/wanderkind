@@ -138,10 +138,10 @@ export default function CampingDetail() {
             </WKCard>
           )}
 
-          {/* Amenities & Facilities */}
+          {/* Facilities & Features */}
           {(spot.amenities.length > 0 || spot.capacity || spot.water || spot.fire || spot.trash) && (
             <WKCard variant="parchment">
-              <Text style={styles.sectionTitle}>Facilities & Amenities</Text>
+              <Text style={styles.sectionTitle}>Facilities & Features</Text>
 
               {spot.capacity && (
                 <View style={styles.facilityRow}>
@@ -161,7 +161,7 @@ export default function CampingDetail() {
 
               {spot.amenities.length > 0 && (
                 <View style={styles.amenitiesSection}>
-                  <Text style={styles.amenitiesLabel}>Amenities</Text>
+                  <Text style={styles.amenitiesLabel}>Features</Text>
                   <View style={styles.amenitiesGrid}>
                     {spot.amenities.map((amenity, i) => (
                       <View key={i} style={styles.amenityTag}>

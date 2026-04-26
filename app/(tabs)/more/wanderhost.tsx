@@ -174,7 +174,7 @@ export default function WanderHostScreen() {
           </View>
           <View style={styles.menuInfo}>
             <Text style={styles.menuTitle}>My House</Text>
-            <Text style={styles.menuSub}>Beds, amenities, photos, house rules</Text>
+            <Text style={styles.menuSub}>Beds, features, photos, house rules</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
         </TouchableOpacity>

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { haptic } from '../../../src/lib/haptics';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useAuth } from '../../../src/stores/auth';
 import { toast } from '../../../src/lib/toast';
@@ -16,7 +17,7 @@ const TILE_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 const TAB_BAR_H = Platform.OS === 'ios' ? 84 : Platform.OS === 'web' ? 64 : 62;
 const HEADER_H = 60;
 const SAFE_AREA_TOP = Platform.OS === 'ios' ? 50 : 0;
-const ROWS = 6; // 12 tiles = 6 rows of 2
+const ROWS = 7; // 13 tiles = 7 rows (last row has 1)
 const AVAILABLE_H = SCREEN_HEIGHT - HEADER_H - TAB_BAR_H - SAFE_AREA_TOP - GRID_PADDING * 2;
 const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS - 1)) / ROWS);
 
@@ -85,6 +86,13 @@ const appTiles: AppTile[] = [
     bgTint: colors.redBg,
   },
   {
+    icon: 'ribbon',
+    title: 'Verification',
+    route: '/(tabs)/more/verification',
+    accent: '#22863A',
+    bgTint: 'rgba(34,134,58,0.08)',
+  },
+  {
     icon: 'shield-checkmark',
     title: 'Trust & Settings',
     route: '/(tabs)/more/settings',
@@ -137,7 +145,7 @@ export default function MoreScreen() {
           <TouchableOpacity
             key={tile.route + tile.title}
             style={[styles.tile, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
-            onPress={() => router.push(tile.route as any)}
+            onPress={() => { haptic.light(); router.push(tile.route as any); }}
             activeOpacity={0.7}
           >
             <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>

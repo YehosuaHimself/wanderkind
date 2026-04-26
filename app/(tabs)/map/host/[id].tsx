@@ -358,10 +358,10 @@ export default function HostDetail() {
             </TouchableOpacity>
           </View>
 
-          {/* Amenities — show all */}
+          {/* Features — show all */}
           {host.amenities && host.amenities.length > 0 && (
             <WKCard>
-              <Text style={styles.sectionTitle}>Amenities</Text>
+              <Text style={styles.sectionTitle}>Features</Text>
               <View style={styles.amenitiesGrid}>
                 {host.amenities.map((amenity, i) => (
                   <View key={i} style={styles.amenityTag}>

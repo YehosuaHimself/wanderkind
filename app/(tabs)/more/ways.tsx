@@ -5,15 +5,16 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   TextInput,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { colors, typography, spacing } from '../../../src/lib/theme';
+import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Route } from '../../../src/types/database';
 import { SEED_ROUTES } from '../../../src/data/seed-routes';
@@ -49,6 +50,26 @@ function getRegion(countries: string[]): string {
 
 const REGIONS = ['All', 'Europe', 'Americas', 'Asia', 'Africa', 'Middle East', 'Oceania'] as const;
 const DIFFICULTIES = ['All', 'Easy', 'Moderate', 'Challenging', 'Expert'] as const;
+
+const getDifficultyLabel = (difficulty: string) => {
+  switch (difficulty) {
+    case 'easy': return 'Easy';
+    case 'moderate': return 'Moderate';
+    case 'challenging': return 'Hard';
+    case 'expert': return 'Expert';
+    default: return difficulty;
+  }
+};
+
+const getDifficultyColor = (difficulty: string): string => {
+  switch (difficulty) {
+    case 'easy': return '#27864A';
+    case 'moderate': return '#C8762A';
+    case 'challenging': return '#C0392B';
+    case 'expert': return '#8E44AD';
+    default: return colors.ink3;
+  }
+};
 
 export default function WaysList({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading } = useAuthGuard();
@@ -115,77 +136,57 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
     return result;
   }, [ways, search, regionFilter, difficultyFilter]);
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return colors.green;
-      case 'moderate': return colors.amber;
-      case 'challenging': return colors.red;
-      case 'expert': return '#8B5CF6';
-      default: return colors.ink3;
-    }
-  };
+  /** Card background colors — cycling through muted, earthy tones */
+  const CARD_COLORS = [
+    '#4A5D3A', // olive green
+    '#2C3E50', // dark navy
+    '#6B5A3E', // earth brown
+    '#5B3A29', // warm chestnut
+    '#3D5C5C', // forest teal
+    '#4A3728', // dark walnut
+    '#2D4A3E', // deep moss
+    '#5C4033', // saddle brown
+  ];
 
-  const renderWay = useCallback(({ item }: { item: Route }) => (
-    <TouchableOpacity
-      style={styles.wayCard}
-      onPress={() => router.push(`/(tabs)/more/ways/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      {/* Hero Image */}
-      {item.hero_image && (
-        <Image source={{ uri: item.hero_image }} style={styles.heroImage} resizeMode="cover" />
-      )}
+  const renderWay = useCallback(({ item, index }: { item: Route; index: number }) => {
+    const bgColor = CARD_COLORS[index % CARD_COLORS.length];
 
-      {/* Region badge on image */}
-      <View style={styles.regionOverlay}>
-        <Text style={styles.regionOverlayText}>{getRegion(item.countries)}</Text>
-      </View>
-
-      {/* Content */}
-      <View style={styles.wayContent}>
-        <View style={styles.wayHeader}>
-          <View style={styles.wayHeaderLeft}>
-            <Text style={styles.wayName} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.wayCountries} numberOfLines={1}>{item.countries.join(' · ')}</Text>
-          </View>
-          <View style={[styles.difficultyBadge, { borderColor: getDifficultyColor(item.difficulty) + '40' }]}>
-            <Text style={[styles.difficultyText, { color: getDifficultyColor(item.difficulty) }]}>
-              {item.difficulty.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        </View>
-
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Ionicons name="location-outline" size={12} color={colors.ink3} />
-            <Text style={styles.statText}>{item.distance_km.toLocaleString()} km</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="calendar-outline" size={12} color={colors.ink3} />
-            <Text style={styles.statText}>{item.duration_days} days</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="home-outline" size={12} color={colors.ink3} />
-            <Text style={styles.statText}>{item.host_count} hosts</Text>
+    return (
+      <TouchableOpacity
+        style={[styles.wayCard, { backgroundColor: bgColor }]}
+        onPress={() => { haptic.light(); router.push(`/(tabs)/more/ways/${item.id}`); }}
+        activeOpacity={0.85}
+      >
+        {item.hero_image ? (
+          <Image
+            source={{ uri: item.hero_image }}
+            style={styles.wayCardImage}
+            resizeMode="cover"
+          />
+        ) : null}
+        <View style={styles.wayCardOverlay}>
+          <Text style={styles.wayName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.wayMeta}>
+            {item.distance_km.toLocaleString()}km  ·  {getDifficultyLabel(item.difficulty)}  ·  {item.walker_count.toLocaleString()} walking
+          </Text>
+          <View style={styles.wayCardStats}>
+            <View style={styles.wayCardStat}>
+              <Ionicons name="time-outline" size={11} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.wayCardStatText}>{item.duration_days} days</Text>
+            </View>
+            <View style={styles.wayCardStat}>
+              <Ionicons name="home-outline" size={11} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.wayCardStatText}>{item.free_host_count} free hosts</Text>
+            </View>
+            <View style={styles.wayCardStat}>
+              <Ionicons name="flag-outline" size={11} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.wayCardStatText}>{item.countries.length} {item.countries.length === 1 ? 'country' : 'countries'}</Text>
+            </View>
           </View>
         </View>
-
-        {/* Free Hosts Badge */}
-        {item.free_host_count > 0 && (
-          <View style={styles.freeHostBadge}>
-            <Ionicons name="leaf" size={12} color={colors.green} />
-            <Text style={styles.freeHostText}>{item.free_host_count} free options</Text>
-          </View>
-        )}
-
-        {/* Walker Count */}
-        <Text style={styles.walkerCount}>
-          {item.walker_count.toLocaleString()} wanderkinder walked this way
-        </Text>
-      </View>
-    </TouchableOpacity>
-  ), [router]);
+      </TouchableOpacity>
+    );
+  }, [router]);
 
   const renderEmpty = () => (
     <View style={styles.emptyState}>
@@ -218,9 +219,9 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
           <View style={styles.header}>
             <View style={styles.headerLabel}>
               <View style={styles.headerDot} />
-              <Text style={styles.headerLabelText}>WAYS</Text>
+              <Text style={styles.headerLabelText}>DISCOVER</Text>
             </View>
-            <Text style={styles.headerTitle}>Walking Routes</Text>
+            <Text style={styles.headerTitle}>THE <Text style={{ color: colors.amber }}>WAYS</Text></Text>
           </View>
         )}
         <View style={styles.centerLoading}>
@@ -236,12 +237,10 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
         <View style={styles.header}>
           <View style={styles.headerLabel}>
             <View style={styles.headerDot} />
-            <Text style={styles.headerLabelText}>WAYS</Text>
+            <Text style={styles.headerLabelText}>DISCOVER</Text>
           </View>
-          <Text style={styles.headerTitle}>Walking Routes</Text>
-          <Text style={styles.headerCount}>
-            {filteredWays.length} route{filteredWays.length !== 1 ? 's' : ''} worldwide
-          </Text>
+          <Text style={styles.headerTitle}>THE <Text style={{ color: colors.amber }}>WAYS</Text></Text>
+          <Text style={styles.headerSub}>Every path has a story. Find yours.</Text>
         </View>
       )}
 
@@ -272,7 +271,7 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
             <TouchableOpacity
               key={region}
               style={[styles.chip, regionFilter === region && styles.chipActive]}
-              onPress={() => setRegionFilter(regionFilter === region ? 'All' : region)}
+              onPress={() => { haptic.selection(); setRegionFilter(regionFilter === region ? 'All' : region); }}
             >
               <Text style={[styles.chipText, regionFilter === region && styles.chipTextActive]}>
                 {region === 'All' ? 'All Regions' : region}
@@ -291,7 +290,7 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
                 difficultyFilter === diff && styles.chipActive,
                 diff !== 'All' && { borderLeftWidth: 3, borderLeftColor: getDifficultyColor(diff.toLowerCase()) },
               ]}
-              onPress={() => setDifficultyFilter(difficultyFilter === diff ? 'All' : diff)}
+              onPress={() => { haptic.selection(); setDifficultyFilter(difficultyFilter === diff ? 'All' : diff); }}
             >
               <Text style={[styles.chipText, difficultyFilter === diff && styles.chipTextActive]}>
                 {diff === 'All' ? 'Any Difficulty' : diff}
@@ -356,10 +355,10 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.ink,
   },
-  headerCount: {
-    ...typography.caption,
-    color: colors.ink3,
-    marginTop: 2,
+  headerSub: {
+    ...typography.body,
+    color: colors.ink2,
+    marginTop: 4,
   },
   centerLoading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
@@ -438,74 +437,55 @@ const styles = StyleSheet.create({
   // Route list
   list: { paddingVertical: 6 },
   wayCard: {
-    backgroundColor: colors.surface,
     marginHorizontal: spacing.lg,
-    marginVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.borderLt,
+    marginVertical: 5,
+    borderRadius: 14,
+    height: 140,
     overflow: 'hidden',
-    ...shadows.sm,
+    position: 'relative' as const,
   },
-  heroImage: { width: '100%', height: 160, backgroundColor: colors.surfaceAlt },
-  regionOverlay: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+  wayCardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  } as any,
+  wayCardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    justifyContent: 'flex-end' as const,
   },
-  regionOverlayText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+  wayCardStats: {
+    flexDirection: 'row' as const,
+    gap: 12,
+    marginTop: 6,
   },
-  wayContent: { padding: spacing.lg },
-  wayHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    gap: 8,
-  },
-  wayHeaderLeft: { flex: 1 },
-  wayName: { ...typography.h3, color: colors.ink, marginBottom: 2 },
-  wayCountries: { ...typography.bodySm, color: colors.ink3 },
-  difficultyBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderLt,
-  },
-  difficultyText: { fontWeight: '700', fontSize: 14 },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statText: { ...typography.bodySm, color: colors.ink3, fontWeight: '500' },
-  freeHostBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  wayCardStat: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 4,
-    backgroundColor: colors.greenBg,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginBottom: spacing.md,
-    alignSelf: 'flex-start',
   },
-  freeHostText: { fontSize: 11, fontWeight: '600', color: colors.green },
-  walkerCount: { ...typography.caption, color: colors.ink3 },
+  wayCardStatText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.75)',
+  },
+  wayName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 3,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  wayMeta: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.3,
+  },
   emptyState: {
     flex: 1,
     justifyContent: 'center',

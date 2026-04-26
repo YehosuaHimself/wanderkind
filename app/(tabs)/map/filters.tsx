@@ -186,9 +186,9 @@ export default function Filters() {
             </View>
           </WKCard>
 
-          {/* Amenities */}
+          {/* Features */}
           <WKCard>
-            <Text style={styles.sectionTitle}>Amenities</Text>
+            <Text style={styles.sectionTitle}>Features</Text>
             <View style={styles.amenityGrid}>
               {amenityOptions.map(amenity => (
                 <TouchableOpacity

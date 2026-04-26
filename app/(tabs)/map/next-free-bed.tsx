@@ -149,10 +149,10 @@ export default function NextFreeBed() {
               <InfoBox icon="people" label="Hosted" value={host.total_hosted.toString()} />
             </View>
 
-            {/* Amenities */}
+            {/* Features */}
             {host.amenities && host.amenities.length > 0 && (
               <View style={styles.amenitiesSection}>
-                <Text style={styles.amenitiesLabel}>Amenities</Text>
+                <Text style={styles.amenitiesLabel}>Features</Text>
                 <View style={styles.amenitiesGrid}>
                   {host.amenities.slice(0, 3).map((amenity, i) => (
                     <Text key={i} style={styles.amenity}>{amenity}</Text>

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, getResponseTimeBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { toast } from '../../../src/lib/toast';
+import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
 import { SEED_HOSTS } from '../../../src/data/seed-hosts';
@@ -34,7 +35,45 @@ interface LayerState {
   churches: boolean;
   parishes: boolean;
   mountains: boolean;
+  camping: boolean;
+  community: boolean;
 }
+
+// Community contribution types
+type CommunityPinType = 'campsite' | 'private_host' | 'parking' | 'accommodation' | 'water' | 'other';
+
+interface CommunityPin {
+  id: string;
+  type: CommunityPinType;
+  name: string;
+  lat: number;
+  lng: number;
+  note?: string;
+  addedBy?: string;
+}
+
+const COMMUNITY_PIN_CONFIG: Record<CommunityPinType, { label: string; icon: string; color: string; description: string }> = {
+  campsite: { label: 'Free Camp Spot', icon: 'bonfire', color: '#059669', description: 'Community recommended wild/free camping' },
+  private_host: { label: 'Private Host', icon: 'person', color: '#C8762A', description: 'Non-digital host who would welcome walkers' },
+  parking: { label: 'Van Parking', icon: 'car', color: '#6366F1', description: 'Overnight parking for vans (park4night style)' },
+  accommodation: { label: 'Accommodation', icon: 'bed', color: '#0ea5e9', description: 'Budget accommodation tip' },
+  water: { label: 'Water Source', icon: 'water', color: '#2563EB', description: 'Drinkable water fountain or tap' },
+  other: { label: 'Other', icon: 'flag', color: '#6B7280', description: 'Anything useful for walkers' },
+};
+
+// Seed community pins — defined at module level so WebMapComponent can access them
+const SEED_COMMUNITY_PINS: CommunityPin[] = [
+  { id: 'cm-01', type: 'campsite', name: 'Free camp near river Arga', lat: 42.7950, lng: -1.6100, note: 'Flat ground, sheltered by trees. 200m from the Camino.' },
+  { id: 'cm-02', type: 'private_host', name: 'Señora Maria (ask at bar)', lat: 42.5200, lng: -2.8500, note: 'Elderly lady who hosts walkers. Ask at Bar El Camino.' },
+  { id: 'cm-03', type: 'parking', name: 'Van parking behind church', lat: 42.3500, lng: -3.7100, note: 'Quiet, no signs prohibiting. 3-4 vans fit.' },
+  { id: 'cm-04', type: 'water', name: 'Spring water fountain', lat: 42.4600, lng: -6.0600, note: 'Clean spring, locals drink from it.' },
+  { id: 'cm-05', type: 'campsite', name: 'Wild camp Alto del Perdon', lat: 42.7750, lng: -1.7350, note: 'Amazing sunset spot. Wind can be strong.' },
+  { id: 'cm-06', type: 'accommodation', name: 'Cheap room above bakery', lat: 43.8500, lng: 10.5100, note: '10 EUR/night, basic but clean. Via Francigena.' },
+  { id: 'cm-07', type: 'parking', name: 'Free van spot lakeside', lat: 47.1300, lng: 8.7600, note: 'Near Einsiedeln. Quiet at night.' },
+  { id: 'cm-08', type: 'private_host', name: 'Farmer Hans (organic farm)', lat: 47.4800, lng: 11.0800, note: 'Hosts walkers in barn. Fresh milk. Königsweg.' },
+  { id: 'cm-09', type: 'water', name: 'Mountain spring Arlberg', lat: 47.1300, lng: 10.2200, note: 'Crystal clear alpine water.' },
+  { id: 'cm-10', type: 'campsite', name: 'Forest clearing near Vézelay', lat: 47.4700, lng: 3.7500, note: 'Quiet, pine forest floor. Via Lemovicensis.' },
+];
 
 type MapMode = 'normal' | 'greyscale' | 'explorer';
 
@@ -125,6 +164,39 @@ const POI_DATA = {
     { id: 'wf-08', name: 'Salzburg Station WiFi', lat: 47.8132, lng: 13.0463 },
     { id: 'wf-09', name: 'Innsbruck Free WiFi', lat: 47.2654, lng: 11.3927 },
     { id: 'wf-10', name: 'Cologne Station WiFi', lat: 50.943, lng: 6.959 },
+  ],
+  camping: [
+    // Official and well-known camping/overnight spots along major walking routes
+    { id: 'cp-01', name: 'Camping Zariquiegui', lat: 42.7812, lng: -1.6891 },
+    { id: 'cp-02', name: 'Camping El Raso (Estella)', lat: 42.6722, lng: -2.0289 },
+    { id: 'cp-03', name: 'Area de Peregrinos Burgos', lat: 42.3422, lng: -3.6967 },
+    { id: 'cp-04', name: 'Camping Ciudad de Leon', lat: 42.6051, lng: -5.5711 },
+    { id: 'cp-05', name: 'Bivouac O Cebreiro', lat: 42.7088, lng: -7.0425 },
+    { id: 'cp-06', name: 'Camping As Cancelas (Santiago)', lat: 42.8744, lng: -8.5322 },
+    { id: 'cp-07', name: 'Camping Orbitur (Porto)', lat: 41.1577, lng: -8.6703 },
+    { id: 'cp-08', name: 'Camping Internazionale Firenze', lat: 43.7833, lng: 11.2500 },
+    { id: 'cp-09', name: 'Camping Siena Colleverde', lat: 43.3267, lng: 11.3417 },
+    { id: 'cp-10', name: 'Camping Tiber (Rome)', lat: 41.9539, lng: 12.4892 },
+    { id: 'cp-11', name: 'Camping Einsiedeln', lat: 47.1308, lng: 8.7489 },
+    { id: 'cp-12', name: 'Camping Salzburg Nord', lat: 47.8167, lng: 13.0500 },
+    { id: 'cp-13', name: 'Campingplatz Berchtesgaden', lat: 47.6367, lng: 12.9989 },
+    { id: 'cp-14', name: 'Camping Innsbruck Kranebitter', lat: 47.2594, lng: 11.3561 },
+    { id: 'cp-15', name: 'Camping Genève Pointe-a-la-Bise', lat: 46.2333, lng: 6.1833 },
+    { id: 'cp-16', name: 'Camping Bern Eymatt', lat: 46.9583, lng: 7.4000 },
+    { id: 'cp-17', name: 'Camping Canterbury', lat: 51.2833, lng: 1.0833 },
+    { id: 'cp-18', name: 'Camping Le Puy-en-Velay', lat: 45.0436, lng: 3.8978 },
+    { id: 'cp-19', name: 'Camping Konstanz Klausenhorn', lat: 47.6500, lng: 9.1833 },
+    { id: 'cp-20', name: 'Camping Freiburg Hirzberg', lat: 47.9833, lng: 7.8500 },
+    { id: 'cp-21', name: 'Camping Garmisch-Partenkirchen', lat: 47.4917, lng: 11.1000 },
+    { id: 'cp-22', name: 'Camping Köln Poll', lat: 50.9167, lng: 6.9833 },
+    { id: 'cp-23', name: 'Camping La Cite (Carcassonne)', lat: 43.2067, lng: 2.3667 },
+    { id: 'cp-24', name: 'Camping Assisi', lat: 43.0750, lng: 12.6083 },
+    { id: 'cp-25', name: 'Camping Lucca Il Serchio', lat: 43.8500, lng: 10.5000 },
+    { id: 'cp-26', name: 'Camping Roncesvaux', lat: 43.0094, lng: -1.3178 },
+    { id: 'cp-27', name: 'Bivouac Cruz de Ferro', lat: 42.4633, lng: -6.3733 },
+    { id: 'cp-28', name: 'Camping Astorga', lat: 42.4567, lng: -6.0567 },
+    { id: 'cp-29', name: 'Camping Sarria', lat: 42.7783, lng: -7.4150 },
+    { id: 'cp-30', name: 'Camping Finisterre', lat: 42.9083, lng: -9.2617 },
   ],
   mountains: [
     { id: 'mt-01', name: 'Cruz de Ferro', lat: 42.4646, lng: -6.3714 },
@@ -307,13 +379,20 @@ function WebMapComponent({
 <body>
   <div id="map"></div>
   <script>
-    var map = L.map('map').setView([47.0, 4.0], 5);
+    var map = L.map('map', {
+      zoomSnap: 1,
+      zoomDelta: 1,
+      wheelPxPerZoomLevel: 120,
+      fadeAnimation: true,
+      zoomAnimation: true,
+      markerZoomAnimation: true,
+    }).setView([47.0, 4.0], 5);
 
     // Tile layer URLs for each mode
     var tileUrls = {
       normal: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       greyscale: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      explorer: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg'
+      explorer: 'https://tile.opentopomap.org/{z}/{x}/{y}.png'
     };
 
     var currentTileLayer = null;
@@ -340,6 +419,8 @@ function WebMapComponent({
     var churchGroup = L.layerGroup();
     var wifiGroup = L.layerGroup();
     var mountainGroup = L.layerGroup();
+    var campingGroup = L.layerGroup();
+    var communityGroup = L.layerGroup();
 
     var currentFilter = '${filter}';
     var currentLayers = ${JSON.stringify(layers)};
@@ -465,6 +546,42 @@ function WebMapComponent({
         .addTo(mountainGroup);
     });
 
+    // === CAMPING RENDERING ===
+    var campingSpots = ${JSON.stringify(POI_DATA.camping)};
+    campingSpots.forEach(function(c) {
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="poi-icon" style="background:#059669;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 2L3 20h18L12 2zm0 5l5.5 11h-11L12 7z"/><rect x="8" y="18" width="8" height="2" rx="1"/></svg></div>',
+        iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      L.marker([c.lat, c.lng], { icon: icon })
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + c.name + '</strong><br/><span style="color:#059669;font-size:10px;">Camping</span></div>')
+        .on('click', function() {
+          window.parent.postMessage({ type: 'camping-click', campingId: c.id }, '*');
+        })
+        .addTo(campingGroup);
+    });
+
+    // === COMMUNITY RENDERING ===
+    var communityPins = ${JSON.stringify(SEED_COMMUNITY_PINS)};
+    var communityColors = { campsite: '#059669', private_host: '#C8762A', parking: '#6366F1', accommodation: '#0ea5e9', water: '#2563EB', other: '#6B7280' };
+    var communityIcons = { campsite: 'M12 2L3 20h18L12 2z', private_host: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z', parking: 'M13 3H6v18h4v-6h3c3.31 0 6-2.69 6-6s-2.69-6-6-6zm.2 8H10V7h3.2c1.1 0 2 .9 2 2s-.9 2-2 2z', accommodation: 'M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V7H1v10h2v-3h18v3h2V10c0-2.21-1.79-4-4-4z', water: 'M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2C20 10.48 17.33 6.55 12 2z', other: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z' };
+    communityPins.forEach(function(pin) {
+      var col = communityColors[pin.type] || '#6B7280';
+      var pathD = communityIcons[pin.type] || communityIcons.other;
+      var icon = L.divIcon({
+        className: '',
+        html: '<div style="width:28px;height:28px;border-radius:50%;background:' + col + ';border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="' + pathD + '"/></svg></div>',
+        iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+      var popupHtml = '<div style="font-size:12px;max-width:180px;"><strong>' + pin.name + '</strong><br/><span style="color:' + col + ';font-size:10px;text-transform:uppercase;">COMMUNITY</span>';
+      if (pin.note) popupHtml += '<br/><span style="font-size:11px;color:#666;margin-top:4px;display:block;">' + pin.note + '</span>';
+      popupHtml += '</div>';
+      L.marker([pin.lat, pin.lng], { icon: icon })
+        .bindPopup(popupHtml)
+        .addTo(communityGroup);
+    });
+
     // === ISRAEL BLANK OVERLAY ===
     // Grey polygon covering Israel — no names, no features, just blank
     var israelCoords = [
@@ -519,6 +636,10 @@ function WebMapComponent({
       if (!ly.wifi && map.hasLayer(wifiGroup)) map.removeLayer(wifiGroup);
       if (ly.mountains && !map.hasLayer(mountainGroup)) map.addLayer(mountainGroup);
       if (!ly.mountains && map.hasLayer(mountainGroup)) map.removeLayer(mountainGroup);
+      if (ly.camping && !map.hasLayer(campingGroup)) map.addLayer(campingGroup);
+      if (!ly.camping && map.hasLayer(campingGroup)) map.removeLayer(campingGroup);
+      if (ly.community && !map.hasLayer(communityGroup)) map.addLayer(communityGroup);
+      if (!ly.community && map.hasLayer(communityGroup)) map.removeLayer(communityGroup);
     }
 
     // Initial render
@@ -605,7 +726,7 @@ function MapModesPanel({ mapMode, onModeChange, onClose }: {
   const modes: { id: MapMode; label: string; description: string; icon: string }[] = [
     { id: 'normal', label: 'Normal', description: 'OpenStreetMap (Default)', icon: 'map' },
     { id: 'greyscale', label: 'Grey/Orange', description: 'CartoDB Positron - Clean', icon: 'contrast' },
-    { id: 'explorer', label: 'Explorer', description: 'Watercolor - Old-World', icon: 'brush' },
+    { id: 'explorer', label: 'Terrain', description: 'OpenTopoMap - Topographic', icon: 'mountain' },
   ];
 
   return (
@@ -656,6 +777,8 @@ function LayersPanel({ layers, onToggle, onClose }: {
     { key: 'churches', label: 'Churches', icon: 'business', color: '#8B4513' },
     { key: 'parishes', label: 'Parishes', icon: 'home', color: '#6B21A8' },
     { key: 'mountains', label: 'Mountains', icon: 'triangle', color: '#6B7280' },
+    { key: 'camping', label: 'Camping', icon: 'bonfire', color: '#059669' },
+    { key: 'community', label: 'Community', icon: 'people-circle', color: '#C8762A' },
   ];
 
   return (
@@ -670,7 +793,7 @@ function LayersPanel({ layers, onToggle, onClose }: {
         <TouchableOpacity
           key={key}
           style={styles.layerRow}
-          onPress={() => onToggle(key)}
+          onPress={() => { haptic.selection(); onToggle(key); }}
           activeOpacity={0.7}
         >
           <View style={[styles.layerIcon, { backgroundColor: `${color}20` }]}>
@@ -711,7 +834,6 @@ export default function MapHome() {
   const [filter, setFilter] = useState<FilterMode>('all');
   const [nearbyHosts, setNearbyHosts] = useState<Host[]>([]);
   const [activeHostIndex, setActiveHostIndex] = useState(0);
-  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showPastStays, setShowPastStays] = useState(false);
@@ -729,7 +851,12 @@ export default function MapHome() {
     churches: false,
     parishes: false,
     mountains: false,
+    camping: false,
+    community: false,
   });
+  const [showCommunityFAB, setShowCommunityFAB] = useState(false);
+  const [showCommunityInfo, setShowCommunityInfo] = useState(false);
+  const [communityPins, setCommunityPins] = useState<CommunityPin[]>(SEED_COMMUNITY_PINS);
 
   // Get user location on mount
   useEffect(() => {
@@ -806,7 +933,6 @@ export default function MapHome() {
     });
     setNearbyHosts(filtered);
     setActiveHostIndex(0);
-    setExpandedCardId(null);
   }, [hosts, userLat, userLng, filter]);
 
   const fetchHosts = async () => {
@@ -866,6 +992,7 @@ export default function MapHome() {
     if (viewableItems.length > 0) {
       const idx = viewableItems[0].index ?? 0;
       setActiveHostIndex(idx);
+      haptic.light();
       const host = viewableItems[0].item as Host;
       if (host) {
         // Fly map to this host's location
@@ -970,14 +1097,13 @@ export default function MapHome() {
   // Render a single host card
   const renderHostCard = useCallback(({ item, index }: { item: Host; index: number }) => {
     const config = hostTypeConfig[item.host_type as keyof typeof hostTypeConfig];
-    const isExpanded = expandedCardId === item.id;
     const dist = formatDistance(item);
 
     return (
       <TouchableOpacity
         style={styles.hostCard}
         activeOpacity={0.95}
-        onPress={() => setExpandedCardId(isExpanded ? null : item.id)}
+        onPress={() => haptic.light()}
       >
         {/* Top label row */}
         <View style={styles.hostCardHeader}>
@@ -992,7 +1118,7 @@ export default function MapHome() {
 
         {/* Name + Favorite Button */}
         <View style={styles.nameRow}>
-          <Text style={styles.hostCardName} numberOfLines={isExpanded ? 3 : 1}>{item.name}</Text>
+          <Text style={styles.hostCardName} numberOfLines={3}>{item.name}</Text>
           <FavoriteButton hostId={item.id} />
         </View>
 
@@ -1011,6 +1137,47 @@ export default function MapHome() {
             {item.capacity ? `${item.capacity} beds` : 'Beds available'}
           </Text>
         </View>
+
+        {/* Description — always shown, first 2 lines */}
+        {item.description && (
+          <View style={styles.hostCardRow}>
+            <Text style={styles.hostCardDetail} numberOfLines={2}>
+              {item.description}
+            </Text>
+          </View>
+        )}
+
+        {/* Hosted count */}
+        <View style={styles.hostCardRow}>
+          <Ionicons name="people-outline" size={13} color={colors.ink3} />
+          <Text style={styles.hostCardDetail}>
+            {item.total_hosted?.toLocaleString() ?? '0'} wanderkinder hosted
+          </Text>
+        </View>
+
+        {/* Country */}
+        {(item as any).country && (
+          <View style={styles.hostCardRow}>
+            <Ionicons name="flag-outline" size={13} color={colors.ink3} />
+            <Text style={styles.hostCardDetail}>{(item as any).country}</Text>
+          </View>
+        )}
+
+        {/* Route km */}
+        {item.route_km != null && (
+          <View style={styles.hostCardRow}>
+            <Ionicons name="compass-outline" size={13} color={colors.ink3} />
+            <Text style={styles.hostCardDetail}>Route km {item.route_km}</Text>
+          </View>
+        )}
+
+        {/* Price range */}
+        {(item as any).price_range && (
+          <View style={styles.hostCardRow}>
+            <Ionicons name="pricetag-outline" size={13} color={colors.ink3} />
+            <Text style={styles.hostCardDetail}>{(item as any).price_range}</Text>
+          </View>
+        )}
 
         {/* Trust badges — freshness + data source + response time */}
         <View style={styles.trustBadgeRow}>
@@ -1044,10 +1211,21 @@ export default function MapHome() {
           {(item as any).amenities && (item as any).amenities.length > 0 && (
             <View style={[styles.trustBadge, { backgroundColor: colors.amberBg }]}>
               <Ionicons name="pricetag-outline" size={10} color={colors.amber} />
-              <Text style={[styles.trustBadgeText, { color: colors.amber }]}>{(item as any).amenities.length} amenities</Text>
+              <Text style={[styles.trustBadgeText, { color: colors.amber }]}>{(item as any).amenities.length} features</Text>
             </View>
           )}
         </View>
+
+        {/* Features */}
+        {(item as any).amenities && (item as any).amenities.length > 0 && (
+          <View style={styles.amenitiesRow}>
+            {(item as any).amenities.map((a: string, i: number) => (
+              <View key={i} style={styles.amenityPill}>
+                <Text style={styles.amenityText}>{a}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Contact row — phone & email */}
         <View style={styles.hostContactRow}>
@@ -1078,69 +1256,10 @@ export default function MapHome() {
             <Ionicons name="navigate" size={14} color={colors.ink2} />
             <Text style={styles.contactBtnText}>Focus</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.contactBtn, styles.contactBtnPrimary]}
-            onPress={() => router.push(`/(tabs)/map/host/${item.id}`)}
-          >
-            <Ionicons name="open-outline" size={14} color="#FFF" />
-            <Text style={[styles.contactBtnText, { color: '#FFF' }]}>Details</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Expanded section */}
-        {isExpanded && (
-          <View style={styles.expandedSection}>
-            {item.description ? (
-              <Text style={styles.expandedDesc}>{item.description}</Text>
-            ) : null}
-            <View style={styles.expandedMeta}>
-              <Text style={styles.expandedMetaItem}>
-                <Text style={styles.expandedMetaLabel}>Hosted: </Text>
-                {item.total_hosted?.toLocaleString() ?? '—'} wanderkinder
-              </Text>
-              {(item as any).country && (
-                <Text style={styles.expandedMetaItem}>
-                  <Text style={styles.expandedMetaLabel}>Country: </Text>
-                  {(item as any).country}
-                </Text>
-              )}
-              {item.route_km != null && (
-                <Text style={styles.expandedMetaItem}>
-                  <Text style={styles.expandedMetaLabel}>Route km: </Text>
-                  {item.route_km}
-                </Text>
-              )}
-              {(item as any).price_range && (
-                <Text style={styles.expandedMetaItem}>
-                  <Text style={styles.expandedMetaLabel}>Price: </Text>
-                  {(item as any).price_range}
-                </Text>
-              )}
-            </View>
-            {/* Amenities */}
-            {(item as any).amenities && (item as any).amenities.length > 0 && (
-              <View style={styles.amenitiesRow}>
-                {(item as any).amenities.map((a: string, i: number) => (
-                  <View key={i} style={styles.amenityPill}>
-                    <Text style={styles.amenityText}>{a}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Expand hint */}
-        <View style={styles.expandHint}>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={14}
-            color={colors.ink3}
-          />
         </View>
       </TouchableOpacity>
     );
-  }, [expandedCardId, nearbyHosts.length, userLat, userLng, router, centerMapOnHost]);
+  }, [nearbyHosts.length, userLat, userLng, router, centerMapOnHost]);
 
   return (
     <View style={styles.container}>
@@ -1177,34 +1296,38 @@ export default function MapHome() {
         </MapView>
       )}
 
-      {/* Top controls */}
+      {/* Top controls — filter tags only */}
       <SafeAreaView style={styles.topOverlay} edges={['top']}>
         <View style={styles.filterRow}>
           {(['free', 'donativo', 'all'] as FilterMode[]).map(f => (
             <TouchableOpacity
               key={f}
               style={[styles.filterChip, filter === f && styles.filterChipActive]}
-              onPress={() => setFilter(f)}
+              onPress={() => { haptic.selection(); setFilter(f); }}
             >
               <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
                 {f === 'free' ? 'FREE STAYS' : f === 'donativo' ? 'PAY WHAT YOU CAN' : 'ALL HOSTS'}
               </Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowMapModes(!showMapModes)}
-          >
-            <Ionicons name="map" size={18} color={colors.amber} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowLayers(!showLayers)}
-          >
-            <Ionicons name="layers" size={18} color={colors.amber} />
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {/* Right side — layers & map mode buttons, aligned with heart/house */}
+      <View style={styles.rightActionStrip}>
+        <TouchableOpacity
+          style={styles.rightActionBtn}
+          onPress={() => { haptic.selection(); setShowLayers(!showLayers); }}
+        >
+          <Ionicons name="layers" size={20} color={colors.amber} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.rightActionBtn}
+          onPress={() => { haptic.selection(); setShowMapModes(!showMapModes); }}
+        >
+          <Ionicons name="map" size={20} color={colors.amber} />
+        </TouchableOpacity>
+      </View>
 
       {/* Map modes panel */}
       {showMapModes && (
@@ -1251,10 +1374,62 @@ export default function MapHome() {
       {/* Right side — locate/relocate button, above cards */}
       <TouchableOpacity
         style={styles.locateBtn}
-        onPress={handleLocationPress}
+        onPress={() => { haptic.light(); handleLocationPress(); }}
       >
         <Ionicons name="locate" size={20} color={colors.amber} />
       </TouchableOpacity>
+
+      {/* Community contribution FAB — orange circle with + */}
+      <TouchableOpacity
+        style={styles.communityFab}
+        onPress={() => { haptic.medium(); setShowCommunityFAB(!showCommunityFAB); }}
+        activeOpacity={0.8}
+      >
+        <Ionicons name={showCommunityFAB ? 'close' : 'add'} size={22} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Community contribution menu */}
+      {showCommunityFAB && (
+        <View style={styles.communityMenu}>
+          <View style={styles.communityMenuHeader}>
+            <Text style={styles.communityMenuTitle}>ADD TO MAP</Text>
+            <TouchableOpacity onPress={() => setShowCommunityInfo(!showCommunityInfo)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="information-circle-outline" size={18} color={colors.ink2} />
+            </TouchableOpacity>
+          </View>
+          {showCommunityInfo && (
+            <View style={styles.communityInfoBox}>
+              <Text style={styles.communityInfoText}>
+                Help fellow wanderkinder by adding useful places to the map. Your contributions appear on the COMMUNITY layer and help others find free camps, private hosts, parking, and more.
+              </Text>
+            </View>
+          )}
+          {(Object.entries(COMMUNITY_PIN_CONFIG) as [CommunityPinType, typeof COMMUNITY_PIN_CONFIG[CommunityPinType]][]).map(([type, config]) => (
+            <TouchableOpacity
+              key={type}
+              style={styles.communityMenuItem}
+              onPress={() => {
+                haptic.selection();
+                setShowCommunityFAB(false);
+                toast.info(`Tap the map to place your ${config.label}`);
+                // Enable community layer automatically when adding
+                if (!layers.community) {
+                  setLayers(prev => ({ ...prev, community: true }));
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.communityMenuIcon, { backgroundColor: `${config.color}20` }]}>
+                <Ionicons name={config.icon as any} size={16} color={config.color} />
+              </View>
+              <View style={styles.communityMenuInfo}>
+                <Text style={styles.communityMenuLabel}>{config.label}</Text>
+                <Text style={styles.communityMenuDesc} numberOfLines={1}>{config.description}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Favorites panel */}
       {showFavorites && (
@@ -1284,12 +1459,12 @@ export default function MapHome() {
                     if (Platform.OS === 'web') {
                       const iframe = document.querySelector('iframe');
                       if (iframe?.contentWindow) {
-                        iframe.contentWindow.postMessage(JSON.stringify({
+                        iframe.contentWindow.postMessage({
                           type: 'flyTo',
                           lat: host.lat,
                           lng: host.lng,
                           zoom: 14,
-                        }), '*');
+                        }, '*');
                       }
                     }
                   }}
@@ -1396,6 +1571,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 8,
     alignItems: 'center',
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 90 : 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   filterChip: {
     paddingVertical: 7,
@@ -1411,8 +1591,8 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontFamily: 'Courier New',
-    fontSize: 9,
-    letterSpacing: 1,
+    fontSize: 11,
+    letterSpacing: 1.2,
     color: colors.ink2,
     fontWeight: '600',
   },
@@ -1428,13 +1608,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 'auto',
   },
   // Layers panel
   layersPanel: {
     position: 'absolute',
-    top: Platform.OS === 'web' ? 56 : 100,
-    right: spacing.md,
+    top: '35%',
+    right: 60,
     width: 260,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -1515,6 +1694,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.ink3,
   },
+  rightActionStrip: {
+    position: 'absolute',
+    right: 12,
+    top: '42%',
+    gap: 8,
+    zIndex: 20,
+  },
+  rightActionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   leftActionStrip: {
     position: 'absolute',
     left: 12,
@@ -1551,6 +1752,86 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.lg,
     zIndex: 20,
+  },
+  communityFab: {
+    position: 'absolute',
+    right: 12,
+    bottom: Platform.OS === 'ios' ? 260 : Platform.OS === 'web' ? 245 : 245,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#C8762A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+    zIndex: 20,
+  },
+  communityMenu: {
+    position: 'absolute',
+    right: 12,
+    bottom: Platform.OS === 'ios' ? 316 : Platform.OS === 'web' ? 300 : 300,
+    width: 260,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    zIndex: 100,
+  },
+  communityMenuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  communityMenuTitle: {
+    ...typography.bodySm,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: colors.ink,
+  },
+  communityInfoBox: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 8,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  communityInfoText: {
+    ...typography.bodySm,
+    color: colors.ink2,
+    lineHeight: 18,
+    fontSize: 11,
+  },
+  communityMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 8,
+  },
+  communityMenuIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  communityMenuInfo: {
+    flex: 1,
+  },
+  communityMenuLabel: {
+    ...typography.bodySm,
+    color: colors.ink,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  communityMenuDesc: {
+    ...typography.bodySm,
+    color: colors.ink3,
+    fontSize: 10,
   },
   favoritesPanel: {
     position: 'absolute',
@@ -1636,6 +1917,7 @@ const styles = StyleSheet.create({
   },
   hostCard: {
     width: HOST_CARD_WIDTH,
+    minHeight: Math.round(height / 3),
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 14,
@@ -1792,8 +2074,8 @@ const styles = StyleSheet.create({
   // Map modes panel
   mapModesPanel: {
     position: 'absolute',
-    top: Platform.OS === 'web' ? 56 : 100,
-    right: spacing.md,
+    top: '45%',
+    right: 60,
     width: 280,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,

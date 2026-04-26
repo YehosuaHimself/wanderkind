@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
@@ -73,6 +74,7 @@ export default function MessagesScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    haptic.medium();
     await fetchThreads();
     setRefreshing(false);
   };
@@ -128,6 +130,13 @@ export default function MessagesScreen() {
           <Text style={styles.headerLabelText}>MESSAGES</Text>
         </View>
         <Text style={styles.headerTitle}>Conversations</Text>
+      </View>
+
+      {/* E2E Encryption Trust Banner */}
+      <View style={styles.encryptionBanner}>
+        <Ionicons name="lock-closed" size={13} color="#27864A" />
+        <Text style={styles.encryptionText}>End-to-end encrypted</Text>
+        <Ionicons name="shield-checkmark-outline" size={13} color="#27864A" />
       </View>
 
       {/* Search Bar */}
@@ -223,7 +232,7 @@ export default function MessagesScreen() {
       {/* FAB — New Message */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/(tabs)/messages/new' as any)}
+        onPress={() => { haptic.medium(); router.push('/(tabs)/messages/new' as any); }}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={24} color="#FFFFFF" />
@@ -247,6 +256,24 @@ function formatTime(iso: string): string {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  encryptionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(39,134,74,0.06)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(39,134,74,0.1)',
+  },
+  encryptionText: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    fontWeight: '600',
+    color: '#27864A',
+    textTransform: 'uppercase',
+  },
   header: {
     paddingHorizontal: spacing.xl,
     paddingTop: 8,

@@ -20,6 +20,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { Stamp } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { toast } from '../../../src/lib/toast';
+import { haptic } from '../../../src/lib/haptics';
 
 export default function StampsCollection({ embedded = false }: { embedded?: boolean }) {
   useAuthGuard();
@@ -168,7 +169,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
           <View style={styles.header}>
             <View style={styles.headerLabel}>
               <View style={styles.headerDot} />
-              <Text style={styles.headerLabelText}>STAMPS</Text>
+              <Text style={styles.headerLabelText}>STAMPS & VISAS</Text>
             </View>
             <Text style={styles.headerTitle}>Your Collection</Text>
           </View>
@@ -186,7 +187,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
         <View style={styles.header}>
           <View style={styles.headerLabel}>
             <View style={styles.headerDot} />
-            <Text style={styles.headerLabelText}>STAMPS</Text>
+            <Text style={styles.headerLabelText}>STAMPS & VISAS</Text>
           </View>
           <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>Your Collection</Text>
@@ -215,7 +216,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
       {/* FAB — Scan Stamp (single core action, direct navigation) */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/(tabs)/more/scan' as any)}
+        onPress={() => { haptic.medium(); router.push('/(tabs)/more/scan' as any); }}
         activeOpacity={0.85}
       >
         <Ionicons name="scan-outline" size={24} color="#fff" />

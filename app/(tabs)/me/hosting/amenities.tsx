@@ -62,7 +62,7 @@ export default function AmenitiesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Amenities" showBack={true} />
+      <WKHeader title="Features" showBack={true} />
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
@@ -71,11 +71,11 @@ export default function AmenitiesScreen() {
             <View style={styles.summary}>
               <Text style={styles.summaryLabel}>You have</Text>
               <Text style={styles.summaryValue}>{enabledCount}</Text>
-              <Text style={styles.summaryLabel}>amenities enabled</Text>
+              <Text style={styles.summaryLabel}>features enabled</Text>
             </View>
           </WKCard>
 
-          {/* Amenities */}
+          {/* Features */}
           <WKCard>
             {AMENITIES.map((amenity, idx) => (
               <View
@@ -114,13 +114,13 @@ export default function AmenitiesScreen() {
               <Text style={styles.tipTitle}>Pro Tip</Text>
             </View>
             <Text style={styles.tipText}>
-              Listings with more amenities receive more requests. Highlight the features that make your space special.
+              Listings with more features receive more requests. Highlight what makes your space special.
             </Text>
           </WKCard>
 
           {/* Save Button */}
           <WKButton
-            title="Save Amenities"
+            title="Save Features"
             onPress={handleSave}
             fullWidth
             style={styles.saveBtn}

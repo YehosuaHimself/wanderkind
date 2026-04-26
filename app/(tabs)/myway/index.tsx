@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { haptic } from '../../../src/lib/haptics';
 
 // Direct imports instead of React.lazy — fixes rendering issues
 import WaysContent from '../more/ways';
@@ -30,7 +31,7 @@ export default function MyWayScreen() {
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'ways' && styles.tabActive]}
-          onPress={() => setActiveTab('ways')}
+          onPress={() => { haptic.selection(); setActiveTab('ways'); }}
           activeOpacity={0.7}
         >
           <Ionicons
@@ -44,7 +45,7 @@ export default function MyWayScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'journey' && styles.tabActive]}
-          onPress={() => setActiveTab('journey')}
+          onPress={() => { haptic.selection(); setActiveTab('journey'); }}
           activeOpacity={0.7}
         >
           <Ionicons

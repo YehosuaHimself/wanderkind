@@ -398,7 +398,7 @@ export default function MeScreen() {
             activeOpacity={0.7}
           >
             <Ionicons name="ribbon-outline" size={16} color={activeTab === 'stamps' ? colors.amber : colors.ink3} />
-            <Text style={[styles.activityTabText, activeTab === 'stamps' && styles.activityTabTextActive]}>Stamps</Text>
+            <Text style={[styles.activityTabText, activeTab === 'stamps' && styles.activityTabTextActive]}>Stamps & Visas</Text>
             {stamps.length > 0 && (
               <View style={styles.activityTabBadge}>
                 <Text style={styles.activityTabBadgeText}>{stamps.length}</Text>

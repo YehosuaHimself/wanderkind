@@ -113,8 +113,8 @@ export default function ListingEdit() {
             ))}
           </View>
 
-          {/* Amenities */}
-          <Text style={styles.sectionLabel}>Amenities</Text>
+          {/* Features */}
+          <Text style={styles.sectionLabel}>Features</Text>
           <WKCard>
             {AMENITIES.map((amenity) => (
               <View key={amenity} style={styles.amenityRow}>

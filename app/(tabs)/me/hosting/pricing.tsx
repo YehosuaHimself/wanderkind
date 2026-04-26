@@ -177,7 +177,7 @@ export default function PricingScreen() {
                 <Text style={styles.infoBold}>Budget:</Text> Affordable nightly rate (10-30 EUR)
               </Text>
               <Text style={styles.infoItem}>
-                <Text style={styles.infoBold}>Paid:</Text> Premium comfort and amenities
+                <Text style={styles.infoBold}>Paid:</Text> Premium comfort and features
               </Text>
             </View>
           </WKCard>

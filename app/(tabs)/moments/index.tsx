@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Moment, Profile } from '../../../src/types/database';
 import { SEED_MOMENTS } from '../../../src/data/seed-moments';
@@ -218,6 +219,7 @@ export default function MomentsFeed() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    haptic.medium();
     await Promise.all([fetchMoments(), fetchStories()]);
     setRefreshing(false);
   };
@@ -276,7 +278,7 @@ export default function MomentsFeed() {
     <View style={styles.filterBar}>
       <TouchableOpacity
         style={[styles.filterTab, filter === 'nearby' && styles.filterTabActive]}
-        onPress={() => setFilter('nearby')}
+        onPress={() => { haptic.selection(); setFilter('nearby'); }}
         activeOpacity={0.7}
       >
         <Ionicons
@@ -291,7 +293,7 @@ export default function MomentsFeed() {
 
       <TouchableOpacity
         style={[styles.filterTab, filter === 'recent' && styles.filterTabActive]}
-        onPress={() => setFilter('recent')}
+        onPress={() => { haptic.selection(); setFilter('recent'); }}
         activeOpacity={0.7}
       >
         <Ionicons
@@ -395,7 +397,7 @@ export default function MomentsFeed() {
       <View style={styles.header}>
         <View style={styles.headerLabel}>
           <View style={styles.headerDot} />
-          <Text style={styles.headerLabelText}>MOMENTS</Text>
+          <Text style={styles.headerLabelText}>MEMORIES</Text>
         </View>
         <Text style={styles.headerTitle}>From the Road</Text>
       </View>
