@@ -626,6 +626,7 @@ export default function MapHome() {
   const [activeHostIndex, setActiveHostIndex] = useState(0);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [liveWalkers, setLiveWalkers] = useState<typeof walkingSeedProfiles>([]);
@@ -1114,6 +1115,18 @@ export default function MapHome() {
         />
       )}
 
+      {/* Favorites button */}
+      <TouchableOpacity
+        style={styles.favoritesButton}
+        onPress={() => setShowFavorites(!showFavorites)}
+      >
+        <Ionicons
+          name={showFavorites ? 'heart' : 'heart-outline'}
+          size={20}
+          color={showFavorites ? '#E25555' : colors.amber}
+        />
+      </TouchableOpacity>
+
       {/* My location button */}
       <TouchableOpacity
         style={styles.locationButton}
@@ -1121,6 +1134,62 @@ export default function MapHome() {
       >
         <Ionicons name="locate" size={20} color={colors.amber} />
       </TouchableOpacity>
+
+      {/* Favorites panel */}
+      {showFavorites && (
+        <View style={styles.favoritesPanel}>
+          <View style={styles.favoritesPanelHeader}>
+            <Ionicons name="heart" size={16} color="#E25555" />
+            <Text style={styles.favoritesPanelTitle}>Saved Places</Text>
+            <TouchableOpacity onPress={() => setShowFavorites(false)}>
+              <Ionicons name="close" size={18} color={colors.ink3} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+            {hosts.filter(h => useFavoritesStore.getState().isFavorite(h.id)).length === 0 ? (
+              <View style={styles.favoritesEmpty}>
+                <Ionicons name="heart-outline" size={28} color={colors.ink3} />
+                <Text style={styles.favoritesEmptyText}>No saved places yet</Text>
+                <Text style={styles.favoritesEmptyHint}>Tap the heart on any host card to save it here</Text>
+              </View>
+            ) : (
+              hosts.filter(h => useFavoritesStore.getState().isFavorite(h.id)).map(host => (
+                <TouchableOpacity
+                  key={host.id}
+                  style={styles.favoriteItem}
+                  onPress={() => {
+                    setShowFavorites(false);
+                    // Focus map on this host
+                    if (Platform.OS === 'web') {
+                      const iframe = document.querySelector('iframe');
+                      if (iframe?.contentWindow) {
+                        iframe.contentWindow.postMessage(JSON.stringify({
+                          type: 'flyTo',
+                          lat: host.lat,
+                          lng: host.lng,
+                          zoom: 14,
+                        }), '*');
+                      }
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.favoriteItemIcon}>
+                    <Ionicons name="home" size={14} color={colors.amber} />
+                  </View>
+                  <View style={styles.favoriteItemInfo}>
+                    <Text style={styles.favoriteItemName} numberOfLines={1}>{host.name}</Text>
+                    <Text style={styles.favoriteItemLocation} numberOfLines={1}>
+                      {host.address || 'Saved place'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Swipeable Host Cards */}
       {nearbyHosts.length > 0 && (
@@ -1307,6 +1376,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.ink3,
   },
+  favoritesButton: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: 272,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+    zIndex: 20,
+  },
   locationButton: {
     position: 'absolute',
     right: spacing.lg,
@@ -1321,6 +1405,80 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.lg,
     zIndex: 20,
+  },
+  favoritesPanel: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: 220,
+    width: 280,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLt,
+    zIndex: 100,
+  },
+  favoritesPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+    marginBottom: 8,
+  },
+  favoritesPanelTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  favoritesEmpty: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    gap: 8,
+  },
+  favoritesEmptyText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink3,
+  },
+  favoritesEmptyHint: {
+    fontSize: 11,
+    color: colors.ink3,
+    textAlign: 'center',
+    maxWidth: 200,
+    lineHeight: 16,
+  },
+  favoriteItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  favoriteItemIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriteItemInfo: {
+    flex: 1,
+  },
+  favoriteItemName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  favoriteItemLocation: {
+    fontSize: 10,
+    color: colors.ink3,
+    marginTop: 1,
   },
   // Host card carousel
   hostCarousel: {

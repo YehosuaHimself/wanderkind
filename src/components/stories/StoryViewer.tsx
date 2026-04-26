@@ -7,9 +7,7 @@ import {
   Text,
   Dimensions,
   Animated,
-  StyleSheet,
   PanResponder,
-  GestureResponderEvent,
 } from 'react-native';
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -32,6 +30,7 @@ type StoryViewerProps = {
 const STORY_DURATION_MS = 11 * 60 * 1000 + 11 * 1000; // 11 minutes 11 seconds
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SWIPE_THRESHOLD = 50;
 
 export const StoryViewer = ({
   stories,
@@ -57,12 +56,14 @@ export const StoryViewer = ({
   // Display full name (personal, not @handle)
   const displayName = authorName.replace(/^@/, '');
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [paused, setPaused] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const swipeStartX = useRef(0);
 
   const currentStory = stories[currentIndex];
+
+  // Reset index when stories change (new group)
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [stories, initialIndex]);
 
   // Format time ago
   const getTimeAgo = useCallback((createdAt: string): string => {
@@ -78,11 +79,29 @@ export const StoryViewer = ({
     return `${diffMinutes}m ago`;
   }, []);
 
+  // Handle next story — advance within group, then to next group
+  const handleNext = useCallback(() => {
+    if (currentIndex < stories.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else if (onNextGroup) {
+      onNextGroup();
+    } else {
+      onClose();
+    }
+  }, [currentIndex, stories.length, onClose, onNextGroup]);
+
+  // Handle previous story — go back within group, then to previous group
+  const handlePrevious = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+    } else if (onPreviousGroup) {
+      onPreviousGroup();
+    }
+  }, [currentIndex, onPreviousGroup]);
+
   // Progress bar animation
   useEffect(() => {
-    if (!visible || paused || !currentStory) {
-      return;
-    }
+    if (!visible || !currentStory) return;
 
     progressAnim.setValue(0);
 
@@ -93,89 +112,61 @@ export const StoryViewer = ({
     });
 
     animation.start(({ finished }) => {
-      if (finished && currentIndex < stories.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else if (finished && currentIndex === stories.length - 1) {
-        onClose();
+      if (finished) {
+        handleNext();
       }
     });
 
     return () => {
       animation.stop();
     };
-  }, [currentIndex, visible, paused, stories.length, progressAnim, onClose]);
+  }, [currentIndex, visible, stories.length, progressAnim]);
 
-  // Handle next story - auto-advance to next group when at end
-  const handleNext = useCallback(() => {
-    if (currentIndex < stories.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else if (currentIndex === stories.length - 1) {
-      // At end of current group - jump to next group
-      if (onNextGroup) {
-        onNextGroup();
-      } else {
-        onClose();
-      }
-    }
-  }, [currentIndex, stories.length, onClose, onNextGroup]);
+  // PanResponder for swipe + tap detection
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only claim if horizontal movement exceeds threshold
+        return Math.abs(gestureState.dx) > 10;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
 
-  // Handle previous story - jump to previous group when at start
-  const handlePrevious = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    } else if (currentIndex === 0 && onPreviousGroup) {
-      // At start of current group - jump to previous group
-      onPreviousGroup();
-    }
-  }, [currentIndex, onPreviousGroup]);
-
-  // Handle screen tap - left/right zones for story navigation
-  const handleScreenTap = useCallback(
-    (event: GestureResponderEvent) => {
-      const { locationX } = event.nativeEvent;
-      const tapZone = locationX / SCREEN_WIDTH;
-
-      if (tapZone < 0.3) {
-        // Left 30% - previous story
-        handlePrevious();
-      } else if (tapZone > 0.7) {
-        // Right 30% - next story
-        handleNext();
-      }
-      // Middle 40% - do nothing (allows pausing if needed)
-    },
-    [handleNext, handlePrevious]
-  );
-
-  // Handle swipe gestures - left/right swipes navigate between groups
-  const handleSwipeStart = useCallback((event: GestureResponderEvent) => {
-    swipeStartX.current = event.nativeEvent.pageX;
-  }, []);
-
-  const handleSwipeEnd = useCallback(
-    (event: GestureResponderEvent) => {
-      const swipeEndX = event.nativeEvent.pageX;
-      const swipeDistance = swipeStartX.current - swipeEndX;
-      const minSwipeDistance = 50; // Minimum distance to register as swipe
-
-      if (Math.abs(swipeDistance) < minSwipeDistance) {
-        return; // Not a significant swipe
-      }
-
-      if (swipeDistance > 0) {
-        // Swiped left - go to next group
-        if (onNextGroup) {
-          onNextGroup();
+        // Vertical swipe down = close
+        if (dy > 100 && absDy > absDx) {
+          onClose();
+          return;
         }
-      } else {
-        // Swiped right - go to previous group
-        if (onPreviousGroup) {
-          onPreviousGroup();
+
+        // Horizontal swipe
+        if (absDx > SWIPE_THRESHOLD && absDx > absDy) {
+          if (dx < 0) {
+            // Swiped left — next group
+            if (onNextGroup) onNextGroup();
+            else onClose();
+          } else {
+            // Swiped right — previous group
+            if (onPreviousGroup) onPreviousGroup();
+          }
+          return;
         }
-      }
-    },
-    [onNextGroup, onPreviousGroup]
-  );
+
+        // Tap — use location to determine left/right zone
+        const { locationX } = evt.nativeEvent;
+        const tapZone = locationX / SCREEN_WIDTH;
+
+        if (tapZone < 0.35) {
+          handlePrevious();
+        } else {
+          // Tap on right 65% = next (generous zone for easy progression)
+          handleNext();
+        }
+      },
+    })
+  ).current;
 
   if (!visible || stories.length === 0 || !currentStory) {
     return null;
@@ -188,12 +179,7 @@ export const StoryViewer = ({
         <View key={index} style={styles.progressSegmentWrapper}>
           {index < currentIndex ? (
             // Completed segment
-            <View
-              style={[
-                styles.progressSegment,
-                { backgroundColor: '#FFFFFF' },
-              ]}
-            />
+            <View style={[styles.progressSegment, { backgroundColor: '#FFFFFF' }]} />
           ) : index === currentIndex ? (
             // Current segment with animation
             <Animated.View
@@ -210,12 +196,7 @@ export const StoryViewer = ({
             />
           ) : (
             // Upcoming segment
-            <View
-              style={[
-                styles.progressSegment,
-                { backgroundColor: 'rgba(255, 255, 255, 0.3)' },
-              ]}
-            />
+            <View style={[styles.progressSegment, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]} />
           )}
         </View>
       ))}
@@ -233,20 +214,14 @@ export const StoryViewer = ({
         {/* Progress bar */}
         <ProgressBar />
 
-        {/* Story image - tap for navigation, swipe for group navigation */}
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handleScreenTap}
-          onPressIn={handleSwipeStart}
-          onPressOut={handleSwipeEnd}
-          style={styles.imageContainer}
-        >
+        {/* Story image + gesture area */}
+        <View style={styles.imageContainer} {...panResponder.panHandlers}>
           <Image
             source={{ uri: currentStory.photo_url }}
             style={styles.storyImage}
             resizeMode="cover"
           />
-        </TouchableOpacity>
+        </View>
 
         {/* Top header: avatar + author + time — tappable for profile */}
         <TouchableOpacity
@@ -256,10 +231,7 @@ export const StoryViewer = ({
           disabled={!authorId}
         >
           {authorAvatar ? (
-            <Image
-              source={{ uri: authorAvatar }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: authorAvatar }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder} />
           )}
@@ -275,16 +247,13 @@ export const StoryViewer = ({
         </TouchableOpacity>
 
         {/* Close button */}
-        <TouchableOpacity
-          onPress={onClose}
-          style={styles.closeButton}
-        >
-          <Text style={styles.closeButtonText}>✕</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={28} color="#fff" />
         </TouchableOpacity>
 
         {/* Bottom caption and location */}
         {(currentStory.caption || currentStory.location_name) && (
-          <View style={styles.captionContainer}>
+          <View style={styles.captionContainer} pointerEvents="none">
             {currentStory.caption && (
               <Text style={styles.caption}>{currentStory.caption}</Text>
             )}
@@ -294,9 +263,19 @@ export const StoryViewer = ({
           </View>
         )}
 
-        {/* Tap zones for debugging/testing (invisible) */}
-        <View style={styles.leftTapZone} />
-        <View style={styles.rightTapZone} />
+        {/* Navigation hint arrows */}
+        <View style={styles.navHints} pointerEvents="none">
+          {(currentIndex > 0 || onPreviousGroup) && (
+            <View style={styles.navHintLeft}>
+              <Ionicons name="chevron-back" size={20} color="rgba(255,255,255,0.3)" />
+            </View>
+          )}
+          {(currentIndex < stories.length - 1 || onNextGroup) && (
+            <View style={styles.navHintRight}>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+            </View>
+          )}
+        </View>
       </SafeAreaViewContext>
     </Modal>
   );
@@ -387,12 +366,6 @@ const styles = {
     alignItems: 'center' as const,
     zIndex: 20,
   },
-  closeButtonText: {
-    color: colors.surface,
-    fontSize: 28,
-    lineHeight: 28,
-    fontWeight: '300' as const,
-  },
   captionContainer: {
     position: 'absolute' as const,
     bottom: 0,
@@ -413,18 +386,23 @@ const styles = {
     fontSize: 14,
     fontWeight: '500' as const,
   },
-  leftTapZone: {
+  navHints: {
     position: 'absolute' as const,
     top: 0,
     left: 0,
-    width: SCREEN_WIDTH * 0.3,
-    height: SCREEN_HEIGHT,
-  },
-  rightTapZone: {
-    position: 'absolute' as const,
-    top: 0,
     right: 0,
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_HEIGHT,
+    bottom: 0,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 4,
+  },
+  navHintLeft: {
+    padding: 8,
+    opacity: 0.5,
+  },
+  navHintRight: {
+    padding: 8,
+    opacity: 0.5,
   },
 };
