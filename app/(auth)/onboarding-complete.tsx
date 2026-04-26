@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Dimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKButton } from '../../src/components/ui/WKButton';
+import { InstallBanner } from '../../src/components/InstallBanner';
 import { colors, typography, spacing } from '../../src/lib/theme';
 import { useAuthStore } from '../../src/stores/auth';
+import { useInstallPrompt } from '../../src/hooks/useInstallPrompt';
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,10 +59,20 @@ const Confetti = ({ delay }: { delay: number }) => {
 export default function OnboardingCompleteScreen() {
   const router = useRouter();
   const { setOnboarded } = useAuthStore();
+  const { canInstall, isInstalled } = useInstallPrompt();
+  const [showInstallScreen, setShowInstallScreen] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // On web, show install screen first if app isn't installed
+    if (Platform.OS === 'web' && canInstall && !isInstalled) {
+      setShowInstallScreen(true);
+    }
+  }, [canInstall, isInstalled]);
+
+  useEffect(() => {
+    if (showInstallScreen) return; // Don't animate celebration while install screen is up
     // Animate logo scale and content fade
     Animated.parallel([
       Animated.spring(scaleAnim, {
@@ -75,7 +87,7 @@ export default function OnboardingCompleteScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [showInstallScreen]);
 
   const handleContinue = () => {
     setOnboarded();
@@ -87,6 +99,25 @@ export default function OnboardingCompleteScreen() {
     <Confetti key={i} delay={i * 50} />
   ));
 
+  // ─── INSTALL SCREEN (shown first on web) ───
+  if (showInstallScreen) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <InstallBanner mode="fullscreen" />
+        <View style={styles.installSkipContainer}>
+          <WKButton
+            title="Continue to App"
+            onPress={() => setShowInstallScreen(false)}
+            variant="outline"
+            size="md"
+            fullWidth
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ─── CELEBRATION SCREEN ───
   return (
     <SafeAreaView style={styles.container}>
       {/* Confetti background */}
@@ -256,5 +287,9 @@ const styles = StyleSheet.create({
     color: colors.ink3,
     textAlign: 'center',
     marginTop: spacing.sm,
+  },
+  installSkipContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
   },
 });

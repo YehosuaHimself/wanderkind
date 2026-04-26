@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Dimensions, AccessibilityInfo } from 'react-nat
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WKButton } from '../../src/components/ui/WKButton';
+import { InstallBanner } from '../../src/components/InstallBanner';
 import { colors, typography, spacing } from '../../src/lib/theme';
 import { supabase } from '../../src/lib/supabase';
 
@@ -82,6 +83,9 @@ export default function WelcomeScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
+        {/* PWA Install Banner — appears above signup buttons */}
+        <InstallBanner mode="banner" />
+
         <WKButton
           title="Begin Your Way"
           onPress={() => router.push('/(auth)/role-select')}
@@ -96,6 +100,9 @@ export default function WelcomeScreen() {
           size="md"
           fullWidth
         />
+
+        {/* Persistent footer install link (shows after banner dismissed 3×) */}
+        <InstallBanner mode="footer" />
 
         <View style={styles.hostBanner}>
           <View style={styles.hostBannerLine} />
