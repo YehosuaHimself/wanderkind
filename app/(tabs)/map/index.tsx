@@ -496,7 +496,10 @@ function WebMapComponent({
       if (!event.data || !event.data.type) return;
       switch (event.data.type) {
         case 'center-on-location':
-          map.setView([event.data.lat, event.data.lng], 10, { animate: true, duration: 1 });
+          map.flyTo([event.data.lat, event.data.lng], event.data.zoom || 13, { animate: true, duration: 1.2 });
+          break;
+        case 'flyTo':
+          map.flyTo([event.data.lat, event.data.lng], event.data.zoom || 14, { animate: true, duration: 1.2 });
           break;
         case 'update-layers':
           applyLayers(event.data.layers);
@@ -627,6 +630,7 @@ export default function MapHome() {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showPastStays, setShowPastStays] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [liveWalkers, setLiveWalkers] = useState<typeof walkingSeedProfiles>([]);
@@ -778,13 +782,14 @@ export default function MapHome() {
       setActiveHostIndex(idx);
       const host = viewableItems[0].item as Host;
       if (host) {
-        // Center map
+        // Fly map to this host's location
         if (Platform.OS === 'web') {
           const iframe = document.querySelector('iframe');
           iframe?.contentWindow?.postMessage({
-            type: 'center-on-location',
+            type: 'flyTo',
             lat: host.lat,
             lng: host.lng,
+            zoom: 14,
           }, '*');
         }
       }
@@ -1115,25 +1120,35 @@ export default function MapHome() {
         />
       )}
 
-      {/* Favorites button */}
-      <TouchableOpacity
-        style={styles.favoritesButton}
-        onPress={() => setShowFavorites(!showFavorites)}
-      >
-        <Ionicons
-          name={showFavorites ? 'heart' : 'heart-outline'}
-          size={20}
-          color={showFavorites ? '#E25555' : colors.amber}
-        />
-      </TouchableOpacity>
-
-      {/* My location button */}
-      <TouchableOpacity
-        style={styles.locationButton}
-        onPress={handleLocationPress}
-      >
-        <Ionicons name="locate" size={20} color={colors.amber} />
-      </TouchableOpacity>
+      {/* Left side action strip — heart (favorites), past stays, locate */}
+      <View style={styles.leftActionStrip}>
+        <TouchableOpacity
+          style={[styles.leftActionBtn, showFavorites && styles.leftActionBtnActive]}
+          onPress={() => { setShowFavorites(!showFavorites); setShowPastStays(false); }}
+        >
+          <Ionicons
+            name={showFavorites ? 'heart' : 'heart-outline'}
+            size={20}
+            color={showFavorites ? '#E25555' : colors.amber}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.leftActionBtn, showPastStays && styles.leftActionBtnActive]}
+          onPress={() => { setShowPastStays(!showPastStays); setShowFavorites(false); }}
+        >
+          <Ionicons
+            name={showPastStays ? 'home' : 'home-outline'}
+            size={20}
+            color={showPastStays ? colors.amber : colors.ink2}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.leftActionBtn}
+          onPress={handleLocationPress}
+        >
+          <Ionicons name="locate" size={20} color={colors.amber} />
+        </TouchableOpacity>
+      </View>
 
       {/* Favorites panel */}
       {showFavorites && (
@@ -1188,6 +1203,24 @@ export default function MapHome() {
               ))
             )}
           </ScrollView>
+        </View>
+      )}
+
+      {/* Past Stays panel */}
+      {showPastStays && (
+        <View style={styles.favoritesPanel}>
+          <View style={styles.favoritesPanelHeader}>
+            <Ionicons name="home" size={16} color={colors.amber} />
+            <Text style={styles.favoritesPanelTitle}>Past Stays</Text>
+            <TouchableOpacity onPress={() => setShowPastStays(false)}>
+              <Ionicons name="close" size={18} color={colors.ink3} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.favoritesEmpty}>
+            <Ionicons name="bed-outline" size={28} color={colors.ink3} />
+            <Text style={styles.favoritesEmptyText}>No past stays yet</Text>
+            <Text style={styles.favoritesEmptyHint}>Places you have stayed at will appear here for quick access</Text>
+          </View>
         </View>
       )}
 
@@ -1376,25 +1409,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.ink3,
   },
-  favoritesButton: {
+  leftActionStrip: {
     position: 'absolute',
-    right: spacing.lg,
-    bottom: 272,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.lg,
+    left: 12,
+    top: '42%',
+    gap: 8,
     zIndex: 20,
   },
-  locationButton: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: 220,
+  leftActionBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1404,12 +1426,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
-    zIndex: 20,
+  },
+  leftActionBtnActive: {
+    borderColor: colors.amber,
+    backgroundColor: colors.amberBg,
   },
   favoritesPanel: {
     position: 'absolute',
-    right: spacing.md,
-    bottom: 220,
+    left: 64,
+    top: '30%',
     width: 280,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,

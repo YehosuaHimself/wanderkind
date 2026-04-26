@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
-  RefreshControl, Switch, FlatList, Dimensions, Platform, ActivityIndicator, Modal, Share,
+  RefreshControl, Switch, Dimensions, Platform, ActivityIndicator, Modal, Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,9 +17,8 @@ import { SEED_MOMENTS } from '../../../src/data/seed-moments';
 import { QRCode } from '../../../src/components/ui/QRCode';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GALLERY_SIZE = (SCREEN_WIDTH - 48 - 36) / 7; // 7 items with 6 gaps of 6px
 
-type ContentTab = 'posts';
+type ContentTab = 'posts' | 'stamps';
 
 export default function MeScreen() {
   useAuthGuard();
@@ -32,8 +31,8 @@ export default function MeScreen() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [moments, setMoments] = useState<any[]>([]);
   const [stamps, setStamps] = useState<any[]>([]);
-  const [stampsExpanded, setStampsExpanded] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<ContentTab>('posts');
 
   useEffect(() => {
     if (profile) {
@@ -356,166 +355,148 @@ export default function MeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ===== GALLERY ===== */}
+        {/* ===== PROFILE IMAGES ===== */}
         <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>GALLERY</Text>
+          <Text style={styles.sectionTitle}>PROFILE IMAGES</Text>
         </View>
-        {(galleryPhotos.length > 0) ? (
-          <View style={styles.carouselSection}>
-            <FlatList
-              data={galleryPhotos}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(_, i) => `gallery-${i}`}
-              renderItem={({ item }) => (
-                <View style={styles.carouselSlide}>
-                  <Image source={{ uri: item }} style={styles.carouselImage} resizeMode="cover" />
-                </View>
-              )}
-            />
-            <View style={styles.carouselDots}>
-              {galleryPhotos.map((_, i) => (
-                <View key={i} style={styles.carouselDot} />
-              ))}
-            </View>
-            {galleryPhotos.length < 7 && (
-              <TouchableOpacity
-                style={styles.addPhotoOverlay}
-                onPress={() => router.push('/(tabs)/me/gallery' as any)}
-              >
-                <Ionicons name="add-circle" size={20} color="#fff" />
-                <Text style={styles.addPhotoText}>{galleryPhotos.length}/7</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.carouselEmpty}
-            onPress={() => router.push('/(tabs)/me/gallery' as any)}
-          >
-            <Ionicons name="images-outline" size={28} color={colors.ink3} />
-            <Text style={styles.carouselEmptyText}>Add up to 7 journey photos</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* ===== STAMPS (Unfoldable) ===== */}
-        {stamps.length > 0 && (
-          <>
-            <TouchableOpacity
-              style={styles.sectionBlockRow}
-              onPress={() => setStampsExpanded(!stampsExpanded)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sectionTitle}>STAMPS</Text>
-              <View style={styles.stampsBadge}>
-                <Text style={styles.stampsBadgeText}>{stamps.length}</Text>
-              </View>
-              <View style={{ flex: 1 }} />
-              <Ionicons
-                name={stampsExpanded ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={colors.ink3}
-              />
-            </TouchableOpacity>
-
-            {/* Primary stamps stack (always visible — first 4) */}
-            <View style={styles.stampsStack}>
-              {stamps.slice(0, stampsExpanded ? stamps.length : 4).map((stamp: any, idx: number) => (
-                <TouchableOpacity
-                  key={stamp.id || idx}
-                  style={styles.stampItem}
-                  onPress={() => router.push(`/(tabs)/more/stamps/${stamp.id}` as any)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.stampCircle, { backgroundColor: `${colors.amber}15` }]}>
-                    {stamp.photo_url ? (
-                      <Image source={{ uri: stamp.photo_url }} style={styles.stampCircleImg} />
-                    ) : (
-                      <Ionicons name="ribbon" size={16} color={colors.amber} />
-                    )}
-                  </View>
-                  <View style={styles.stampItemInfo}>
-                    <Text style={styles.stampItemName} numberOfLines={1}>{stamp.place_name || stamp.category || 'Stamp'}</Text>
-                    <Text style={styles.stampItemDate}>{new Date(stamp.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {!stampsExpanded && stamps.length > 4 && (
-              <TouchableOpacity
-                style={styles.stampsShowMore}
-                onPress={() => setStampsExpanded(true)}
-              >
-                <Text style={styles.stampsShowMoreText}>Show {stamps.length - 4} more</Text>
-              </TouchableOpacity>
-            )}
-
-            {stampsExpanded && (
-              <TouchableOpacity
-                style={styles.stampsShowMore}
-                onPress={() => router.push('/(tabs)/more/stamps' as any)}
-              >
-                <Text style={[styles.stampsShowMoreText, { color: colors.amber }]}>View Full Collection</Text>
-              </TouchableOpacity>
-            )}
-          </>
-        )}
-
-        {/* ===== MY POSTS ===== */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>MY POSTS</Text>
-        </View>
-        <View style={styles.contentGrid}>
-          {moments.length > 0 ? (
-            <View style={styles.photoGrid}>
-              {moments.map((m, idx) => (
-                <TouchableOpacity
-                  key={m.id || idx}
-                  style={styles.gridItem}
-                  onPress={() => router.push(`/(tabs)/moments` as any)}
-                >
-                  {m.photo_url ? (
-                    <Image source={{ uri: m.photo_url }} style={styles.gridImage} />
-                  ) : (
-                    <View style={styles.gridTextItem}>
-                      <Text style={styles.gridText} numberOfLines={4}>{m.content}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyTab}>
-              <Ionicons name="camera-outline" size={36} color={colors.ink3} />
-              <Text style={styles.emptyTabTitle}>No posts yet</Text>
-              <Text style={styles.emptyTabText}>Share your first moment from the road.</Text>
-              <TouchableOpacity
-                style={styles.emptyTabAction}
-                onPress={() => router.push('/(tabs)/moments/create' as any)}
-              >
-                <Text style={styles.emptyTabActionText}>Create Post</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* ===== PASSES ===== */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>PASSES</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.passesRow}
-          onPress={() => router.push('/(tabs)/me/passes' as any)}
-          activeOpacity={0.7}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.profileImagesRow}
+          style={styles.profileImagesScroll}
         >
-          <View style={styles.passesIcon}>
-            <Ionicons name="document-text" size={16} color={colors.amber} />
+          {Array.from({ length: 7 }).map((_, i) => {
+            const photo = galleryPhotos[i];
+            if (photo) {
+              return (
+                <TouchableOpacity
+                  key={`pi-${i}`}
+                  style={styles.profileImageSlot}
+                  onPress={() => router.push('/(tabs)/me/gallery' as any)}
+                  activeOpacity={0.8}
+                >
+                  <Image source={{ uri: photo }} style={styles.profileImageThumb} />
+                </TouchableOpacity>
+              );
+            }
+            return (
+              <TouchableOpacity
+                key={`pi-${i}`}
+                style={styles.profileImageEmpty}
+                onPress={() => router.push('/(tabs)/me/gallery' as any)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={22} color={colors.ink3} />
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* ===== POSTS | STAMPS — two-fold activity section ===== */}
+        <View style={styles.activityTabBar}>
+          <TouchableOpacity
+            style={[styles.activityTab, activeTab === 'posts' && styles.activityTabActive]}
+            onPress={() => setActiveTab('posts')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="grid-outline" size={16} color={activeTab === 'posts' ? colors.amber : colors.ink3} />
+            <Text style={[styles.activityTabText, activeTab === 'posts' && styles.activityTabTextActive]}>Posts</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.activityTab, activeTab === 'stamps' && styles.activityTabActive]}
+            onPress={() => setActiveTab('stamps')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="ribbon-outline" size={16} color={activeTab === 'stamps' ? colors.amber : colors.ink3} />
+            <Text style={[styles.activityTabText, activeTab === 'stamps' && styles.activityTabTextActive]}>Stamps</Text>
+            {stamps.length > 0 && (
+              <View style={styles.activityTabBadge}>
+                <Text style={styles.activityTabBadgeText}>{stamps.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Posts tab content */}
+        {activeTab === 'posts' && (
+          <View style={styles.contentGrid}>
+            {moments.length > 0 ? (
+              <View style={styles.photoGrid}>
+                {moments.map((m, idx) => (
+                  <TouchableOpacity
+                    key={m.id || idx}
+                    style={styles.gridItem}
+                    onPress={() => router.push(`/(tabs)/moments` as any)}
+                  >
+                    {m.photo_url ? (
+                      <Image source={{ uri: m.photo_url }} style={styles.gridImage} />
+                    ) : (
+                      <View style={styles.gridTextItem}>
+                        <Text style={styles.gridText} numberOfLines={4}>{m.content}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyTab}>
+                <Ionicons name="camera-outline" size={36} color={colors.ink3} />
+                <Text style={styles.emptyTabTitle}>No posts yet</Text>
+                <Text style={styles.emptyTabText}>Share your first moment from the road.</Text>
+                <TouchableOpacity
+                  style={styles.emptyTabAction}
+                  onPress={() => router.push('/(tabs)/moments/create' as any)}
+                >
+                  <Text style={styles.emptyTabActionText}>Create Post</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-          <Text style={styles.passesText}>Your Passes</Text>
-          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-        </TouchableOpacity>
+        )}
+
+        {/* Stamps tab content */}
+        {activeTab === 'stamps' && (
+          <View style={styles.contentGrid}>
+            {stamps.length > 0 ? (
+              <View style={styles.stampsStack}>
+                {stamps.map((stamp: any, idx: number) => (
+                  <TouchableOpacity
+                    key={stamp.id || idx}
+                    style={styles.stampItem}
+                    onPress={() => router.push(`/(tabs)/more/stamps/${stamp.id}` as any)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.stampCircle, { backgroundColor: `${colors.amber}15` }]}>
+                      {stamp.photo_url ? (
+                        <Image source={{ uri: stamp.photo_url }} style={styles.stampCircleImg} />
+                      ) : (
+                        <Ionicons name="ribbon" size={16} color={colors.amber} />
+                      )}
+                    </View>
+                    <View style={styles.stampItemInfo}>
+                      <Text style={styles.stampItemName} numberOfLines={1}>{stamp.place_name || stamp.category || 'Stamp'}</Text>
+                      <Text style={styles.stampItemDate}>{new Date(stamp.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.viewAllStamps}
+                  onPress={() => router.push('/(tabs)/more/stamps' as any)}
+                >
+                  <Text style={styles.viewAllStampsText}>View Full Collection</Text>
+                  <Ionicons name="arrow-forward" size={14} color={colors.amber} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.emptyTab}>
+                <Ionicons name="ribbon-outline" size={36} color={colors.ink3} />
+                <Text style={styles.emptyTabTitle}>No stamps yet</Text>
+                <Text style={styles.emptyTabText}>Collect stamps at hosts and landmarks along your way.</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -918,114 +899,89 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  // === IMAGE CAROUSEL ===
-  carouselSection: {
-    height: 260,
-    position: 'relative',
+  // === PROFILE IMAGES (horizontal scroll) ===
+  profileImagesScroll: {
     marginBottom: 4,
   },
-  carouselSlide: {
-    width: SCREEN_WIDTH,
-    height: 260,
+  profileImagesRow: {
+    paddingHorizontal: 20,
+    gap: 8,
+    paddingVertical: 4,
   },
-  carouselImage: {
+  profileImageSlot: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceAlt,
+  },
+  profileImageThumb: {
     width: '100%',
     height: '100%',
   },
-  carouselDots: {
-    position: 'absolute',
-    bottom: 10,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  carouselDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-  addPhotoOverlay: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  profileImageEmpty: {
+    width: 72,
+    height: 72,
     borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  addPhotoText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  carouselEmpty: {
-    height: 120,
-    marginHorizontal: 20,
-    marginBottom: 8,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: colors.border,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
     backgroundColor: colors.surfaceAlt,
-  },
-  carouselEmptyText: {
-    fontSize: 13,
-    color: colors.ink3,
-  },
-
-  // === PASSES ROW ===
-  passesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 20,
-    marginVertical: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: colors.amberBg,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.amberLine,
-  },
-  passesIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  passesText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.amber,
-  },
 
-  // === TAB BAR ===
-  tabBar: {
+  // === ACTIVITY TABS (Posts | Stamps) ===
+  activityTabBar: {
     flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLt,
   },
-  tab: {
+  activityTab: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabActive: {
+  activityTabActive: {
     borderBottomColor: colors.amber,
+  },
+  activityTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink3,
+  },
+  activityTabTextActive: {
+    color: colors.amber,
+  },
+  activityTabBadge: {
+    backgroundColor: colors.amberBg,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  activityTabBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.amber,
+  },
+  viewAllStamps: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+  },
+  viewAllStampsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.amber,
   },
 
   // === CONTENT GRID ===
@@ -1093,26 +1049,7 @@ const styles = StyleSheet.create({
   },
 
   // === STAMPS LIST ===
-  sectionBlockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  stampsBadge: {
-    backgroundColor: colors.amberBg,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  stampsBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.amber,
-  },
   stampsStack: {
-    paddingHorizontal: 20,
     gap: 4,
   },
   stampItem: {
@@ -1142,16 +1079,5 @@ const styles = StyleSheet.create({
   stampItemInfo: { flex: 1 },
   stampItemName: { fontSize: 13, fontWeight: '600', color: colors.ink },
   stampItemDate: { fontSize: 10, color: colors.ink3, marginTop: 1 },
-  stampsShowMore: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  stampsShowMoreText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.ink3,
-  },
-  // (old stamp styles removed — replaced by stampsStack/stampItem above)
 
 });

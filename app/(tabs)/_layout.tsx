@@ -1,33 +1,67 @@
 import { Tabs } from 'expo-router';
-import { View, Platform, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRef, useCallback } from 'react';
+import { View, Platform, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../src/lib/theme';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
 
-/** Floating MORE button — appears in upper-right on all tab screens */
+const { width: WINDOW_W, height: WINDOW_H } = Dimensions.get('window');
+const MORE_SIZE = 48;
+const DEFAULT_TOP = Platform.OS === 'ios' ? 56 : Platform.OS === 'web' ? 14 : 14;
+const DEFAULT_RIGHT = 16;
+
+/** Floating draggable MORE button — appears on all tab screens */
 function MoreMenuButton() {
   const router = useRouter();
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const isDragging = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5,
+      onPanResponderGrant: () => {
+        isDragging.current = false;
+        pan.setOffset({ x: (pan.x as any)._value || 0, y: (pan.y as any)._value || 0 });
+        pan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: (_, g) => {
+        if (Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5) isDragging.current = true;
+        Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false })(_, g);
+      },
+      onPanResponderRelease: () => {
+        pan.flattenOffset();
+        if (!isDragging.current) {
+          router.push('/(tabs)/more' as any);
+        }
+      },
+    })
+  ).current;
+
   return (
-    <TouchableOpacity
-      style={moreBtn.button}
-      onPress={() => router.push('/(tabs)/more' as any)}
-      activeOpacity={0.7}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    <Animated.View
+      style={[
+        moreBtn.button,
+        {
+          transform: pan.getTranslateTransform(),
+        },
+      ]}
+      {...panResponder.panHandlers}
     >
-      <Ionicons name="grid-outline" size={18} color={colors.ink2} />
-    </TouchableOpacity>
+      <Ionicons name="grid-outline" size={22} color={colors.ink2} />
+    </Animated.View>
   );
 }
 
 const moreBtn = StyleSheet.create({
   button: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 56 : Platform.OS === 'web' ? 14 : 14,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: DEFAULT_TOP,
+    right: DEFAULT_RIGHT,
+    width: MORE_SIZE,
+    height: MORE_SIZE,
+    borderRadius: MORE_SIZE / 2,
     backgroundColor: 'rgba(250,246,239,0.92)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -35,10 +69,10 @@ const moreBtn = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(200,118,42,0.15)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 
