@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
+  Share,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,6 +54,72 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
       toast.error('Could not load your stamps. Pull down to retry.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportCollection = async () => {
+    if (stamps.length === 0) {
+      toast.error('No stamps to export yet.');
+      return;
+    }
+
+    const stampRows = stamps.map((s, i) => {
+      const date = new Date(s.created_at).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      });
+      const reflection = (s as any).reflection ? `<p style="color:#6B5A3E;font-style:italic;margin:4px 0 0">"${(s as any).reflection}"</p>` : '';
+      const verified = (s as any).host_verified
+        ? '<span style="color:#27864A;font-size:10px;font-weight:700;letter-spacing:1px">HOST VERIFIED</span>'
+        : '';
+      const photo = s.photo_url
+        ? `<img src="${s.photo_url}" style="width:80px;height:80px;border-radius:8px;object-fit:cover;border:1px solid #E8DFD0" />`
+        : `<div style="width:80px;height:80px;border-radius:8px;background:#F5F0E8;display:flex;align-items:center;justify-content:center;border:1px solid #E8DFD0"><span style="font-size:28px;color:#9B8E7E">&#9733;</span></div>`;
+      return `<tr style="border-bottom:1px solid #F0EBE2">
+        <td style="padding:12px;text-align:center;color:#9B8E7E;font-size:12px">${i + 1}</td>
+        <td style="padding:12px">${photo}</td>
+        <td style="padding:12px"><strong style="font-size:14px">${s.host_name || 'Unknown'}</strong><br/><span style="color:#9B8E7E;font-size:11px">${date}</span>${reflection}${verified ? '<br/>' + verified : ''}</td>
+      </tr>`;
+    }).join('');
+
+    const userName = user?.user_metadata?.trail_name || user?.email || 'Wanderkind';
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${userName} — Stamp Collection</title>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body{font-family:'Inter',sans-serif;background:#FAFAF5;color:#1A120A;max-width:700px;margin:0 auto;padding:24px}
+    .hero{text-align:center;padding:32px 0;border-bottom:2px solid #C8762A}
+    .hero h1{font-size:28px;font-weight:700;margin:0}
+    .hero .sub{color:#6B5A3E;font-size:13px;margin-top:4px}
+    .hero .count{font-size:48px;font-weight:800;color:#C8762A;margin-top:16px}
+    .hero .count-label{font-size:10px;letter-spacing:3px;color:#9B8E7E;text-transform:uppercase}
+    table{width:100%;border-collapse:collapse;margin-top:24px}
+    .footer{text-align:center;padding:24px 0;margin-top:32px;border-top:1px solid #E8DFD0;color:#9B8E7E;font-size:10px;letter-spacing:2px}
+    @media print{body{padding:12px}}</style></head>
+    <body>
+    <div class="hero">
+      <h1>${userName}</h1>
+      <div class="sub">WANDERKIND STAMP COLLECTION</div>
+      <div class="count">${stamps.length}</div>
+      <div class="count-label">stamps collected</div>
+    </div>
+    <table>${stampRows}</table>
+    <div class="footer">WANDERKIND EMBASSY &middot; ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+    </body></html>`;
+
+    if (Platform.OS === 'web') {
+      // Open in new tab — user can Ctrl+P / Print to PDF
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      toast.success('Your collection opened — use Print to save as PDF');
+    } else {
+      // On native, share as text
+      try {
+        await Share.share({
+          message: `My Wanderkind Stamp Collection: ${stamps.length} stamps\n\n${stamps.map((s, i) => `${i + 1}. ${s.host_name} — ${new Date(s.created_at).toLocaleDateString()}`).join('\n')}`,
+          title: 'My Stamp Collection',
+        });
+      } catch {
+        toast.error('Could not share collection');
+      }
     }
   };
 
@@ -197,6 +265,23 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
                 <Text style={styles.fabMenuSub}>Scan a QR code from a host</Text>
               </View>
             </TouchableOpacity>
+            {stamps.length > 0 && (
+              <TouchableOpacity
+                style={styles.fabMenuItem}
+                onPress={() => {
+                  setShowFabMenu(false);
+                  exportCollection();
+                }}
+              >
+                <View style={[styles.fabMenuIcon, { backgroundColor: 'rgba(39,134,74,0.08)' }]}>
+                  <Ionicons name="download-outline" size={20} color={colors.green} />
+                </View>
+                <View style={styles.fabMenuInfo}>
+                  <Text style={styles.fabMenuTitle}>Export Collection</Text>
+                  <Text style={styles.fabMenuSub}>Save as printable PDF</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
