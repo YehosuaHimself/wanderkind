@@ -122,6 +122,8 @@ export interface ProfileRow {
   current_way: string | null;
   // Mobility
   mobility_type: 'walk' | 'cycle' | 'run' | null;
+  // Identity
+  wanderkind_id: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;

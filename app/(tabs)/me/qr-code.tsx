@@ -52,6 +52,9 @@ export default function QRCodeScreen() {
 
         <View style={styles.infoSection}>
           <Text style={styles.trailName}>{trailName}</Text>
+          <Text style={[styles.badge, { marginBottom: 4 }]}>
+            {profile?.wanderkind_id || 'WK-0000'}
+          </Text>
           <Text style={styles.badge}>
             {(profile?.tier || 'wanderkind').toUpperCase()}
           </Text>

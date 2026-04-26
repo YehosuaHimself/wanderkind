@@ -14,6 +14,7 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 interface PublicProfile {
   id: string;
   trail_name: string;
+  wanderkind_id?: string;
   bio?: string;
   avatar_url?: string;
   tier: string;
@@ -50,6 +51,7 @@ export default function PublicProfileScreen() {
           setProfile({
             id: seedProfile.id,
             trail_name: seedProfile.trail_name,
+            wanderkind_id: (seedProfile as any).wanderkind_id,
             bio: seedProfile.bio,
             avatar_url: seedProfile.avatar_url,
             tier: seedProfile.tier,
@@ -85,6 +87,7 @@ export default function PublicProfileScreen() {
       setProfile({
         id: seedProfile.id,
         trail_name: seedProfile.trail_name,
+        wanderkind_id: (seedProfile as any).wanderkind_id,
         bio: seedProfile.bio,
         avatar_url: seedProfile.avatar_url,
         tier: seedProfile.tier,
@@ -151,7 +154,7 @@ export default function PublicProfileScreen() {
         {/* Name, Handle, and Tier */}
         <View style={styles.headerSection}>
           <Text style={styles.name}>{profile.trail_name}</Text>
-          <Text style={styles.handle}>@{(profile.trail_name || '').toLowerCase().replace(/\s+/g, '.')}</Text>
+          <Text style={styles.handle}>@{(profile.trail_name || '').toLowerCase().replace(/\s+/g, '.')} · {profile.wanderkind_id ?? 'WK-0000'}</Text>
           <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
             <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
             <Text style={[styles.tierText, { color: tierColor }]}>

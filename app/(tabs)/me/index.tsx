@@ -253,7 +253,7 @@ export default function MeScreen() {
           {/* Name + Handle + WK-ID */}
           <View style={styles.nameSection}>
             <Text style={styles.trailName}>{profile?.trail_name ?? 'Wanderkind'}</Text>
-            <Text style={styles.handle}>@{(profile?.trail_name ?? 'wanderkind').toLowerCase().replace(/\s+/g, '.')} · {(profile as any)?.wanderkind_id ?? 'WK-0000'}</Text>
+            <Text style={styles.handle}>@{(profile?.trail_name ?? 'wanderkind').toLowerCase().replace(/\s+/g, '.')} · {profile?.wanderkind_id ?? 'WK-0000'}</Text>
 
             {!isQuietMode && (
               <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>

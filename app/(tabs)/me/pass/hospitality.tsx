@@ -171,6 +171,10 @@ export default function HospitalityPassScreen() {
               <Text style={styles.bioValue}>{profile?.trail_name || 'Wanderer'}</Text>
             </View>
             <View style={styles.bioField}>
+              <Text style={styles.bioLabel}>WK-ID</Text>
+              <Text style={styles.bioValue}>{profile?.wanderkind_id || 'WK-0000'}</Text>
+            </View>
+            <View style={styles.bioField}>
               <Text style={styles.bioLabel}>CLASS</Text>
               <Text style={styles.bioValue}>SHELTER</Text>
             </View>

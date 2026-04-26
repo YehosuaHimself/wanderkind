@@ -86,15 +86,37 @@ export default function NewMessage() {
       setSearching(true);
       try {
         const escapedQuery = escapeIlike(query);
+        const isWkSearch = query.toUpperCase().startsWith('WK-');
+        let results: Profile[] = [];
+
+        // Search Supabase profiles by name or WK-ID
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .ilike('trail_name', `%${escapedQuery}%`)
+          .or(`trail_name.ilike.%${escapedQuery}%,wanderkind_id.ilike.%${escapedQuery}%`)
           .neq('id', user?.id || '')
           .limit(10);
 
-        if (error) throw error;
-        setSearchResults((data || []) as Profile[]);
+        if (!error && data) {
+          results = data as Profile[];
+        }
+
+        // Also search seed profiles
+        const lowerQuery = query.toLowerCase();
+        const seedMatches = SEED_PROFILES.filter(p =>
+          p.trail_name.toLowerCase().includes(lowerQuery) ||
+          (isWkSearch && (p as any).wanderkind_id?.toUpperCase().includes(query.toUpperCase()))
+        ).slice(0, 10 - results.length);
+
+        // Merge, avoiding duplicates
+        const existingIds = new Set(results.map(r => r.id));
+        for (const sp of seedMatches) {
+          if (!existingIds.has(sp.id)) {
+            results.push(sp as unknown as Profile);
+          }
+        }
+
+        setSearchResults(results);
       } catch (err) {
         console.error('Search failed:', err);
       } finally {

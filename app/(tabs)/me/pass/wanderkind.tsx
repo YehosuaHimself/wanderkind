@@ -251,6 +251,7 @@ export default function WanderkindPassScreen() {
           <View style={styles.signatureSection}>
             <Text style={styles.signatureLabel}>Signature</Text>
             <Text style={styles.signatureValue}>{profile?.trail_name || 'Wanderer'}</Text>
+            <Text style={[styles.signatureLabel, { marginTop: 4 }]}>{profile?.wanderkind_id || 'WK-0000'}</Text>
           </View>
 
           {/* Verified Badge */}
