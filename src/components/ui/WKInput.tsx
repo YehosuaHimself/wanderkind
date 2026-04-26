@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { colors, typography, spacing, radii } from '../../lib/theme';
 
@@ -8,39 +8,35 @@ type Props = TextInputProps & {
   helper?: string;
 };
 
+/**
+ * WKInput — Cross-platform text input
+ *
+ * On web: renders a native HTML <input> to bypass React Native Web's
+ * user-select: none bug that blocks text input on iOS Safari.
+ *
+ * On native: uses standard RNW TextInput.
+ */
 export function WKInput({ label, error, helper, style, ...rest }: Props) {
   const [focused, setFocused] = useState(false);
-  const inputRef = useRef<TextInput>(null);
 
-  // Web fix: ensure the underlying <input> element has correct styles
-  // RNW applies user-select: none as inline styles which blocks focus on iOS Safari
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !inputRef.current) return;
-    const node = inputRef.current as any;
-    // RNW exposes the DOM node via _node or through findDOMNode pattern
-    const el = node._node || node;
-    if (el && el.style) {
-      el.style.userSelect = 'text';
-      el.style.webkitUserSelect = 'text';
-      el.style.pointerEvents = 'auto';
-    }
-    // Also try to find the actual <input> inside
-    if (el && el.querySelector) {
-      const input = el.querySelector('input, textarea');
-      if (input) {
-        input.style.userSelect = 'text';
-        input.style.webkitUserSelect = 'text';
-        input.style.pointerEvents = 'auto';
-        input.style.fontSize = '16px'; // prevent iOS zoom
-      }
-    }
-  }, []);
+  if (Platform.OS === 'web') {
+    return (
+      <WebInput
+        label={label}
+        error={error}
+        helper={helper}
+        focused={focused}
+        setFocused={setFocused}
+        style={style}
+        {...rest}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
-        ref={inputRef}
         style={[
           styles.input,
           focused && styles.inputFocused,
@@ -60,6 +56,156 @@ export function WKInput({ label, error, helper, style, ...rest }: Props) {
   );
 }
 
+/**
+ * WebInput — native HTML input for web platform
+ * Completely bypasses RNW's TextInput and its user-select: none issue
+ */
+function WebInput({
+  label,
+  error,
+  helper,
+  focused,
+  setFocused,
+  style,
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
+  maxLength,
+  editable,
+  multiline,
+  numberOfLines,
+  ...rest
+}: Props & { focused: boolean; setFocused: (f: boolean) => void }) {
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      onChangeText?.(e.target.value);
+    },
+    [onChangeText],
+  );
+
+  // Map RNW keyboardType to HTML input type
+  let inputType = 'text';
+  if (secureTextEntry) inputType = 'password';
+  else if (keyboardType === 'email-address') inputType = 'email';
+  else if (keyboardType === 'number-pad' || keyboardType === 'numeric') inputType = 'text';
+  else if (keyboardType === 'phone-pad') inputType = 'tel';
+  else if (keyboardType === 'url') inputType = 'url';
+
+  // Map autoCapitalize
+  let autoCapitalizeAttr: string | undefined;
+  if (autoCapitalize === 'none') autoCapitalizeAttr = 'off';
+  else if (autoCapitalize === 'characters') autoCapitalizeAttr = 'characters';
+  else if (autoCapitalize === 'words') autoCapitalizeAttr = 'words';
+
+  const borderColor = error
+    ? colors.red
+    : focused
+    ? colors.amber
+    : colors.border;
+
+  const inputStyle: React.CSSProperties = {
+    backgroundColor: colors.surface,
+    border: `1px solid ${borderColor}`,
+    borderRadius: radii.md,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontSize: 16,
+    color: colors.ink,
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    outline: 'none',
+    fontFamily: 'inherit',
+    WebkitAppearance: 'none' as any,
+    appearance: 'none' as any,
+    // Explicitly enable text interaction — the whole point of this component
+    WebkitUserSelect: 'text',
+    userSelect: 'text',
+    touchAction: 'manipulation',
+    pointerEvents: 'auto' as const,
+  };
+
+  const containerStyle: React.CSSProperties = {
+    marginBottom: 16,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: colors.ink2,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+    display: 'block',
+  };
+
+  const errorStyle: React.CSSProperties = {
+    fontSize: 11,
+    color: colors.red,
+    marginTop: 4,
+  };
+
+  const helperStyle: React.CSSProperties = {
+    fontSize: 11,
+    color: colors.ink3,
+    marginTop: 4,
+  };
+
+  const sharedProps = {
+    ref: inputRef as any,
+    value: value ?? '',
+    onChange: handleChange,
+    placeholder,
+    maxLength,
+    disabled: editable === false,
+    autoCapitalize: autoCapitalizeAttr as any,
+    style: inputStyle,
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
+    'aria-label': label,
+    'aria-describedby': helper ? `${label}-helper` : undefined,
+    // Prevent iOS zoom
+    'data-testid': `wk-input-${label}`,
+  };
+
+  return (
+    <div style={containerStyle}>
+      {label && <label style={labelStyle}>{label}</label>}
+      {multiline ? (
+        <textarea
+          {...sharedProps}
+          rows={numberOfLines || 3}
+        />
+      ) : (
+        <input
+          {...sharedProps}
+          type={inputType}
+          inputMode={
+            keyboardType === 'number-pad' || keyboardType === 'numeric'
+              ? 'numeric'
+              : keyboardType === 'email-address'
+              ? 'email'
+              : keyboardType === 'phone-pad'
+              ? 'tel'
+              : undefined
+          }
+        />
+      )}
+      {error && <div style={errorStyle}>{error}</div>}
+      {helper && !error && (
+        <div style={helperStyle} id={`${label}-helper`}>
+          {helper}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
   label: {
@@ -74,9 +220,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
-    paddingHorizontal: 16,    // 8-point grid
-    paddingVertical: 12,     // acceptable: ensures 44px min-height with fontSize 16
-    fontSize: 16,     // body minimum per guidelines V3 §03
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
     color: colors.ink,
   },
   inputFocused: {
