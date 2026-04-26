@@ -16,12 +16,12 @@ import { getRouteRelativeDistance } from '../../../src/lib/route-distance';
 
 const { width, height } = Dimensions.get('window');
 
-// Default to central Europe
+// Default to wide Europe overview — user zooms in via locate button
 const INITIAL_REGION = {
-  latitude: 47.5,
-  longitude: 7.5,
-  latitudeDelta: 8,
-  longitudeDelta: 8,
+  latitude: 47.0,
+  longitude: 4.0,
+  latitudeDelta: 22,
+  longitudeDelta: 22,
 };
 
 type FilterMode = 'free' | 'donativo' | 'all';
@@ -286,14 +286,18 @@ function WebMapComponent({
     .wk-w { animation: wk-rotate 4s linear infinite; display:inline-block; perspective: 200px; }
     .wk-walking { animation: wk-walk 3s ease-in-out infinite; }
     .poi-icon { display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.2);font-size:12px; }
+    .leaflet-control-attribution { font-size:8px!important; opacity:0.5; background:transparent!important; }
+    .leaflet-control-attribution a { color:#999!important; }
+    .leaflet-bottom.leaflet-right .leaflet-control-attribution { right:auto; left:0; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
-    var map = L.map('map').setView([47.5, 7.5], 6);
+    var map = L.map('map').setView([47.0, 4.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '\\u00a9 OpenStreetMap contributors',
+      attribution: '\\u00a9 OSM',
+      attributionControl: true,
       maxZoom: 19
     }).addTo(map);
 
@@ -810,7 +814,8 @@ export default function MapHome() {
             iframe?.contentWindow?.postMessage({
               type: 'center-on-location',
               lat: latitude,
-              lng: longitude
+              lng: longitude,
+              zoom: 14,
             }, '*');
           }, () => {});
         }
@@ -823,8 +828,8 @@ export default function MapHome() {
         mapRef.current?.animateToRegion({
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
-          latitudeDelta: 0.5,
-          longitudeDelta: 0.5,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
         }, 800);
       }
     } catch {}
@@ -1120,7 +1125,7 @@ export default function MapHome() {
         />
       )}
 
-      {/* Left side action strip — heart (favorites), past stays, locate */}
+      {/* Left side — heart (favorites), past stays */}
       <View style={styles.leftActionStrip}>
         <TouchableOpacity
           style={[styles.leftActionBtn, showFavorites && styles.leftActionBtnActive]}
@@ -1142,13 +1147,15 @@ export default function MapHome() {
             color={showPastStays ? colors.amber : colors.ink2}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.leftActionBtn}
-          onPress={handleLocationPress}
-        >
-          <Ionicons name="locate" size={20} color={colors.amber} />
-        </TouchableOpacity>
       </View>
+
+      {/* Right side — locate/relocate button, above cards */}
+      <TouchableOpacity
+        style={styles.locateBtn}
+        onPress={handleLocationPress}
+      >
+        <Ionicons name="locate" size={20} color={colors.amber} />
+      </TouchableOpacity>
 
       {/* Favorites panel */}
       {showFavorites && (
@@ -1430,6 +1437,21 @@ const styles = StyleSheet.create({
   leftActionBtnActive: {
     borderColor: colors.amber,
     backgroundColor: colors.amberBg,
+  },
+  locateBtn: {
+    position: 'absolute',
+    right: 12,
+    bottom: Platform.OS === 'ios' ? 210 : Platform.OS === 'web' ? 195 : 195,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+    zIndex: 20,
   },
   favoritesPanel: {
     position: 'absolute',

@@ -479,19 +479,35 @@ export default function MeScreen() {
                     <Ionicons name="chevron-forward" size={14} color={colors.ink3} />
                   </TouchableOpacity>
                 ))}
-                <TouchableOpacity
-                  style={styles.viewAllStamps}
-                  onPress={() => router.push('/(tabs)/more/stamps' as any)}
-                >
-                  <Text style={styles.viewAllStampsText}>View Full Collection</Text>
-                  <Ionicons name="arrow-forward" size={14} color={colors.amber} />
-                </TouchableOpacity>
+                <View style={styles.stampActions}>
+                  <TouchableOpacity
+                    style={styles.stampActionBtn}
+                    onPress={() => router.push('/(tabs)/more/stamps/create' as any)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add-circle-outline" size={16} color={colors.amber} />
+                    <Text style={styles.stampActionText}>Create Stamp</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.viewAllStamps}
+                    onPress={() => router.push('/(tabs)/more/stamps' as any)}
+                  >
+                    <Text style={styles.viewAllStampsText}>View Full Collection</Text>
+                    <Ionicons name="arrow-forward" size={14} color={colors.amber} />
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <View style={styles.emptyTab}>
                 <Ionicons name="ribbon-outline" size={36} color={colors.ink3} />
                 <Text style={styles.emptyTabTitle}>No stamps yet</Text>
                 <Text style={styles.emptyTabText}>Collect stamps at hosts and landmarks along your way.</Text>
+                <TouchableOpacity
+                  style={styles.emptyTabAction}
+                  onPress={() => router.push('/(tabs)/more/stamps/create' as any)}
+                >
+                  <Text style={styles.emptyTabActionText}>Create Stamp</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -971,12 +987,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.amber,
   },
+  stampActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+  },
+  stampActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: `${colors.amber}12`,
+    borderRadius: 8,
+  },
+  stampActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.amber,
+  },
   viewAllStamps: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   viewAllStampsText: {
     fontSize: 13,

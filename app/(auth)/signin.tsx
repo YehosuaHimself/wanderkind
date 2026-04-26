@@ -16,7 +16,7 @@ export default function SignInScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const { signIn } = useAuthStore();
+  const { signIn, signInWithGoogle } = useAuthStore();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -102,6 +102,25 @@ export default function SignInScreen() {
           loading={loading}
           disabled={loading}
         />
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.googleBtn}
+          onPress={async () => {
+            const { error } = await signInWithGoogle();
+            if (error) setErrors({ form: error.message });
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="logo-google" size={18} color={colors.ink} />
+          <Text style={styles.googleBtnText}>Continue with Google</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push('/(auth)/signup')}
@@ -163,6 +182,36 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.amber,
     textAlign: 'center',
+    fontWeight: '600',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.borderLt,
+  },
+  dividerText: {
+    ...typography.bodySm,
+    color: colors.ink3,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.borderLt,
+    borderRadius: 12,
+    paddingVertical: 14,
+    backgroundColor: colors.surface,
+  },
+  googleBtnText: {
+    ...typography.body,
+    color: colors.ink,
     fontWeight: '600',
   },
 });

@@ -64,7 +64,7 @@ export default function TabLayout() {
                 centerStyles.raised,
                 focused && centerStyles.raisedActive,
               ]}>
-                <Ionicons name="grid" size={22} color={focused ? '#fff' : colors.amber} />
+                <Ionicons name="apps" size={22} color={focused ? '#fff' : colors.amber} />
               </View>
             ),
             tabBarLabel: () => null,

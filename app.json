@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAFAF5"
+      "backgroundColor": "#C8762A"
     },
     "ios": {
       "supportsTablet": false,
@@ -27,7 +27,7 @@
       "package": "com.wanderkind.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAFAF5"
+        "backgroundColor": "#C8762A"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [

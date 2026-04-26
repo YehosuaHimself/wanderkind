@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useAuth } from '../../../src/stores/auth';
+import { toast } from '../../../src/lib/toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 10;
@@ -98,9 +100,20 @@ const appTiles: AppTile[] = [
 
 export default function MoreScreen() {
   const { user, isLoading } = useAuthGuard();
+  const { signOut } = useAuth();
   if (isLoading) return null;
 
   const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out');
+      router.replace('/(auth)/login' as any);
+    } catch {
+      toast.error('Could not sign out');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -135,6 +148,18 @@ export default function MoreScreen() {
             </Text>
           </TouchableOpacity>
         ))}
+
+        {/* Logout tile — always last */}
+        <TouchableOpacity
+          style={[styles.tile, { backgroundColor: 'rgba(192,57,43,0.06)' }]}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.tileIconCircle, { backgroundColor: 'rgba(192,57,43,0.12)' }]}>
+            <Ionicons name="log-out-outline" size={24} color={colors.red} />
+          </View>
+          <Text style={[styles.tileTitle, { color: colors.red }]}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

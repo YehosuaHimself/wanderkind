@@ -13,6 +13,7 @@ type AuthState = {
   initialize: () => Promise<void>;
   signUp: (email: string, password: string, trailName: string, role: 'walker' | 'host' | 'both', language: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   fetchProfile: () => Promise<void>;
@@ -134,6 +135,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
+  },
+
+  signInWithGoogle: async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: Platform.OS === 'web'
+            ? `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`
+            : 'wanderkind://auth/callback',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      return { error };
+    } catch (err) {
+      return { error: err as Error };
+    }
   },
 
   signOut: async () => {
