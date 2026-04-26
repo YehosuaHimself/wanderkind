@@ -54,8 +54,8 @@ export const StoryViewer = ({
     }
   }, [authorId, onClose, router]);
 
-  // Display @handle format
-  const displayHandle = authorName.startsWith('@') ? authorName : `@${authorName}`;
+  // Display full name (personal, not @handle)
+  const displayName = authorName.replace(/^@/, '');
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [paused, setPaused] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -264,7 +264,7 @@ export const StoryViewer = ({
             <View style={styles.avatarPlaceholder} />
           )}
           <View style={styles.authorInfo}>
-            <Text style={styles.authorName}>{displayHandle}</Text>
+            <Text style={styles.authorName}>{displayName}</Text>
             <Text style={styles.timeAgo}>
               {getTimeAgo(currentStory.created_at)}
             </Text>

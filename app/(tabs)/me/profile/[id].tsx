@@ -148,10 +148,10 @@ export default function PublicProfileScreen() {
           </View>
         </View>
 
-        {/* Name and Tier */}
+        {/* Name, Handle, and Tier */}
         <View style={styles.headerSection}>
           <Text style={styles.name}>{profile.trail_name}</Text>
-          <Text style={styles.handle}>@{profile.trail_name?.replace(/^@/, '')}</Text>
+          <Text style={styles.handle}>@{(profile.trail_name || '').toLowerCase().replace(/\s+/g, '.')}</Text>
           <View style={[styles.tierBadge, { backgroundColor: `${tierColor}15` }]}>
             <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
             <Text style={[styles.tierText, { color: tierColor }]}>

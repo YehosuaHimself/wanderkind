@@ -72,8 +72,8 @@ export const StoryRing: React.FC<StoryRingProps> = ({
     },
   });
 
-  // Show @handle format, truncated to fit
-  const displayName = name === 'Your story' ? name : (name.startsWith('@') ? name : `@${name}`);
+  // Show first name only (personal, not @handle)
+  const displayName = name === 'Your story' ? name : name.split(' ')[0];
   const truncatedName = displayName.length > 10 ? `${displayName.substring(0, 10)}` : displayName;
 
   return (

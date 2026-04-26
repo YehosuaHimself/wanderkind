@@ -6,7 +6,8 @@ export const SEED_PROFILES = [
   // CAMINO FRANCÉS route (14 profiles)
   {
     id: 'p-001',
-    trail_name: '@clara.hofmann',
+    trail_name: 'Clara Hofmann',
+    wanderkind_id: 'WK-4948',
     email: 'clara.hofmann@wanderkind.love',
     bio: 'Clara Hofmann, 21. Taking a gap year between Abitur and med school. Walking because the library can wait but the mountains won\'t.',
     avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -34,7 +35,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-002',
-    trail_name: '@thomas.muller',
+    trail_name: 'Thomas Müller',
+    wanderkind_id: 'WK-5075',
     email: 'thomas.muller@wanderkind.love',
     bio: 'Thomas Müller, 34. Career changer from Munich finance sector. Walking to remember why I wanted freedom.',
     avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -62,7 +64,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-003',
-    trail_name: '@elena.garcia',
+    trail_name: 'Elena García',
+    wanderkind_id: 'WK-5202',
     email: 'elena.garcia@wanderkind.love',
     bio: 'Elena García, 26. Spanish nurse, walking on rotation schedules. My patients inspire me, the trail heals me.',
     avatar_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -90,7 +93,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-004',
-    trail_name: '@jean.bernard',
+    trail_name: 'Jean Bernard',
+    wanderkind_id: 'WK-5329',
     email: 'jean.bernard@wanderkind.love',
     bio: 'Jean Bernard, 62. Retired teacher from Lyon. Slowness is the only pace that matters now.',
     avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -118,7 +122,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-005',
-    trail_name: '@mira.zahn',
+    trail_name: 'Mira Zahn',
+    wanderkind_id: 'WK-5456',
     email: 'mira.zahn@wanderkind.love',
     bio: 'Mira Zahn, 22. Journeywoman carpenter on her Wanderschaft. I fix tables in every albergue I stay at.',
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -146,7 +151,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-006',
-    trail_name: '@lucia.rossi',
+    trail_name: 'Lucia Rossi',
+    wanderkind_id: 'WK-5583',
     email: 'lucia.rossi@wanderkind.love',
     bio: 'Lucia Rossi, 28. Architect from Milano, walking to remember scale beyond blueprints. My office is the horizon.',
     avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -174,7 +180,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-007',
-    trail_name: '@jos.dekker',
+    trail_name: 'Jos Dekker',
+    wanderkind_id: 'WK-5710',
     email: 'jos.dekker@wanderkind.love',
     bio: 'Jos Dekker, 19. Year between secondary school and university, walking to find out who I am before university picks who I should be.',
     avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -202,7 +209,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-008',
-    trail_name: '@pierre.lefevre',
+    trail_name: 'Pierre Lefèvre',
+    wanderkind_id: 'WK-5837',
     email: 'pierre.lefevre@wanderkind.love',
     bio: 'Pierre Lefèvre, 45. French shepherd, walking to understand what the flock knows that we don\'t.',
     avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -230,7 +238,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-009',
-    trail_name: '@anja.skov',
+    trail_name: 'Anja Skov',
+    wanderkind_id: 'WK-5964',
     email: 'anja.skov@wanderkind.love',
     bio: 'Anja Skov, 20. Danish university student (literature), walked last semester to read the land instead of books.',
     avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -258,7 +267,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-010',
-    trail_name: '@marco.colombo',
+    trail_name: 'Marco Colombo',
+    wanderkind_id: 'WK-6091',
     email: 'marco.colombo@wanderkind.love',
     bio: 'Marco Colombo, 51. Italian chef from Bologna. Walking to find what cannot be cooked.',
     avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -286,7 +296,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-011',
-    trail_name: '@anna.weber',
+    trail_name: 'Anna Weber',
+    wanderkind_id: 'WK-6218',
     email: 'anna.weber@wanderkind.love',
     bio: 'Anna Weber, 18. First year student (engineering), gap before university. Building myself before building bridges.',
     avatar_url: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -314,7 +325,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-012',
-    trail_name: '@pablo.ortiz',
+    trail_name: 'Pablo Ortiz',
+    wanderkind_id: 'WK-6345',
     email: 'pablo.ortiz@wanderkind.love',
     bio: 'Pablo Ortiz, 29. Spanish digital nomad, walks to disconnect. Internet everywhere, silence nowhere.',
     avatar_url: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -342,7 +354,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-013',
-    trail_name: '@sophie.martin',
+    trail_name: 'Sophie Martin',
+    wanderkind_id: 'WK-6472',
     email: 'sophie.martin@wanderkind.love',
     bio: 'Sophie Martin, 36. French therapist, walking to listen to what silence teaches. Slowness as practice.',
     avatar_url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -370,7 +383,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-014',
-    trail_name: '@kevin.fahey',
+    trail_name: 'Kevin Fahey',
+    wanderkind_id: 'WK-6599',
     email: 'kevin.fahey@wanderkind.love',
     bio: 'Kevin Fahey, 19. Irish gap year, musician between festival gigs. Every trail is another kind of tour.',
     avatar_url: 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -400,7 +414,8 @@ export const SEED_PROFILES = [
   // VIA FRANCIGENA route (12 profiles)
   {
     id: 'p-015',
-    trail_name: '@hans.mueller',
+    trail_name: 'Hans Müller',
+    wanderkind_id: 'WK-6726',
     email: 'hans.mueller@wanderkind.love',
     bio: 'Hans Müller, 55. German engineer, walked the Francigena in reverse to understand what finishing means.',
     avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -428,7 +443,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-016',
-    trail_name: '@giulia.marino',
+    trail_name: 'Giulia Marino',
+    wanderkind_id: 'WK-6853',
     email: 'giulia.marino@wanderkind.love',
     bio: 'Giulia Marino, 23. Italian Erasmus student (art history), walking during exchange year. Understanding home by leaving.',
     avatar_url: 'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -456,7 +472,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-017',
-    trail_name: '@franz.schwartz',
+    trail_name: 'Franz Schwartz',
+    wanderkind_id: 'WK-6980',
     email: 'franz.schwartz@wanderkind.love',
     bio: 'Franz Schwartz, 24. Austrian baker, journeyman craftsperson on Wanderschaft. Baking in every kitchen I find.',
     avatar_url: 'https://images.unsplash.com/photo-1557862921-37829c790f19?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -484,7 +501,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-018',
-    trail_name: '@alice.perrin',
+    trail_name: 'Alice Perrin',
+    wanderkind_id: 'WK-7107',
     email: 'alice.perrin@wanderkind.love',
     bio: 'Alice Perrin, 30. French au-pair in Switzerland, walks weekends. The mountains are closer than my family.',
     avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -512,7 +530,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-019',
-    trail_name: '@rosa.fioretti',
+    trail_name: 'Rosa Fioretti',
+    wanderkind_id: 'WK-7234',
     email: 'rosa.fioretti@wanderkind.love',
     bio: 'Rosa Fioretti, 71. Retired librarian from Rome. Books led me through life, now the path leads me.',
     avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -540,7 +559,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-020',
-    trail_name: '@erik.bergstrom',
+    trail_name: 'Erik Bergström',
+    wanderkind_id: 'WK-7361',
     email: 'erik.bergstrom@wanderkind.love',
     bio: 'Erik Bergström, 35. Swedish scout leader, brings youth groups walking. Teaching adventure through example.',
     avatar_url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -568,7 +588,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-021',
-    trail_name: '@chloe.bernard',
+    trail_name: 'Chloé Bernard',
+    wanderkind_id: 'WK-7488',
     email: 'chloe.bernard@wanderkind.love',
     bio: 'Chloé Bernard, 21. French university student (literature), gap semester. Words fail the trail, so I walk instead.',
     avatar_url: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -596,7 +617,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-022',
-    trail_name: '@lorenzo.gallo',
+    trail_name: 'Lorenzo Gallo',
+    wanderkind_id: 'WK-7615',
     email: 'lorenzo.gallo@wanderkind.love',
     bio: 'Lorenzo Gallo, 58. Italian photographer, walking to frame the unframeable.',
     avatar_url: 'https://images.unsplash.com/photo-1506634572416-48426f363f5e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -624,7 +646,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-023',
-    trail_name: '@nina.dumont',
+    trail_name: 'Nina Dumont',
+    wanderkind_id: 'WK-7742',
     email: 'nina.dumont@wanderkind.love',
     bio: 'Nina Dumont, 27. Swiss work-and-travel, administrative assistant finding freedom on the trail.',
     avatar_url: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -652,7 +675,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-024',
-    trail_name: '@antonio.moretti',
+    trail_name: 'Antonio Moretti',
+    wanderkind_id: 'WK-7869',
     email: 'antonio.moretti@wanderkind.love',
     bio: 'Antonio Moretti, 48. Italian farmer from Toscana, walking to remember why the land matters.',
     avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -680,7 +704,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-025',
-    trail_name: '@isabel.molina',
+    trail_name: 'Isabel Molina',
+    wanderkind_id: 'WK-7996',
     email: 'isabel.molina@wanderkind.love',
     bio: 'Isabel Molina, 34. Spanish physical therapist, walks to heal what medicine cannot.',
     avatar_url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -708,7 +733,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-026',
-    trail_name: '@dieter.koch',
+    trail_name: 'Dieter Koch',
+    wanderkind_id: 'WK-8123',
     email: 'dieter.koch@wanderkind.love',
     bio: 'Dieter Koch, 67. German retiree, walking the Francigena to prove retirement is a beginning.',
     avatar_url: 'https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -738,7 +764,8 @@ export const SEED_PROFILES = [
   // CAMINO PORTUGUÉS & other routes (14 profiles)
   {
     id: 'p-027',
-    trail_name: '@marta.santos',
+    trail_name: 'Marta Santos',
+    wanderkind_id: 'WK-8250',
     email: 'marta.santos@wanderkind.love',
     bio: 'Marta Santos, 25. Portuguese university student (psychology), walking home via the long route.',
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -766,7 +793,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-028',
-    trail_name: '@afonso.coelho',
+    trail_name: 'Afonso Coelho',
+    wanderkind_id: 'WK-8377',
     email: 'afonso.coelho@wanderkind.love',
     bio: 'Afonso Coelho, 38. Portuguese chef, walking between restaurant seasons. Searching for the perfect recipe for rest.',
     avatar_url: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -794,7 +822,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-029',
-    trail_name: '@rolf.svensson',
+    trail_name: 'Rolf Svensson',
+    wanderkind_id: 'WK-8504',
     email: 'rolf.svensson@wanderkind.love',
     bio: 'Rolf Svensson, 32. Swedish au-pair in Portugal, walking the Camino between placements. Finding my next chapter.',
     avatar_url: 'https://images.unsplash.com/photo-1528892952291-009c663ce843?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -822,7 +851,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-030',
-    trail_name: '@felicidade.cruz',
+    trail_name: 'Felicidade Cruz',
+    wanderkind_id: 'WK-8631',
     email: 'felicidade.cruz@wanderkind.love',
     bio: 'Felicidade Cruz, 73. Portuguese retiree from Lisbon, walking for joy before the knees say no.',
     avatar_url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -850,7 +880,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-031',
-    trail_name: '@lucas.fernandes',
+    trail_name: 'Lucas Fernandes',
+    wanderkind_id: 'WK-8758',
     email: 'lucas.fernandes@wanderkind.love',
     bio: 'Lucas Fernandes, 28. Portuguese work-and-travel software developer. Code breaks, but the trail heals.',
     avatar_url: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -878,7 +909,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-032',
-    trail_name: '@werner.bauer',
+    trail_name: 'Werner Bauer',
+    wanderkind_id: 'WK-8885',
     email: 'werner.bauer@wanderkind.love',
     bio: 'Werner Bauer, 41. Swiss carpenter on journeyman travels. Building, walking, learning. That\'s the craft.',
     avatar_url: 'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -906,7 +938,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-033',
-    trail_name: '@marisa.esteves',
+    trail_name: 'Marisa Esteves',
+    wanderkind_id: 'WK-9012',
     email: 'marisa.esteves@wanderkind.love',
     bio: 'Marisa Esteves, 52. Portuguese artist, walking to paint silence.',
     avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -934,7 +967,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-034',
-    trail_name: '@knut.andersen',
+    trail_name: 'Knut Andersen',
+    wanderkind_id: 'WK-9139',
     email: 'knut.andersen@wanderkind.love',
     bio: 'Knut Andersen, 26. Norwegian gap year, musician walking between gigs across Iberia. Every trail is a concert hall.',
     avatar_url: 'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -962,7 +996,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-035',
-    trail_name: '@teresa.ribeiro',
+    trail_name: 'Teresa Ribeiro',
+    wanderkind_id: 'WK-9266',
     email: 'teresa.ribeiro@wanderkind.love',
     bio: 'Teresa Ribeiro, 44. Portuguese counselor, walking to process what sits too heavy to name.',
     avatar_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -990,7 +1025,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-036',
-    trail_name: '@gonz.sanchez',
+    trail_name: 'Gonzalo Sánchez',
+    wanderkind_id: 'WK-9393',
     email: 'gonz.sanchez@wanderkind.love',
     bio: 'Gonzalo Sánchez, 19. Spanish gap year student, walking before university decides everything. Last summer of wildness.',
     avatar_url: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1018,7 +1054,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-037',
-    trail_name: '@pedro.alves',
+    trail_name: 'Pedro Alves',
+    wanderkind_id: 'WK-9520',
     email: 'pedro.alves@wanderkind.love',
     bio: 'Pedro Alves, 60. Portuguese farmer, walking after selling the land. The earth still owns me, but I own my time now.',
     avatar_url: 'https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1046,7 +1083,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-038',
-    trail_name: '@irina.volkova',
+    trail_name: 'Irina Volkova',
+    wanderkind_id: 'WK-9647',
     email: 'irina.volkova@wanderkind.love',
     bio: 'Irina Volkova, 33. Russian-German engineer, walking across cultures. Building bridges in my mind first.',
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1074,7 +1112,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-039',
-    trail_name: '@magali.pinto',
+    trail_name: 'Magali Pinto',
+    wanderkind_id: 'WK-9774',
     email: 'magali.pinto@wanderkind.love',
     bio: 'Magali Pinto, 29. Brazilian au-pair in Spain, walks on her free weekends. Europe gave me a job, the trail gives me freedom.',
     avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1102,7 +1141,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-040',
-    trail_name: '@alicia.rodriguez',
+    trail_name: 'Alicia Rodríguez',
+    wanderkind_id: 'WK-9901',
     email: 'alicia.rodriguez@wanderkind.love',
     bio: 'Alicia Rodríguez, 47. Spanish teacher from Valladolid, walking to teach myself what I forgot to learn.',
     avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1132,7 +1172,8 @@ export const SEED_PROFILES = [
   // CAMINO DEL NORTE & E-TRAILS (10 profiles)
   {
     id: 'p-041',
-    trail_name: '@bjorn.larsen',
+    trail_name: 'Björn Larsen',
+    wanderkind_id: 'WK-0028',
     email: 'bjorn.larsen@wanderkind.love',
     bio: 'Björn Larsen, 40. Danish engineer, walking the northern routes. Precision meets wilderness.',
     avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1160,7 +1201,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-042',
-    trail_name: '@mikel.elorza',
+    trail_name: 'Mikel Elorza',
+    wanderkind_id: 'WK-0155',
     email: 'mikel.elorza@wanderkind.love',
     bio: 'Mikel Elorza, 24. Basque university student (geology), walking to read the stone language.',
     avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1188,7 +1230,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-043',
-    trail_name: '@olaf.hansen',
+    trail_name: 'Olaf Hansen',
+    wanderkind_id: 'WK-0282',
     email: 'olaf.hansen@wanderkind.love',
     bio: 'Olaf Hansen, 56. Norwegian retired architect, walking E-trails to understand landscape at human scale.',
     avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1216,7 +1259,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-044',
-    trail_name: '@eider.sanchez',
+    trail_name: 'Eider Sánchez',
+    wanderkind_id: 'WK-0409',
     email: 'eider.sanchez@wanderkind.love',
     bio: 'Eider Sánchez, 26. Spanish nurse from Bilbao, walking between shifts. The trail teaches patience medicine cannot.',
     avatar_url: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1244,7 +1288,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-045',
-    trail_name: '@lars.petersen',
+    trail_name: 'Lars Petersen',
+    wanderkind_id: 'WK-0536',
     email: 'lars.petersen@wanderkind.love',
     bio: 'Lars Petersen, 21. Danish Erasmus student (environmental science), walking during exchange. Europe teaches more than any lecture hall.',
     avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1272,7 +1317,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-046',
-    trail_name: '@sara.herrera',
+    trail_name: 'Sara Herrera',
+    wanderkind_id: 'WK-0663',
     email: 'sara.herrera@wanderkind.love',
     bio: 'Sara Herrera, 31. Spanish coach from Asturias, walking to help others find their pace.',
     avatar_url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1300,7 +1346,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-047',
-    trail_name: '@anke.weber',
+    trail_name: 'Anke Weber',
+    wanderkind_id: 'WK-0790',
     email: 'anke.weber@wanderkind.love',
     bio: 'Anke Weber, 48. German artist and mother, walking while kids are at camp. Reclaiming myself in steps.',
     avatar_url: 'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1328,7 +1375,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-048',
-    trail_name: '@julio.garcia',
+    trail_name: 'Julio García',
+    wanderkind_id: 'WK-0917',
     email: 'julio.garcia@wanderkind.love',
     bio: 'Julio García, 36. Spanish farmer, walking off-season. Land and legs: my two languages.',
     avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1356,7 +1404,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-049',
-    trail_name: '@berit.molvik',
+    trail_name: 'Berit Molvik',
+    wanderkind_id: 'WK-1044',
     email: 'berit.molvik@wanderkind.love',
     bio: 'Berit Molvik, 44. Norwegian woman in recovery, walking to heal. One step is one victory.',
     avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1384,7 +1433,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-050',
-    trail_name: '@montse.ribeiro',
+    trail_name: 'Montse Ribeiro',
+    wanderkind_id: 'WK-1171',
     email: 'montse.ribeiro@wanderkind.love',
     bio: 'Montse Ribeiro, 27. Spanish-Portuguese music teacher, walking between gigs. Every town is a concert, every step a song.',
     avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1414,7 +1464,8 @@ export const SEED_PROFILES = [
   // EUROPEAN CITIES (25 profiles off-route)
   {
     id: 'p-051',
-    trail_name: '@sophie.dubois',
+    trail_name: 'Sophie Dubois',
+    wanderkind_id: 'WK-1298',
     email: 'sophie.dubois@wanderkind.love',
     bio: 'Sophie Dubois, 32. Parisian graphic designer, walked the Camino last year. City life never felt the same.',
     avatar_url: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1442,7 +1493,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-052',
-    trail_name: '@james.murphy',
+    trail_name: 'James Murphy',
+    wanderkind_id: 'WK-1425',
     email: 'james.murphy@wanderkind.love',
     bio: 'James Murphy, 29. Irish writer from Dublin, walked the Camino, now co-hosting pilgrims. Stories need distance to grow.',
     avatar_url: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1470,7 +1522,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-053',
-    trail_name: '@anastasia.petrov',
+    trail_name: 'Anastasia Petrova',
+    wanderkind_id: 'WK-1552',
     email: 'anastasia.petrov@wanderkind.love',
     bio: 'Anastasia Petrova, 26. Russian software engineer in Berlin, walks on weekends. Code is logic, the trail is everything else.',
     avatar_url: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1498,7 +1551,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-054',
-    trail_name: '@erik.johansen',
+    trail_name: 'Erik Johansen',
+    wanderkind_id: 'WK-1679',
     email: 'erik.johansen@wanderkind.love',
     bio: 'Erik Johansen, 38. Danish architect in Copenhagen, walked in retirement planning mode. I walked to live, now living to walk.',
     avatar_url: 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1526,7 +1580,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-055',
-    trail_name: '@leo.scotti',
+    trail_name: 'Leo Scotti',
+    wanderkind_id: 'WK-1806',
     email: 'leo.scotti@wanderkind.love',
     bio: 'Leo Scotti, 55. Italian wine merchant from Bologna, walked the Francigena to understand taste beyond wine.',
     avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1554,7 +1609,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-056',
-    trail_name: '@katrin.mueller',
+    trail_name: 'Katrin Müller',
+    wanderkind_id: 'WK-1933',
     email: 'katrin.mueller@wanderkind.love',
     bio: 'Katrin Müller, 52. German yoga instructor in Hamburg, walks as practice. Movement without purpose is purpose.',
     avatar_url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1582,7 +1638,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-057',
-    trail_name: '@anna.kowalski',
+    trail_name: 'Anna Kowalski',
+    wanderkind_id: 'WK-2060',
     email: 'anna.kowalski@wanderkind.love',
     bio: 'Anna Kowalski, 19. Polish gap year student (pre-med), walking before the studying begins. Medicine has answers, the trail has questions.',
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1610,7 +1667,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-058',
-    trail_name: '@marco.lombardi',
+    trail_name: 'Marco Lombardi',
+    wanderkind_id: 'WK-2187',
     email: 'marco.lombardi@wanderkind.love',
     bio: 'Marco Lombardi, 34. Italian entrepreneur from Milano, walked the Camino to learn failure before success.',
     avatar_url: 'https://images.unsplash.com/photo-1557862921-37829c790f19?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1638,7 +1696,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-059',
-    trail_name: '@astrid.bergman',
+    trail_name: 'Astrid Bergman',
+    wanderkind_id: 'WK-2314',
     email: 'astrid.bergman@wanderkind.love',
     bio: 'Astrid Bergman, 45. Swedish archaeologist in Stockholm, walked to understand what connects us across time.',
     avatar_url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1666,7 +1725,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-060',
-    trail_name: '@christian.olsen',
+    trail_name: 'Christian Olsen',
+    wanderkind_id: 'WK-2441',
     email: 'christian.olsen@wanderkind.love',
     bio: 'Christian Olsen, 40. Norwegian therapist in Oslo, walked to remember what heals is listening to silence.',
     avatar_url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1694,7 +1754,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-061',
-    trail_name: '@isabella.vandermeer',
+    trail_name: 'Isabella van der Meer',
+    wanderkind_id: 'WK-2568',
     email: 'isabella.vandermeer@wanderkind.love',
     bio: 'Isabella van der Meer, 23. Dutch university student (environmental studies), walking to integrate what I learn.',
     avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1722,7 +1783,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-062',
-    trail_name: '@paul.delvaux',
+    trail_name: 'Paul Delvaux',
+    wanderkind_id: 'WK-2695',
     email: 'paul.delvaux@wanderkind.love',
     bio: 'Paul Delvaux, 48. Belgian photographer from Brussels, walked to capture what cannot be captured.',
     avatar_url: 'https://images.unsplash.com/photo-1506634572416-48426f363f5e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1750,7 +1812,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-063',
-    trail_name: '@finn.eriksen',
+    trail_name: 'Finn Eriksen',
+    wanderkind_id: 'WK-2822',
     email: 'finn.eriksen@wanderkind.love',
     bio: 'Finn Eriksen, 31. Norwegian software developer from Bergen, walked to remember humans were built to move.',
     avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1778,7 +1841,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-064',
-    trail_name: '@helen.spencer',
+    trail_name: 'Helen Spencer',
+    wanderkind_id: 'WK-2949',
     email: 'helen.spencer@wanderkind.love',
     bio: 'Helen Spencer, 62. Scottish retired headteacher from Edinburgh, walked the Camino. Retirement is a pilgrimage.',
     avatar_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1806,7 +1870,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-065',
-    trail_name: '@ilse.fischer',
+    trail_name: 'Ilse Fischer',
+    wanderkind_id: 'WK-3076',
     email: 'ilse.fischer@wanderkind.love',
     bio: 'Ilse Fischer, 37. German nurse from München, walked to remember vulnerability is strength.',
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1834,7 +1899,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-066',
-    trail_name: '@sara.kowalczyk',
+    trail_name: 'Sara Kowalczyk',
+    wanderkind_id: 'WK-3203',
     email: 'sara.kowalczyk@wanderkind.love',
     bio: 'Sara Kowalczyk, 25. Polish Erasmus student (languages), walking before returning home. Languages taste different on the trail.',
     avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1862,7 +1928,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-067',
-    trail_name: '@mikael.lindstrom',
+    trail_name: 'Mikael Lindström',
+    wanderkind_id: 'WK-3330',
     email: 'mikael.lindstrom@wanderkind.love',
     bio: 'Mikael Lindström, 53. Swedish business consultant from Stockholm, walked to learn what money cannot teach.',
     avatar_url: 'https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1890,7 +1957,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-068',
-    trail_name: '@helena.koskinen',
+    trail_name: 'Helena Koskinen',
+    wanderkind_id: 'WK-3457',
     email: 'helena.koskinen@wanderkind.love',
     bio: 'Helena Koskinen, 41. Finnish artist from Helsinki, walked to relearn color through exhaustion.',
     avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1918,7 +1986,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-069',
-    trail_name: '@richard.turner',
+    trail_name: 'Richard Turner',
+    wanderkind_id: 'WK-3584',
     email: 'richard.turner@wanderkind.love',
     bio: 'Richard Turner, 58. English retired engineer from London, walked for purpose after work gave none.',
     avatar_url: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1946,7 +2015,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-070',
-    trail_name: '@alex.santos',
+    trail_name: 'Alex Santos',
+    wanderkind_id: 'WK-3711',
     email: 'alex.santos@wanderkind.love',
     bio: 'Alex Santos, 22. Portuguese-Brazilian university student (social work), walking to understand belonging.',
     avatar_url: 'https://images.unsplash.com/photo-1528892952291-009c663ce843?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -1974,7 +2044,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-071',
-    trail_name: '@dimitri.georgiades',
+    trail_name: 'Dimitri Georgiades',
+    wanderkind_id: 'WK-3838',
     email: 'dimitri.georgiades@wanderkind.love',
     bio: 'Dimitri Georgiades, 36. Greek chef from Athens, walked to remember cooking is memory made delicious.',
     avatar_url: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -2002,7 +2073,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-072',
-    trail_name: '@magdalena.zajac',
+    trail_name: 'Magdalena Zając',
+    wanderkind_id: 'WK-3965',
     email: 'magdalena.zajac@wanderkind.love',
     bio: 'Magdalena Zając, 20. Polish university student (philosophy), walking to experience what lectures cannot teach.',
     avatar_url: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -2030,7 +2102,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-073',
-    trail_name: '@andrius.simkus',
+    trail_name: 'Andrius Šimkus',
+    wanderkind_id: 'WK-4092',
     email: 'andrius.simkus@wanderkind.love',
     bio: 'Andrius Šimkus, 39. Lithuanian photographer from Vilnius, walked across Europe to understand light.',
     avatar_url: 'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -2058,7 +2131,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-074',
-    trail_name: '@victoria.muller',
+    trail_name: 'Victoria Müller',
+    wanderkind_id: 'WK-4219',
     email: 'victoria.muller@wanderkind.love',
     bio: 'Victoria Müller, 28. German architect from Berlin, walking to design a different life.',
     avatar_url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
@@ -2086,7 +2160,8 @@ export const SEED_PROFILES = [
   },
   {
     id: 'p-075',
-    trail_name: '@kemal.ozkan',
+    trail_name: 'Kemal Özkan',
+    wanderkind_id: 'WK-4346',
     email: 'kemal.ozkan@wanderkind.love',
     bio: 'Kemal Özkan, 50. Turkish engineer from Istanbul, walked across Europe to understand what bridges connect beyond the physical.',
     avatar_url: 'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=200&h=200&fit=crop&crop=face&fm=webp&q=60',
