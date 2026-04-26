@@ -14,7 +14,7 @@ const TIERS: { level: number; name: string; requirement: string; daysNeeded: num
   { level: 1, name: 'Wunderkind', requirement: '1 night · 2 days', daysNeeded: 2, icon: 'sparkles-outline' },
   { level: 2, name: 'Wandersmann', requirement: '2 nights · 3 days', daysNeeded: 3, icon: 'walk-outline' },
   { level: 3, name: 'Ehrenmann', requirement: '3 nights · 4 days', daysNeeded: 4, icon: 'ribbon-outline' },
-  { level: 4, name: 'Wundermann', requirement: '7 nights · 8 days', daysNeeded: 8, icon: 'compass-outline' },
+  { level: 4, name: 'Wundermacher', requirement: '7 nights · 8 days', daysNeeded: 8, icon: 'compass-outline' },
   { level: 5, name: 'Pilger', requirement: '11 days', daysNeeded: 11, icon: 'map-outline' },
   { level: 6, name: 'Apostel', requirement: '15 days', daysNeeded: 15, icon: 'flame-outline' },
   { level: 7, name: 'Bergapostel', requirement: '1 month, 1 day', daysNeeded: 32, icon: 'trail-sign-outline' },
