@@ -386,6 +386,7 @@ function WebMapComponent({
       fadeAnimation: true,
       zoomAnimation: true,
       markerZoomAnimation: true,
+      zoomControl: false,
     }).setView([50.0, 10.0], 4);
 
     // Tile layer URLs for each mode

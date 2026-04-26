@@ -83,8 +83,7 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
     fetchWays();
   }, []);
 
-  // Don't block rendering when embedded — parent handles auth
-  if (isLoading && !embedded) return null;
+  // Never block rendering — ways list is always accessible
 
   const fetchWays = async () => {
     try {
