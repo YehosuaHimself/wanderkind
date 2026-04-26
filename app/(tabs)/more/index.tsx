@@ -1,95 +1,91 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { colors, typography, spacing } from '../../../src/lib/theme';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
-type MenuItem = {
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GRID_GAP = 10;
+const GRID_PADDING = 16;
+const TILE_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
+
+type AppTile = {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  subtitle: string;
   route: string;
   accent?: string;
+  bgTint?: string;
 };
 
-const menuItems: MenuItem[] = [
+const appTiles: AppTile[] = [
   {
-    icon: 'home-outline',
+    icon: 'home',
     title: 'WanderHost',
-    subtitle: 'Your hosting home, guestbook & project',
     route: '/(tabs)/more/wanderhost',
     accent: colors.amber,
+    bgTint: `${colors.amber}12`,
   },
   {
-    icon: 'ribbon-outline',
-    title: 'The Wanderkind Way',
-    subtitle: 'Your journey, tiers & progression',
-    route: '/(tabs)/more/wanderkind-way',
-  },
-  {
-    icon: 'shield-checkmark-outline',
-    title: 'Verification',
-    subtitle: 'Verify your identity for trust & safety',
-    route: '/(tabs)/more/verification',
-  },
-  {
-    icon: 'shield-outline',
-    title: 'Privacy & Trust',
-    subtitle: 'Control what others see, messages & blocking',
-    route: '/(tabs)/more/privacy',
-  },
-  {
-    icon: 'document-text-outline',
+    icon: 'document-text',
     title: 'Passes',
-    subtitle: 'Your credentials and passes',
     route: '/(tabs)/me/passes',
     accent: colors.amber,
+    bgTint: `${colors.amber}12`,
   },
   {
-    icon: 'journal-outline',
-    title: 'Journal',
-    subtitle: 'Journal, blog & book — your stories',
+    icon: 'ribbon',
+    title: 'Stamps',
+    route: '/(tabs)/more/stamps',
+    accent: '#8B5E3C',
+    bgTint: 'rgba(139,94,60,0.08)',
+  },
+  {
+    icon: 'create',
+    title: 'Writing',
     route: '/(tabs)/more/book',
+    accent: colors.ink2,
   },
   {
-    icon: 'bag-outline',
-    title: 'Packlist',
-    subtitle: 'Your interactive walking packlist',
+    icon: 'bag-check',
+    title: 'Packlist & Tips',
     route: '/(tabs)/more/packlist',
-  },
-  {
-    icon: 'people-outline',
-    title: 'Group Walk',
-    subtitle: 'Walk together with others',
-    route: '/(tabs)/more/group-walk',
-  },
-  {
-    icon: 'thumbs-up-outline',
-    title: 'Hitch Hike',
-    subtitle: 'Hitchhike safely between stages',
-    route: '/(tabs)/map/tramp-mode',
     accent: colors.green,
+    bgTint: `${colors.green}12`,
   },
   {
-    icon: 'call-outline',
-    title: 'Emergency Contacts',
-    subtitle: 'Your emergency contact list',
-    route: '/(tabs)/me/emergency-contacts',
+    icon: 'thumbs-up',
+    title: 'Hitchhike',
+    route: '/(tabs)/map/tramp-mode',
+    accent: '#E67E22',
+    bgTint: 'rgba(230,126,34,0.08)',
   },
   {
-    icon: 'analytics-outline',
-    title: 'Analytics',
-    subtitle: 'Network stats, host coverage & insights',
-    route: '/(tabs)/more/analytics',
+    icon: 'people',
+    title: 'WanderGroups',
+    route: '/(tabs)/more/group-walk',
     accent: colors.blue,
+    bgTint: `${colors.blue}12`,
   },
   {
-    icon: 'information-circle-outline',
+    icon: 'warning',
+    title: 'Emergency & Contacts',
+    route: '/(tabs)/more/emergency',
+    accent: colors.red,
+    bgTint: colors.redBg,
+  },
+  {
+    icon: 'shield-checkmark',
+    title: 'Trust & Settings',
+    route: '/(tabs)/more/settings',
+    accent: colors.ink2,
+  },
+  {
+    icon: 'information-circle',
     title: 'About',
-    subtitle: 'About Wanderkind',
     route: '/(tabs)/more/about',
+    accent: colors.ink3,
   },
 ];
 
@@ -110,62 +106,28 @@ export default function MoreScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
       >
-        {menuItems.map((item, index) => (
+        {appTiles.map((tile) => (
           <TouchableOpacity
-            key={item.route}
-            style={styles.menuItem}
-            onPress={() => router.push(item.route as any)}
+            key={tile.route + tile.title}
+            style={[styles.tile, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
+            onPress={() => router.push(tile.route as any)}
             activeOpacity={0.7}
           >
-            <View style={[styles.menuIcon, item.accent && { backgroundColor: `${item.accent}12` }]}>
+            <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>
               <Ionicons
-                name={item.icon as any}
-                size={20}
-                color={item.accent ?? colors.ink2}
+                name={tile.icon as any}
+                size={24}
+                color={tile.accent ?? colors.ink2}
               />
             </View>
-            <View style={styles.menuInfo}>
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
+            <Text style={[styles.tileTitle, tile.accent ? { color: tile.accent } : null]} numberOfLines={2}>
+              {tile.title}
+            </Text>
           </TouchableOpacity>
         ))}
-
-        {/* Emergency SOS */}
-        <TouchableOpacity
-          style={styles.sosCard}
-          onPress={() => router.push('/(tabs)/more/emergency' as any)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.sosIcon}>
-            <Ionicons name="warning-outline" size={20} color={colors.red} />
-          </View>
-          <View style={styles.menuInfo}>
-            <Text style={[styles.menuTitle, { color: colors.red }]}>Emergency SOS</Text>
-            <Text style={styles.menuSubtitle}>Safety tools and emergency contacts</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.red} />
-        </TouchableOpacity>
-
-        {/* Settings */}
-        <TouchableOpacity
-          style={[styles.menuItem, { marginTop: 16 }]}
-          onPress={() => router.push('/(tabs)/more/settings' as any)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.menuIcon}>
-            <Ionicons name="settings-outline" size={20} color={colors.ink2} />
-          </View>
-          <View style={styles.menuInfo}>
-            <Text style={styles.menuTitle}>Settings</Text>
-            <Text style={styles.menuSubtitle}>Language, notifications, appearance</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -193,7 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amber,
   },
   headerLabelText: {
-    fontFamily: 'Courier New',
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
     fontSize: 10,
     letterSpacing: 3,
     color: colors.amber,
@@ -203,56 +165,40 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.ink,
   },
-  list: {
-    padding: spacing.lg,
-    gap: 8,
-  },
-  menuItem: {
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    padding: GRID_PADDING,
+    gap: GRID_GAP,
+    paddingBottom: 40,
+  },
+  tile: {
+    width: TILE_WIDTH,
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
+    borderRadius: 16,
+    padding: 16,
+    minHeight: 110,
+    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: colors.borderLt,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceAlt,
+  tileIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
   },
-  menuInfo: { flex: 1 },
-  menuTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+  tileTitle: {
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.ink,
-    marginBottom: 2,
-  },
-  menuSubtitle: {
-    ...typography.caption,
-    color: colors.ink3,
-  },
-  sosCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.redBg,
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(176,58,58,0.15)',
-    marginTop: 8,
-  },
-  sosIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.redBg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    letterSpacing: 0.3,
   },
 });

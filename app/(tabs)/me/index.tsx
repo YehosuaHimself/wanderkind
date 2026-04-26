@@ -14,6 +14,7 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { showAlert } from '../../../src/lib/alert';
 import { SEED_MOMENTS } from '../../../src/data/seed-moments';
+import { QRCode } from '../../../src/components/ui/QRCode';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GALLERY_SIZE = (SCREEN_WIDTH - 48 - 36) / 7; // 7 items with 6 gaps of 6px
@@ -24,12 +25,14 @@ export default function MeScreen() {
   useAuthGuard();
 
   const router = useRouter();
-  const { profile, user, fetchProfile } = useAuth();
+  const { profile, user, fetchProfile, updateProfile: storeUpdateProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isWalking, setIsWalking] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [moments, setMoments] = useState<any[]>([]);
+  const [stamps, setStamps] = useState<any[]>([]);
+  const [stampsExpanded, setStampsExpanded] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -53,7 +56,14 @@ export default function MeScreen() {
         .limit(20);
       setMoments(momentsData || []);
 
-      // Stamps moved to MyWay tab
+      // Fetch stamps for profile display
+      const { data: stampsData } = await supabase
+        .from('stamps')
+        .select('*')
+        .eq('walker_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(12);
+      setStamps(stampsData || []);
     } catch (err) {
       console.error('Failed to fetch content:', err);
       toast.error('Could not load your content');
@@ -122,13 +132,14 @@ export default function MeScreen() {
       const filename = `avatar_${user.id}_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl } as any)
-        .eq('id', user.id);
-      if (dbError) console.error('Failed to save avatar URL:', dbError.message);
-
-      await fetchProfile();
+      // Use store's updateProfile for immediate local state + DB persist
+      const { error: dbError } = await storeUpdateProfile({ avatar_url: publicUrl } as any);
+      if (dbError) {
+        console.error('Failed to save avatar URL:', dbError.message);
+        toast.error('Could not save photo');
+      } else {
+        toast.success('Profile photo updated');
+      }
     } catch (err) {
       console.error('Avatar upload failed:', err);
       showAlert('Upload failed', err instanceof Error ? err.message : 'Could not upload photo');
@@ -152,13 +163,14 @@ export default function MeScreen() {
       const filename = `cover_${user.id}_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .update({ cover_url: publicUrl } as any)
-        .eq('id', user.id);
-      if (dbError) console.error('Failed to save cover URL:', dbError.message);
-
-      await fetchProfile();
+      // Use store's updateProfile for immediate local state + DB persist
+      const { error: dbError } = await storeUpdateProfile({ cover_url: publicUrl } as any);
+      if (dbError) {
+        console.error('Failed to save cover URL:', dbError.message);
+        toast.error('Could not save cover photo');
+      } else {
+        toast.success('Cover photo updated');
+      }
     } catch (err) {
       console.error('Cover upload failed:', err);
       showAlert('Upload failed', err instanceof Error ? err.message : 'Could not upload photo');
@@ -239,13 +251,17 @@ export default function MeScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Mini QR Code — always visible and scannable */}
+            {/* Real QR Code — links to this user's public profile */}
             <TouchableOpacity
               style={styles.miniQr}
               onPress={() => router.push('/(tabs)/me/qr-code' as any)}
               activeOpacity={0.8}
             >
-              <Ionicons name="qr-code" size={36} color={colors.ink} />
+              <QRCode
+                value={`https://wanderkind.travel/u/${profile?.wanderkind_id || 'WK-0000'}`}
+                size={48}
+                color={colors.ink}
+              />
               <Text style={styles.miniQrLabel}>SCAN ME</Text>
             </TouchableOpacity>
           </View>
@@ -337,11 +353,6 @@ export default function MeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ===== QR CODE ===== */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>QR CODE</Text>
-        </View>
-
         {/* ===== GALLERY ===== */}
         <View style={styles.sectionBlock}>
           <Text style={styles.sectionTitle}>GALLERY</Text>
@@ -383,6 +394,70 @@ export default function MeScreen() {
             <Ionicons name="images-outline" size={28} color={colors.ink3} />
             <Text style={styles.carouselEmptyText}>Add up to 7 journey photos</Text>
           </TouchableOpacity>
+        )}
+
+        {/* ===== STAMPS (Unfoldable) ===== */}
+        {stamps.length > 0 && (
+          <>
+            <TouchableOpacity
+              style={styles.sectionBlockRow}
+              onPress={() => setStampsExpanded(!stampsExpanded)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sectionTitle}>STAMPS</Text>
+              <View style={styles.stampsBadge}>
+                <Text style={styles.stampsBadgeText}>{stamps.length}</Text>
+              </View>
+              <View style={{ flex: 1 }} />
+              <Ionicons
+                name={stampsExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.ink3}
+              />
+            </TouchableOpacity>
+
+            {/* Primary stamps stack (always visible — first 4) */}
+            <View style={styles.stampsStack}>
+              {stamps.slice(0, stampsExpanded ? stamps.length : 4).map((stamp: any, idx: number) => (
+                <TouchableOpacity
+                  key={stamp.id || idx}
+                  style={styles.stampItem}
+                  onPress={() => router.push(`/(tabs)/more/stamps/${stamp.id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.stampCircle, { backgroundColor: `${colors.amber}15` }]}>
+                    {stamp.photo_url ? (
+                      <Image source={{ uri: stamp.photo_url }} style={styles.stampCircleImg} />
+                    ) : (
+                      <Ionicons name="ribbon" size={16} color={colors.amber} />
+                    )}
+                  </View>
+                  <View style={styles.stampItemInfo}>
+                    <Text style={styles.stampItemName} numberOfLines={1}>{stamp.place_name || stamp.category || 'Stamp'}</Text>
+                    <Text style={styles.stampItemDate}>{new Date(stamp.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {!stampsExpanded && stamps.length > 4 && (
+              <TouchableOpacity
+                style={styles.stampsShowMore}
+                onPress={() => setStampsExpanded(true)}
+              >
+                <Text style={styles.stampsShowMoreText}>Show {stamps.length - 4} more</Text>
+              </TouchableOpacity>
+            )}
+
+            {stampsExpanded && (
+              <TouchableOpacity
+                style={styles.stampsShowMore}
+                onPress={() => router.push('/(tabs)/more/stamps' as any)}
+              >
+                <Text style={[styles.stampsShowMoreText, { color: colors.amber }]}>View Full Collection</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         {/* ===== MY POSTS ===== */}
@@ -436,22 +511,6 @@ export default function MeScreen() {
             <Ionicons name="document-text" size={16} color={colors.amber} />
           </View>
           <Text style={styles.passesText}>Your Passes</Text>
-          <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
-        </TouchableOpacity>
-
-        {/* ===== MY WAY ===== */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>MY WAY</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.passesRow}
-          onPress={() => router.push('/(tabs)/me/journey' as any)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.passesIcon}>
-            <Ionicons name="trail-sign-outline" size={16} color={colors.amber} />
-          </View>
-          <Text style={styles.passesText}>Journey & Progression</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.ink3} />
         </TouchableOpacity>
 
@@ -909,29 +968,65 @@ const styles = StyleSheet.create({
   },
 
   // === STAMPS LIST ===
-  stampsList: {
+  sectionBlockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     gap: 8,
+  },
+  stampsBadge: {
+    backgroundColor: colors.amberBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  stampsBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.amber,
+  },
+  stampsStack: {
+    paddingHorizontal: 20,
+    gap: 4,
   },
   stampItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: colors.surface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.borderLt,
+    gap: 10,
   },
   stampCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.amberBg,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
-  stampInfo: { flex: 1 },
-  stampName: { fontSize: 14, fontWeight: '600', color: colors.ink },
-  stampDate: { fontSize: 11, color: colors.ink3, marginTop: 2 },
+  stampCircleImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  stampItemInfo: { flex: 1 },
+  stampItemName: { fontSize: 13, fontWeight: '600', color: colors.ink },
+  stampItemDate: { fontSize: 10, color: colors.ink3, marginTop: 1 },
+  stampsShowMore: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  stampsShowMoreText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.ink3,
+  },
+  // (old stamp styles removed — replaced by stampsStack/stampItem above)
 
 });

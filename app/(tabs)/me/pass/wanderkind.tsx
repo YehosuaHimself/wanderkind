@@ -18,6 +18,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { generatePassNumber } from '../../../src/lib/pass-number';
+import { QRCode } from '../../../src/components/ui/QRCode';
 
 const DARK_BG = '#0B0705';
 const DARK_INK = '#1A120A';
@@ -346,9 +347,11 @@ export default function WanderkindPassScreen() {
 
           {/* QR Code Section */}
           <View style={styles.qrSection}>
-            <View style={styles.qrPlaceholder}>
-              <Ionicons name="qr-code" size={60} color={colors.amber} />
-            </View>
+            <QRCode
+              value={`https://wanderkind.travel/verify/${passNumber}?wk=${profile?.wanderkind_id || 'WK-0000'}&type=wanderkind`}
+              size={60}
+              color={colors.amber}
+            />
             <Text style={styles.scanText}>SCAN TO VERIFY</Text>
             <Text style={styles.scanUrl}>wanderkind.travel/verify</Text>
           </View>

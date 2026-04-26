@@ -15,6 +15,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { generatePassNumber } from '../../../src/lib/pass-number';
+import { QRCode } from '../../../src/components/ui/QRCode';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passFood; // #27864A — deep green
@@ -137,19 +138,19 @@ export default function FoodPassScreen() {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>MEALS</Text>
-              <Text style={styles.statValue}>{mealsShared}</Text>
+              <Text style={[styles.statValue, mealsShared === 0 && styles.statPlaceholder]}>{mealsShared || '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>DONATIVO</Text>
-              <Text style={styles.statValue}>{donativoCount}</Text>
+              <Text style={[styles.statValue, donativoCount === 0 && styles.statPlaceholder]}>{donativoCount || '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>MILESTONES</Text>
-              <Text style={styles.statValue}>{Math.floor(mealsShared / 10)}</Text>
+              <Text style={[styles.statValue, mealsShared === 0 && styles.statPlaceholder]}>{mealsShared > 0 ? Math.floor(mealsShared / 10) : '—'}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>STATUS</Text>
-              <Text style={styles.statValue}>ACTIVE</Text>
+              <Text style={styles.statValue}>{mealsShared > 0 ? 'ACTIVE' : 'AWAITING FIRST MEAL'}</Text>
             </View>
           </View>
 
@@ -198,7 +199,11 @@ export default function FoodPassScreen() {
 
           {/* QR Code Section */}
           <View style={styles.qrSection}>
-            <Ionicons name="qr-code" size={50} color={ACCENT} />
+            <QRCode
+              value={`https://wanderkind.travel/verify/${passNumber}?wk=${profile?.wanderkind_id || 'WK-0000'}&type=food`}
+              size={50}
+              color={ACCENT}
+            />
             <Text style={styles.qrText}>SCAN TO VERIFY</Text>
           </View>
         </View>
@@ -267,6 +272,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.green, opacity: 0.8 },
   statusText: { ...typography.caption, color: colors.green, letterSpacing: 1, fontWeight: '600', fontSize: 9 },
   passNumberText: { ...typography.monoXs, color: ACCENT, opacity: 0.6, letterSpacing: 1, fontSize: 8 },
+  statPlaceholder: { opacity: 0.35 },
   photoSection: { alignItems: 'center', marginBottom: spacing.sm },
   initialsCircle: {
     width: 56,

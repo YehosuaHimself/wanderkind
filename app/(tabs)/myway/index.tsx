@@ -6,9 +6,9 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 
 // Direct imports instead of React.lazy — fixes rendering issues
 import WaysContent from '../more/ways';
-import StampsContent from '../more/stamps';
+import JourneyContent from './journey';
 
-type TabMode = 'ways' | 'stamps';
+type TabMode = 'ways' | 'journey';
 
 export default function MyWayScreen() {
   const [activeTab, setActiveTab] = useState<TabMode>('ways');
@@ -22,7 +22,7 @@ export default function MyWayScreen() {
           <Text style={styles.headerLabelText}>MY WAY</Text>
         </View>
         <Text style={styles.headerTitle}>
-          {activeTab === 'ways' ? 'Walking Routes' : 'My Stamps'}
+          {activeTab === 'ways' ? 'Walking Routes' : 'My Journey'}
         </Text>
       </View>
 
@@ -43,24 +43,24 @@ export default function MyWayScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'stamps' && styles.tabActive]}
-          onPress={() => setActiveTab('stamps')}
+          style={[styles.tab, activeTab === 'journey' && styles.tabActive]}
+          onPress={() => setActiveTab('journey')}
           activeOpacity={0.7}
         >
           <Ionicons
-            name="ribbon-outline"
+            name="footsteps-outline"
             size={16}
-            color={activeTab === 'stamps' ? colors.amber : colors.ink3}
+            color={activeTab === 'journey' ? colors.amber : colors.ink3}
           />
-          <Text style={[styles.tabText, activeTab === 'stamps' && styles.tabTextActive]}>
-            Stamps
+          <Text style={[styles.tabText, activeTab === 'journey' && styles.tabTextActive]}>
+            My Journey
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content — direct rendering, no lazy load */}
       <View style={styles.content}>
-        {activeTab === 'ways' ? <WaysContent embedded /> : <StampsContent embedded />}
+        {activeTab === 'ways' ? <WaysContent embedded /> : <JourneyContent embedded />}
       </View>
     </SafeAreaView>
   );

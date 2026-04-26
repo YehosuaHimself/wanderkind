@@ -15,6 +15,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { generatePassNumber } from '../../../src/lib/pass-number';
+import { QRCode } from '../../../src/components/ui/QRCode';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passWater; // #4CA8C9 — cerulean blue
@@ -204,7 +205,11 @@ export default function WaterPassScreen() {
 
           {/* QR Code Section at Bottom */}
           <View style={styles.qrSection}>
-            <Ionicons name="qr-code" size={50} color={ACCENT} />
+            <QRCode
+              value={`https://wanderkind.travel/verify/${passNumber}?wk=${profile?.wanderkind_id || 'WK-0000'}&type=water`}
+              size={50}
+              color={ACCENT}
+            />
             <Text style={styles.qrText}>SCAN TO VERIFY</Text>
           </View>
 

@@ -15,6 +15,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { generatePassNumber } from '../../../src/lib/pass-number';
+import { QRCode } from '../../../src/components/ui/QRCode';
 
 const DARK_BG = '#0B0705';
 const ACCENT = colors.passHosp; // #8B1A2B — deep crimson
@@ -212,7 +213,11 @@ export default function HospitalityPassScreen() {
 
           {/* QR Code Section */}
           <View style={styles.qrSection}>
-            <Ionicons name="qr-code" size={50} color={ACCENT} />
+            <QRCode
+              value={`https://wanderkind.travel/verify/${passNumber}?wk=${profile?.wanderkind_id || 'WK-0000'}&type=hospitality`}
+              size={50}
+              color={ACCENT}
+            />
             <Text style={styles.qrText}>SCAN TO VERIFY</Text>
           </View>
 

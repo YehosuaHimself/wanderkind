@@ -17,6 +17,7 @@ import { supabase } from '../../../../src/lib/supabase';
 import { useAuth } from '../../../../src/stores/auth';
 import { Message, Profile } from '../../../../src/types/database';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { encryptMessage, decryptMessage, isEncrypted, isE2EAvailable } from '../../../../src/lib/encryption';
 
 type MessageWithAuthor = Message & { sender?: Profile };
 type GroupThread = {
@@ -86,12 +87,20 @@ export default function GroupChat() {
 
     setSending(true);
     try {
+      // Encrypt message if E2E is available
+      const participantIds = group?.participant_ids || [];
+      const threadIdStr = typeof threadId === 'string' ? threadId : String(threadId);
+      let contentToSend = messageText.trim();
+      if (isE2EAvailable() && participantIds.length > 0) {
+        contentToSend = await encryptMessage(contentToSend, threadIdStr, participantIds);
+      }
+
       const { data, error } = await supabase
         .from('messages')
         .insert({
           thread_id: threadId,
           sender_id: user.id,
-          content: messageText.trim(),
+          content: contentToSend,
           message_type: 'text',
         })
         .select('*, sender:profiles!messages_sender_id_fkey(*)')
@@ -111,8 +120,34 @@ export default function GroupChat() {
     }
   };
 
+  // Decrypt messages for display
+  const [decryptedMessages, setDecryptedMessages] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    const participantIds = group?.participant_ids || [];
+    const threadIdStr = typeof threadId === 'string' ? threadId : String(threadId);
+    if (participantIds.length === 0) return;
+
+    const decryptAll = async () => {
+      const newMap = new Map<string, string>();
+      for (const msg of messages) {
+        if (isEncrypted(msg.content)) {
+          const decrypted = await decryptMessage(msg.content, threadIdStr, participantIds);
+          newMap.set(msg.id, decrypted);
+        }
+      }
+      if (newMap.size > 0) setDecryptedMessages(newMap);
+    };
+    decryptAll();
+  }, [messages, group?.participant_ids, threadId]);
+
+  const getDisplayContent = (msg: MessageWithAuthor): string => {
+    return decryptedMessages.get(msg.id) || (isEncrypted(msg.content) ? '[Encrypted]' : msg.content);
+  };
+
   const renderMessage = ({ item }: { item: MessageWithAuthor }) => {
     const isOwn = item.sender_id === user?.id;
+    const displayContent = getDisplayContent(item);
     return (
       <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
         {!isOwn && (
@@ -136,11 +171,16 @@ export default function GroupChat() {
             <Text style={styles.senderName}>{item.sender?.trail_name || 'Wanderkind'}</Text>
           )}
           <Text style={[styles.messageText, isOwn && styles.messageTextOwn]}>
-            {item.content}
+            {displayContent}
           </Text>
-          <Text style={[styles.messageTime, isOwn && styles.messageTimeOwn]}>
-            {formatTime(item.created_at)}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            {isEncrypted(item.content) && (
+              <Ionicons name="lock-closed" size={8} color={isOwn ? 'rgba(255,255,255,0.5)' : colors.ink3} style={{ marginRight: 4 }} />
+            )}
+            <Text style={[styles.messageTime, isOwn && styles.messageTimeOwn]}>
+              {formatTime(item.created_at)}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -174,7 +214,15 @@ export default function GroupChat() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{group?.name || 'Group Chat'}</Text>
-          <Text style={styles.headerSubtitle}>{participants.length} members</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            {isE2EAvailable() && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: `${colors.green}15`, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 }}>
+                <Ionicons name="lock-closed" size={8} color={colors.green} />
+                <Text style={{ fontSize: 8, fontWeight: '700', color: colors.green, letterSpacing: 0.5 }}>E2E</Text>
+              </View>
+            )}
+            <Text style={styles.headerSubtitle}>{participants.length} members</Text>
+          </View>
         </View>
         <TouchableOpacity>
           <Ionicons name="information-circle-outline" size={24} color={colors.ink} />

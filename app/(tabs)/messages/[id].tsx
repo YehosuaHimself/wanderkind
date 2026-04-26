@@ -20,6 +20,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { Message, Profile, Thread } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
+import { encryptMessage, decryptMessage, isEncrypted, isE2EAvailable } from '../../../src/lib/encryption';
 
 type MessageWithAuthor = Message & { sender?: Profile };
 
@@ -153,11 +154,19 @@ export default function ChatThread() {
 
     setSending(true);
     try {
+      // Encrypt message if E2E is available
+      const participantIds = thread?.participant_ids || [];
+      const threadIdStr = typeof threadId === 'string' ? threadId : String(threadId);
+      let contentToSend = sanitized;
+      if (isE2EAvailable() && participantIds.length > 0 && !isSeedProfile) {
+        contentToSend = await encryptMessage(sanitized, threadIdStr, participantIds);
+      }
+
       if (isSeedProfile) {
         // For seed profiles, just add message to local state
         const localMessage: MessageWithAuthor = {
           id: Date.now().toString(),
-          thread_id: threadId as string,
+          thread_id: threadIdStr,
           sender_id: user.id,
           content: sanitized,
           message_type: 'text',
@@ -175,7 +184,7 @@ export default function ChatThread() {
           .insert({
             thread_id: threadId,
             sender_id: user.id,
-            content: sanitized,
+            content: contentToSend,
             message_type: 'text',
           })
           .select('*, sender:profiles!messages_sender_id_fkey(*)')
@@ -197,8 +206,34 @@ export default function ChatThread() {
     }
   };
 
+  // Decrypt messages for display
+  const [decryptedMessages, setDecryptedMessages] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    const participantIds = thread?.participant_ids || [];
+    const threadIdStr = typeof threadId === 'string' ? threadId : String(threadId);
+    if (participantIds.length === 0) return;
+
+    const decryptAll = async () => {
+      const newMap = new Map<string, string>();
+      for (const msg of messages) {
+        if (isEncrypted(msg.content)) {
+          const decrypted = await decryptMessage(msg.content, threadIdStr, participantIds);
+          newMap.set(msg.id, decrypted);
+        }
+      }
+      if (newMap.size > 0) setDecryptedMessages(newMap);
+    };
+    decryptAll();
+  }, [messages, thread?.participant_ids, threadId]);
+
+  const getDisplayContent = useCallback((msg: MessageWithAuthor): string => {
+    return decryptedMessages.get(msg.id) || (isEncrypted(msg.content) ? '[Encrypted]' : msg.content);
+  }, [decryptedMessages]);
+
   const renderMessage = ({ item }: { item: MessageWithAuthor }) => {
     const isOwn = item.sender_id === user?.id;
+    const displayContent = getDisplayContent(item);
     return (
       <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
         {!isOwn && (
@@ -217,11 +252,16 @@ export default function ChatThread() {
           ]}
         >
           <Text style={[styles.messageText, isOwn && styles.messageTextOwn]}>
-            {item.content}
+            {displayContent}
           </Text>
-          <Text style={[styles.messageTime, isOwn && styles.messageTimeOwn]}>
-            {formatTime(item.created_at)}
-          </Text>
+          <View style={styles.messageFooter}>
+            {isEncrypted(item.content) && (
+              <Ionicons name="lock-closed" size={8} color={isOwn ? 'rgba(255,255,255,0.5)' : colors.ink3} style={{ marginRight: 4 }} />
+            )}
+            <Text style={[styles.messageTime, isOwn && styles.messageTimeOwn]}>
+              {formatTime(item.created_at)}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -255,7 +295,15 @@ export default function ChatThread() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{otherUser?.trail_name || 'Wanderkind'}</Text>
-          <Text style={styles.headerSubtitle}>{otherUser?.tier?.toUpperCase() || 'WALKER'}</Text>
+          <View style={styles.headerSubRow}>
+            {isE2EAvailable() && !isSeedProfile && (
+              <View style={styles.e2eBadge}>
+                <Ionicons name="lock-closed" size={8} color={colors.green} />
+                <Text style={styles.e2eText}>E2E</Text>
+              </View>
+            )}
+            <Text style={styles.headerSubtitle}>{otherUser?.tier?.toUpperCase() || 'WALKER'}</Text>
+          </View>
         </View>
         <TouchableOpacity>
           <Ionicons name="ellipsis-vertical" size={24} color={colors.ink} />
@@ -325,7 +373,10 @@ const styles = StyleSheet.create({
   },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle: { ...typography.bodySm, fontWeight: '700', color: colors.ink },
-  headerSubtitle: { fontSize: 10, letterSpacing: 2, color: colors.amber, marginTop: 2 },
+  headerSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  headerSubtitle: { fontSize: 10, letterSpacing: 2, color: colors.amber },
+  e2eBadge: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: `${colors.green}15`, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 },
+  e2eText: { fontSize: 8, fontWeight: '700', color: colors.green, letterSpacing: 0.5 },
   centerLoading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   messagesList: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
   messageRow: {
@@ -355,7 +406,8 @@ const styles = StyleSheet.create({
   messageBubbleOther: { backgroundColor: colors.surfaceAlt },
   messageText: { ...typography.bodySm, color: colors.ink },
   messageTextOwn: { color: colors.surface },
-  messageTime: { fontSize: 10, color: colors.ink3, marginTop: 4 },
+  messageFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  messageTime: { fontSize: 10, color: colors.ink3 },
   messageTimeOwn: { color: 'rgba(255,255,255,0.7)' },
   inputSection: {
     flexDirection: 'row',
