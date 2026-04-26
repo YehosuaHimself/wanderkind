@@ -1,13 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
-import { Platform } from 'react-native';
 import { colors, radii, typography } from '../../lib/theme';
-
-// expo-haptics doesn't work on web
-let Haptics: any = null;
-if (Platform.OS !== 'web') {
-  try { Haptics = require('expo-haptics'); } catch {}
-}
+import { haptic } from '../../lib/haptics';
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 
@@ -37,9 +31,10 @@ export function WKButton({
   icon,
 }: Props) {
   const handlePress = () => {
-    if (Haptics) {
-      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
-    }
+    // Contextual haptic: danger gets warning, primary gets medium, others get light
+    if (variant === 'danger') haptic.warning();
+    else if (variant === 'primary') haptic.medium();
+    else haptic.light();
     onPress();
   };
 

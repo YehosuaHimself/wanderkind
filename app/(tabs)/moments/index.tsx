@@ -13,6 +13,7 @@ import { StoryRing } from '../../../src/components/stories/StoryRing';
 import { StoryViewer } from '../../../src/components/stories/StoryViewer';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 type MomentWithAuthor = Moment & { author?: Profile };
 
@@ -398,7 +399,8 @@ export default function MomentsFeed() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <RouteErrorBoundary routeName="Moments">
+      <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLabel}>
@@ -483,6 +485,7 @@ export default function MomentsFeed() {
         </TouchableOpacity>
       </Modal>
     </SafeAreaView>
+    </RouteErrorBoundary>
   );
 }
 

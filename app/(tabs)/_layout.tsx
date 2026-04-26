@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { View, Platform, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../src/lib/theme';
+import { haptic } from '../../src/lib/haptics';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
 
 const CENTER_SIZE = 52;
@@ -36,6 +37,9 @@ export default function TabLayout() {
           },
         }}
         initialRouteName="map"
+        screenListeners={{
+          tabPress: () => haptic.light(),
+        }}
       >
         <Tabs.Screen
           name="myway"

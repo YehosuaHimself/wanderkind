@@ -7,6 +7,7 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useSettings } from '../../../../src/stores/settings';
+import { haptic } from '../../../../src/lib/haptics';
 
 type NotificationSetting = {
   key: string;
@@ -80,7 +81,10 @@ export default function NotificationsScreen() {
                   </View>
                   <Switch
                     value={isOn}
-                    onValueChange={(val) => setNotification(key, val)}
+                    onValueChange={(val) => {
+                      haptic.light();
+                      setNotification(key, val);
+                    }}
                     trackColor={{ false: colors.border, true: colors.amberBg }}
                     thumbColor={isOn ? colors.amber : colors.ink3}
                   />

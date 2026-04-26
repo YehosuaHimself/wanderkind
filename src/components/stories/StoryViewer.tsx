@@ -13,6 +13,7 @@ import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-cont
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
+import { haptic } from '../../lib/haptics';
 import type { StoryRow } from '../../types/database';
 
 type StoryViewerProps = {
@@ -150,12 +151,14 @@ export const StoryViewer = ({
 
         // Vertical swipe down = close
         if (dy > 100 && absDy > absDx) {
+          haptic.light();
           onCloseRef.current();
           return;
         }
 
         // Horizontal swipe — advance stories (not just groups)
         if (absDx > SWIPE_THRESHOLD && absDx > absDy) {
+          haptic.light();
           if (dx < 0) {
             handleNextRef.current();
           } else {
@@ -168,6 +171,7 @@ export const StoryViewer = ({
         const { locationX } = evt.nativeEvent;
         const tapZone = locationX / SCREEN_WIDTH;
 
+        haptic.selection();
         if (tapZone < 0.35) {
           handlePreviousRef.current();
         } else {

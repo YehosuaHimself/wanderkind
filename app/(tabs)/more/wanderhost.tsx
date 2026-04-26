@@ -12,6 +12,7 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { showAlert } from '../../../src/lib/alert';
 import { toast } from '../../../src/lib/toast';
+import { haptic } from '../../../src/lib/haptics';
 
 export default function WanderHostScreen() {
   useAuthGuard();
@@ -48,6 +49,7 @@ export default function WanderHostScreen() {
   };
 
   const toggleHosting = async (value: boolean) => {
+    haptic.medium();
     const prev = isHosting;
     setIsHosting(value);
     if (user) {
@@ -63,6 +65,7 @@ export default function WanderHostScreen() {
   };
 
   const handleSnoozePress = () => {
+    haptic.light();
     if (isSnoozed) {
       // Un-snooze immediately
       confirmSnooze(false);
@@ -73,6 +76,7 @@ export default function WanderHostScreen() {
   };
 
   const confirmSnooze = async (snooze: boolean) => {
+    haptic.success();
     setShowSnoozeConfirm(false);
     const prev = isSnoozed;
     setIsSnoozed(snooze);

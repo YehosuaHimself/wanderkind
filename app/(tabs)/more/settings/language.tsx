@@ -7,6 +7,7 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useSettings, AppLanguage } from '../../../../src/stores/settings';
+import { haptic } from '../../../../src/lib/haptics';
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -35,6 +36,7 @@ export default function LanguageScreen() {
   const { language: selected, setLanguage } = useSettings();
 
   const handleSelect = (code: string) => {
+    haptic.selection();
     setLanguage(code as AppLanguage);
     setTimeout(() => router.back(), 300);
   };

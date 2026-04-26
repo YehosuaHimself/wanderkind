@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { haptic } from '../../../src/lib/haptics';
+import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GRID_GAP = 10;
@@ -157,6 +158,7 @@ export default function MoreScreen() {
   ), [router, TILE_HEIGHT]);
 
   return (
+    <RouteErrorBoundary routeName="More">
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header with title + page label */}
       <View style={styles.header}>
@@ -198,6 +200,7 @@ export default function MoreScreen() {
         ))}
       </View>
     </SafeAreaView>
+    </RouteErrorBoundary>
   );
 }
 

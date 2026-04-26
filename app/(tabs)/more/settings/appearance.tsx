@@ -7,6 +7,7 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useSettings, AppTheme } from '../../../../src/stores/settings';
+import { haptic } from '../../../../src/lib/haptics';
 
 export default function AppearanceScreen() {
   const { user, isLoading } = useAuthGuard();
@@ -43,7 +44,10 @@ export default function AppearanceScreen() {
                   styles.themeButton,
                   theme === t.id && styles.themeButtonSelected,
                 ]}
-                onPress={() => setTheme(t.id as AppTheme)}
+                onPress={() => {
+                  haptic.selection();
+                  setTheme(t.id as AppTheme);
+                }}
                 activeOpacity={0.7}
               >
                 <Ionicons
@@ -87,7 +91,10 @@ export default function AppearanceScreen() {
                 <TouchableOpacity
                   key={size}
                   style={[styles.sizeStep, textSize === size && styles.sizeStepActive]}
-                  onPress={() => setTextSize(size)}
+                  onPress={() => {
+                    haptic.selection();
+                    setTextSize(size);
+                  }}
                   accessibilityLabel={`Text size ${Math.round((0.8 + size * 0.4) * 100)}%`}
                 >
                   <Text style={[

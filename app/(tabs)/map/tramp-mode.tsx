@@ -25,6 +25,7 @@ import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { supabase } from '../../../src/lib/supabase';
 import { toast } from '../../../src/lib/toast';
+import { haptic } from '../../../src/lib/haptics';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -122,15 +123,14 @@ export default function TrampMode() {
 
   // ── Handlers ───────────────────────────────────────────────────────
   const activateSignal = useCallback(() => {
+    haptic.heavy();
     setSignalActive(true);
     setWaitStarted(new Date());
     setShowSignalScreen(true);
-    if (Platform.OS !== 'web') {
-      Vibration.vibrate(100);
-    }
   }, []);
 
   const deactivateSignal = useCallback(() => {
+    haptic.medium();
     setSignalActive(false);
     setWaitStarted(null);
     setWaitMinutes(0);
@@ -255,7 +255,10 @@ export default function TrampMode() {
         <View style={signalStyles.controls}>
           <TouchableOpacity
             style={signalStyles.gotRideBtn}
-            onPress={startRide}
+            onPress={() => {
+              haptic.success();
+              startRide();
+            }}
             activeOpacity={0.8}
           >
             <Ionicons name="car-outline" size={22} color={colors.tramp} />
@@ -264,7 +267,10 @@ export default function TrampMode() {
 
           <TouchableOpacity
             style={signalStyles.stopBtn}
-            onPress={deactivateSignal}
+            onPress={() => {
+              haptic.medium();
+              deactivateSignal();
+            }}
             activeOpacity={0.7}
           >
             <Ionicons name="close" size={20} color="#FFFFFF" />
@@ -352,7 +358,10 @@ export default function TrampMode() {
                     styles.ratingBtn,
                     feedbackRating === 'good' && styles.ratingBtnActive,
                   ]}
-                  onPress={() => setFeedbackRating('good')}
+                  onPress={() => {
+                    haptic.selection();
+                    setFeedbackRating('good');
+                  }}
                   activeOpacity={0.7}
                 >
                   <Ionicons
@@ -371,7 +380,10 @@ export default function TrampMode() {
                     styles.ratingBtn,
                     feedbackRating === 'bad' && styles.ratingBtnActive,
                   ]}
-                  onPress={() => setFeedbackRating('bad')}
+                  onPress={() => {
+                    haptic.selection();
+                    setFeedbackRating('bad');
+                  }}
                   activeOpacity={0.7}
                 >
                   <Ionicons

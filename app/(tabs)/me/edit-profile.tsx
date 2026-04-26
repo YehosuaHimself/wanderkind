@@ -11,6 +11,7 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/stores/auth';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { haptic } from '../../../src/lib/haptics';
 
 const LANGUAGES = ['English', 'German', 'French', 'Spanish', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
 const EXPERIENCE_LEVELS = ['First Time', 'Casual Walker', 'Experienced', 'Seasoned', 'Guide'];
@@ -158,7 +159,7 @@ export default function EditProfileScreen() {
                 styles.languageTag,
                 languages.includes(lang) && styles.languageTagActive,
               ]}
-              onPress={() => toggleLanguage(lang)}
+              onPress={() => { haptic.selection(); toggleLanguage(lang); }}
             >
               <Text
                 style={[
@@ -189,7 +190,7 @@ export default function EditProfileScreen() {
                 styles.expButton,
                 experience === level && styles.expButtonActive,
               ]}
-              onPress={() => setExperience(level)}
+              onPress={() => { haptic.selection(); setExperience(level); }}
             >
               <Text
                 style={[
@@ -212,7 +213,7 @@ export default function EditProfileScreen() {
                 styles.expButton,
                 mobilityType === m.id && styles.expButtonActive,
               ]}
-              onPress={() => setMobilityType(m.id)}
+              onPress={() => { haptic.selection(); setMobilityType(m.id); }}
             >
               <Ionicons
                 name={m.icon as any}

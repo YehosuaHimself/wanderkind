@@ -8,6 +8,7 @@ import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 type Thread = {
@@ -123,8 +124,9 @@ export default function MessagesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <RouteErrorBoundary routeName="Messages">
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
         <View style={styles.headerLabel}>
           <View style={styles.headerDot} />
           <Text style={styles.headerLabelText}>MESSAGES</Text>
@@ -237,7 +239,8 @@ export default function MessagesScreen() {
       >
         <Ionicons name="add" size={24} color="#FFFFFF" />
       </TouchableOpacity>
-    </SafeAreaView>
+      </SafeAreaView>
+    </RouteErrorBoundary>
   );
 }
 

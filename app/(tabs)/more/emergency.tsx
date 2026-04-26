@@ -10,6 +10,7 @@ if (Platform.OS !== 'web') {
   try { Location = require('expo-location'); } catch {}
 }
 import { colors, typography, spacing } from '../../../src/lib/theme';
+import { haptic } from '../../../src/lib/haptics';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
@@ -142,7 +143,7 @@ export default function EmergencyScreen() {
               <TouchableOpacity
                 key={item.number}
                 style={styles.emergencyButton}
-                onPress={() => callEmergency(item.number)}
+                onPress={() => { haptic.heavy(); callEmergency(item.number); }}
                 activeOpacity={0.8}
               >
                 <Ionicons name={item.icon} size={28} color={colors.surface} />

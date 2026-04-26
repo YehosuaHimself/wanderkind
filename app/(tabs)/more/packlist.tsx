@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useRouter } from 'expo-router';
+import { haptic } from '../../../src/lib/haptics';
 
 type PackTab = 'packlist' | 'tips';
 
@@ -175,12 +176,14 @@ export default function PacklistScreen() {
   ]);
 
   const toggleCategory = (index: number) => {
+    haptic.selection();
     const newCategories = [...categories];
     newCategories[index].expanded = !newCategories[index].expanded;
     setCategories(newCategories);
   };
 
   const toggleItem = (categoryIndex: number, itemId: string) => {
+    haptic.selection();
     const newCategories = [...categories];
     const item = newCategories[categoryIndex].items.find((i) => i.id === itemId);
     if (item) {
@@ -208,7 +211,10 @@ export default function PacklistScreen() {
         <TouchableOpacity
           key={tab}
           style={[styles.tab, activeTab === tab && styles.tabActive]}
-          onPress={() => setActiveTab(tab)}
+          onPress={() => {
+            haptic.light();
+            setActiveTab(tab);
+          }}
         >
           <Ionicons
             name={tabInfo[tab].icon as any}

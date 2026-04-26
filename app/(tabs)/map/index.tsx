@@ -14,6 +14,7 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../src/stores/favorites';
 import { useAuthStore } from '../../../src/stores/auth';
 import { getRouteRelativeDistance } from '../../../src/lib/route-distance';
+import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 const { width, height } = Dimensions.get('window');
 
@@ -1316,7 +1317,8 @@ export default function MapHome() {
   }, [nearbyHosts.length, userLat, userLng, router, centerMapOnHost]);
 
   return (
-    <View style={styles.container}>
+    <RouteErrorBoundary routeName="Map">
+      <View style={styles.container}>
       {/* Map */}
       {Platform.OS === 'web' ? (
         <WebMapComponent
@@ -1657,7 +1659,8 @@ export default function MapHome() {
           />
         </View>
       )}
-    </View>
+      </View>
+    </RouteErrorBoundary>
   );
 }
 

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { haptic } from '../../../src/lib/haptics';
+import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 // Direct imports instead of React.lazy — fixes rendering issues
 import WaysContent from '../more/ways';
@@ -15,6 +16,7 @@ export default function MyWayScreen() {
   const [activeTab, setActiveTab] = useState<TabMode>('ways');
 
   return (
+    <RouteErrorBoundary routeName="My Way">
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
@@ -64,6 +66,7 @@ export default function MyWayScreen() {
         {activeTab === 'ways' ? <WaysContent embedded /> : <GroupWalkContent embedded />}
       </View>
     </SafeAreaView>
+    </RouteErrorBoundary>
   );
 }
 

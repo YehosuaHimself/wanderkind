@@ -10,6 +10,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useSettings } from '../../../src/stores/settings';
+import { haptic } from '../../../src/lib/haptics';
 
 const LANG_NAMES: Record<string, string> = {
   en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español',
@@ -35,19 +36,28 @@ export default function SettingsScreen() {
       label: 'Language',
       subtitle: LANG_NAMES[language] || 'English',
       icon: 'globe-outline' as const,
-      onPress: () => router.push('/(tabs)/more/settings/language' as any),
+      onPress: () => {
+        haptic.light();
+        router.push('/(tabs)/more/settings/language' as any);
+      },
     },
     {
       label: 'Notifications',
       subtitle: 'Manage alerts',
       icon: 'notifications-outline' as const,
-      onPress: () => router.push('/(tabs)/more/settings/notifications' as any),
+      onPress: () => {
+        haptic.light();
+        router.push('/(tabs)/more/settings/notifications' as any);
+      },
     },
     {
       label: 'Appearance',
       subtitle: `${theme === 'dark' ? 'Dark' : 'Light'} theme`,
       icon: 'contrast-outline' as const,
-      onPress: () => router.push('/(tabs)/more/settings/appearance' as any),
+      onPress: () => {
+        haptic.light();
+        router.push('/(tabs)/more/settings/appearance' as any);
+      },
     },
   ];
 
@@ -99,7 +109,10 @@ export default function SettingsScreen() {
           </WKCard>
 
           <View style={styles.accountActions}>
-            <TouchableOpacity style={styles.accountButton} onPress={() => router.push('/(tabs)/me/edit-profile' as any)}>
+            <TouchableOpacity style={styles.accountButton} onPress={() => {
+              haptic.light();
+              router.push('/(tabs)/me/edit-profile' as any);
+            }}>
               <Text style={styles.accountButtonText}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -115,7 +128,10 @@ export default function SettingsScreen() {
           />
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => router.push('/(tabs)/me/delete-account' as any)}
+            onPress={() => {
+              haptic.light();
+              router.push('/(tabs)/me/delete-account' as any);
+            }}
             activeOpacity={0.7}
           >
             <Text style={styles.deleteButtonText}>Delete Account</Text>
