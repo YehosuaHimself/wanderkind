@@ -386,7 +386,7 @@ function WebMapComponent({
       fadeAnimation: true,
       zoomAnimation: true,
       markerZoomAnimation: true,
-    }).setView([47.0, 4.0], 5);
+    }).setView([50.0, 10.0], 4);
 
     // Tile layer URLs for each mode
     var tileUrls = {
@@ -1038,22 +1038,29 @@ export default function MapHome() {
       setActiveHostIndex(idx);
       haptic.light();
       const host = viewableItems[0].item as Host;
-      if (host) {
+      if (host && host.lat && host.lng) {
         // Fly map to this host's location
         if (Platform.OS === 'web') {
-          const iframe = document.querySelector('iframe');
-          iframe?.contentWindow?.postMessage({
-            type: 'flyTo',
-            lat: host.lat,
-            lng: host.lng,
-            zoom: 14,
-          }, '*');
+          // Find all iframes and post to each — ensures we hit the map iframe
+          const iframes = document.querySelectorAll('iframe');
+          iframes.forEach((iframe: HTMLIFrameElement) => {
+            try {
+              iframe.contentWindow?.postMessage({
+                type: 'flyTo',
+                lat: host.lat,
+                lng: host.lng,
+                zoom: 14,
+              }, '*');
+            } catch (e) {
+              // cross-origin iframe, skip
+            }
+          });
         }
       }
     }
   }).current;
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const handleLocationPress = async () => {
     try {
@@ -1635,7 +1642,6 @@ export default function MapHome() {
             renderItem={renderHostCard}
             keyExtractor={item => item.id}
             horizontal
-            pagingEnabled
             showsHorizontalScrollIndicator={false}
             snapToInterval={HOST_CARD_WIDTH + 12}
             snapToAlignment="start"
