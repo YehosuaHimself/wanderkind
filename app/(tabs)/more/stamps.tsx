@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Modal,
   Platform,
   Share,
   Linking,
@@ -29,7 +28,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
   const { user } = useAuth();
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFabMenu, setShowFabMenu] = useState(false);
+  // showFabMenu removed — FAB goes directly to scan
 
   useEffect(() => {
     fetchStamps();
@@ -202,22 +201,6 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
         data={stamps}
         renderItem={renderStamp}
         keyExtractor={item => item.id}
-        ListHeaderComponent={
-          <TouchableOpacity
-            style={styles.myStampCard}
-            onPress={() => router.push('/(tabs)/more/stamps/my-stamp' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.myStampIcon}>
-              <Ionicons name="finger-print-outline" size={28} color={colors.amber} />
-            </View>
-            <View style={styles.myStampInfo}>
-              <Text style={styles.myStampTitle}>My Wanderkind Stamp</Text>
-              <Text style={styles.myStampSub}>Design your personal stamp to share</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.ink3} />
-          </TouchableOpacity>
-        }
         ListEmptyComponent={renderEmpty}
         numColumns={3}
         columnWrapperStyle={styles.row}
@@ -229,78 +212,14 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
         initialNumToRender={15}
       />
 
-      {/* FAB — Scan Stamp (single core action) */}
+      {/* FAB — Scan Stamp (single core action, direct navigation) */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => setShowFabMenu(true)}
+        onPress={() => router.push('/(tabs)/more/scan' as any)}
         activeOpacity={0.85}
       >
         <Ionicons name="scan-outline" size={24} color="#fff" />
       </TouchableOpacity>
-
-      {/* FAB Menu Modal */}
-      <Modal
-        visible={showFabMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFabMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.fabOverlay}
-          activeOpacity={1}
-          onPress={() => setShowFabMenu(false)}
-        >
-          <View style={styles.fabMenu}>
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              onPress={() => {
-                setShowFabMenu(false);
-                router.push('/(tabs)/more/scan' as any);
-              }}
-            >
-              <View style={[styles.fabMenuIcon, { backgroundColor: '#DBEAFE' }]}>
-                <Ionicons name="scan-outline" size={20} color="#2563EB" />
-              </View>
-              <View style={styles.fabMenuInfo}>
-                <Text style={styles.fabMenuTitle}>Scan Stamp</Text>
-                <Text style={styles.fabMenuSub}>Scan a QR code to collect a stamp</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              onPress={() => {
-                setShowFabMenu(false);
-                router.push('/(tabs)/more/stamps/my-stamp' as any);
-              }}
-            >
-              <View style={[styles.fabMenuIcon, { backgroundColor: colors.amberBg }]}>
-                <Ionicons name="finger-print-outline" size={20} color={colors.amber} />
-              </View>
-              <View style={styles.fabMenuInfo}>
-                <Text style={styles.fabMenuTitle}>My Wanderkind Stamp</Text>
-                <Text style={styles.fabMenuSub}>Design and share your personal stamp</Text>
-              </View>
-            </TouchableOpacity>
-            {stamps.length > 0 && (
-              <TouchableOpacity
-                style={styles.fabMenuItem}
-                onPress={() => {
-                  setShowFabMenu(false);
-                  exportCollection();
-                }}
-              >
-                <View style={[styles.fabMenuIcon, { backgroundColor: 'rgba(39,134,74,0.08)' }]}>
-                  <Ionicons name="download-outline" size={20} color={colors.green} />
-                </View>
-                <View style={styles.fabMenuInfo}>
-                  <Text style={styles.fabMenuTitle}>Export Collection</Text>
-                  <Text style={styles.fabMenuSub}>Save as printable PDF</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </Wrapper>
   );
 }

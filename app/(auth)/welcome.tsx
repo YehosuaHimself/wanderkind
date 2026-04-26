@@ -59,18 +59,18 @@ export default function WelcomeScreen() {
 
         {/* Title */}
         <Text style={styles.title} accessibilityRole="header">WANDERKIND</Text>
-        <Text style={styles.subtitle}>Free shelter across Europe.{'\n'}Your pass. Open your door.</Text>
+        <Text style={styles.subtitle}>Walk the ancient ways.{'\n'}Stay with those who walk them too.</Text>
 
         {/* Stats row — dynamic from Supabase */}
         <View style={styles.statsRow} accessibilityLabel={`${stats.hosts} hosts, ${stats.routes} routes, ${stats.countries} countries`}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{stats.hosts}</Text>
-            <Text style={styles.statLabel}>HOSTS</Text>
+            <Text style={styles.statValue}>{stats.hosts}+</Text>
+            <Text style={styles.statLabel}>OPEN DOORS</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.routes}</Text>
-            <Text style={styles.statLabel}>ROUTES</Text>
+            <Text style={styles.statLabel}>WAYS</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
@@ -97,9 +97,11 @@ export default function WelcomeScreen() {
           fullWidth
         />
 
-        <Text style={styles.footer} accessibilityRole="text">
-          Every Wanderkind is a host.
-        </Text>
+        <View style={styles.hostBanner}>
+          <View style={styles.hostBannerLine} />
+          <Text style={styles.hostBannerText}>EVERY WANDERKIND IS ALSO A HOST</Text>
+          <View style={styles.hostBannerLine} />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -202,10 +204,24 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 12,
   },
-  footer: {
-    ...typography.caption,
-    color: colors.ink3,
+  hostBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+  },
+  hostBannerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.amber,
+    opacity: 0.4,
+  },
+  hostBannerText: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    letterSpacing: 2.5,
+    color: colors.amber,
+    fontWeight: '700',
     textAlign: 'center',
-    marginTop: 8,
   },
 });

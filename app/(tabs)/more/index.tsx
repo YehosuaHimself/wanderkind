@@ -8,10 +8,17 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useAuth } from '../../../src/stores/auth';
 import { toast } from '../../../src/lib/toast';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GRID_GAP = 8;
 const GRID_PADDING = 12;
 const TILE_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
+// Header ~60px + tab bar ~84px (iOS) / ~64px (web) + safe area ~50px = ~194px overhead
+const TAB_BAR_H = Platform.OS === 'ios' ? 84 : Platform.OS === 'web' ? 64 : 62;
+const HEADER_H = 60;
+const SAFE_AREA_TOP = Platform.OS === 'ios' ? 50 : 0;
+const ROWS = 6; // 12 tiles = 6 rows of 2
+const AVAILABLE_H = SCREEN_HEIGHT - HEADER_H - TAB_BAR_H - SAFE_AREA_TOP - GRID_PADDING * 2;
+const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS - 1)) / ROWS);
 
 type AppTile = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -31,17 +38,17 @@ const appTiles: AppTile[] = [
   },
   {
     icon: 'document-text',
-    title: 'Passes',
+    title: 'Pass & Stamps',
     route: '/(tabs)/me/passes',
     accent: colors.amber,
     bgTint: `${colors.amber}12`,
   },
   {
-    icon: 'ribbon',
-    title: 'Stamps',
-    route: '/(tabs)/more/stamps',
-    accent: '#8B5E3C',
-    bgTint: 'rgba(139,94,60,0.08)',
+    icon: 'compass',
+    title: 'The Ways',
+    route: '/(tabs)/more/ways',
+    accent: '#2D6A4F',
+    bgTint: 'rgba(45,106,79,0.08)',
   },
   {
     icon: 'create',
@@ -203,10 +210,10 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: TILE_WIDTH,
+    height: TILE_HEIGHT,
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 10,
-    minHeight: 76,
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: colors.borderLt,
