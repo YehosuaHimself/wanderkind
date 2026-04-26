@@ -71,9 +71,10 @@ export default function ChatThread() {
                 sender_id: pending.sender_id,
                 content: pending.content,
                 message_type: 'text',
+                metadata: null,
                 created_at: pending.created_at,
                 read_at: null,
-                sender: user as Profile,
+                sender: user as unknown as Profile,
               });
             } catch {}
             window.sessionStorage.removeItem(pendingKey);
@@ -160,9 +161,10 @@ export default function ChatThread() {
           sender_id: user.id,
           content: sanitized,
           message_type: 'text',
+          metadata: null,
           created_at: new Date().toISOString(),
           read_at: null,
-          sender: user as Profile,
+          sender: user as unknown as Profile,
         };
         setMessages([...messages, localMessage]);
         setMessageText('');

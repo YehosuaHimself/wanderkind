@@ -16,7 +16,7 @@ import { WKButton } from '../../../../src/components/ui/WKButton';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 const RULES = [
-  { id: 'shoes', label: 'Shoes off indoors', icon: 'shoe' as const },
+  { id: 'shoes', label: 'Shoes off indoors', icon: 'footsteps-outline' as const },
   { id: 'quiet', label: 'Quiet hours (10pm-7am)', icon: 'moon' as const },
   { id: 'smoking', label: 'No smoking', icon: 'close-circle' as const },
   { id: 'pets', label: 'Pets allowed', icon: 'paw' as const },

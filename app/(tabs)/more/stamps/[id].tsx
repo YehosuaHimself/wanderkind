@@ -101,7 +101,7 @@ export default function StampDetail() {
           <Image source={{ uri: stamp.photo_url }} style={styles.stampImage} resizeMode="cover" />
         ) : (
           <View style={styles.stampPlaceholder}>
-            <Ionicons name="stamp" size={64} color={colors.amber} />
+            <Ionicons name="ribbon" size={64} color={colors.amber} />
           </View>
         )}
 

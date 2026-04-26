@@ -30,7 +30,7 @@ function WebScanFallback() {
 
   useEffect(() => {
     let stream: MediaStream | null = null;
-    let animFrame: number;
+    let animFrame: number | undefined;
 
     const startCamera = async () => {
       try {

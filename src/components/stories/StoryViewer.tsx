@@ -327,7 +327,7 @@ const styles = {
     overflow: 'hidden' as const,
   },
   progressSegment: {
-    height: '100%',
+    flex: 1,
     borderRadius: 1,
   },
   imageContainer: {

@@ -95,7 +95,7 @@ export default function EmergencyScreen() {
 
   const emergencyNumbers = [
     { label: 'Emergency (112)', number: '112', icon: 'call-outline' as const },
-    { label: 'Mountain Rescue', number: '112', icon: 'mountain-outline' as const },
+    { label: 'Mountain Rescue', number: '112', icon: 'trail-sign-outline' as const },
     { label: 'Police', number: '112', icon: 'shield-checkmark-outline' as const },
   ];
 

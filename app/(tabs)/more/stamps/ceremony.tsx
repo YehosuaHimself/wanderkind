@@ -71,7 +71,7 @@ export default function StampCeremony() {
             ]}
           >
             <View style={styles.stampCircle}>
-              <Ionicons name="stamp" size={64} color={colors.surface} />
+              <Ionicons name="ribbon" size={64} color={colors.surface} />
             </View>
           </Animated.View>
 

@@ -91,7 +91,7 @@ export default function EditCoverScreen() {
         {selectedImage || profile?.cover_url ? (
           <View style={styles.previewContainer}>
             <Image
-              source={{ uri: selectedImage || profile?.cover_url }}
+              source={{ uri: selectedImage || profile?.cover_url || undefined }}
               style={styles.preview}
             />
             <TouchableOpacity

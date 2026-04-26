@@ -197,7 +197,7 @@ export default function RouteDetail() {
           <WKCard>
             <Text style={styles.sectionTitle}>Elevation Profile</Text>
             <View style={styles.elevationPlaceholder}>
-              <Ionicons name="mountain" size={32} color={colors.amberBg} />
+              <Ionicons name="trail-sign-outline" size={32} color={colors.amberBg} />
               <Text style={styles.elevationPlaceholderText}>Coming soon</Text>
             </View>
           </WKCard>

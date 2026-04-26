@@ -12,7 +12,7 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const categories = [
   { id: 'bug', label: 'Bug Report', icon: 'warning-outline' as const },
-  { id: 'feature', label: 'Feature Request', icon: 'lightbulb-outline' as const },
+  { id: 'feature', label: 'Feature Request', icon: 'bulb-outline' as const },
   { id: 'feedback', label: 'General Feedback', icon: 'chatbubble-outline' as const },
   { id: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' as const },
 ];

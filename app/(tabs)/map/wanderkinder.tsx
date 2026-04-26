@@ -43,7 +43,7 @@ export default function Wanderkinder() {
       const { data } = await supabase
         .from('presence')
         .select('profile_id, lat, lng, updated_at')
-        .eq('profile_id', '!=', 'null')
+        .not('profile_id', 'is', null)
         .order('updated_at', { ascending: false });
 
       if (data && data.length > 0) {

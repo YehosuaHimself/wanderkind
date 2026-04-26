@@ -71,7 +71,7 @@ export default function VerificationScreen() {
             <WKCard
               key={step.level}
               variant={isCurrent ? 'parchment' : 'default'}
-              style={[styles.verCard, !isActive && styles.verCardInactive]}
+              style={[styles.verCard, !isActive && styles.verCardInactive] as any}
             >
               {/* Header */}
               <View style={styles.verHeader}>
@@ -100,7 +100,7 @@ export default function VerificationScreen() {
                     <View
                       style={[
                         styles.stepNumber,
-                        isActive && { backgroundColor: step.color, color: '#fff' },
+                        isActive && { backgroundColor: step.color },
                       ]}
                     >
                       <Text style={styles.stepNumberText}>{stepIdx + 1}</Text>

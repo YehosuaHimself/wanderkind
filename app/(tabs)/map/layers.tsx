@@ -58,7 +58,7 @@ export default function Layers() {
     wanderkinder: 'people' as const,
     routes: 'map' as const,
     pois: 'location' as const,
-    camping: 'tent' as const,
+    camping: 'bed-outline' as const,
   };
 
   const layerColors = {

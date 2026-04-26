@@ -85,7 +85,7 @@ export default function MyProjectScreen() {
 
         <WKCard variant="parchment" style={styles.exampleCard}>
           <View style={styles.exampleHeader}>
-            <Ionicons name="lightbulb" size={20} color={colors.amber} />
+            <Ionicons name="bulb-outline" size={20} color={colors.amber} />
             <Text style={styles.exampleTitle}>Examples</Text>
           </View>
           <Text style={styles.exampleText}>

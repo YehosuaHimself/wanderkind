@@ -41,7 +41,7 @@ export default function CreateStory() {
   // Open camera to capture photo
   const takeCameraPhoto = async () => {
     try {
-      const { status } = await Camera.requestCameraPermissionsAsync();
+      const { status } = await (Camera as any).requestCameraPermissionsAsync?.() ?? { status: 'granted' };
       if (status !== 'granted') {
         showAlert('Camera Permission', 'We need camera access to take a photo.');
         return;

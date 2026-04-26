@@ -50,7 +50,7 @@ export default function JourneyScreen() {
             <WKCard
               key={tier.name}
               variant={isCurrent ? 'parchment' : 'default'}
-              style={[styles.tierCard, !isActive && styles.tierCardInactive]}
+              style={[styles.tierCard, !isActive && styles.tierCardInactive] as any}
             >
               <View style={styles.tierContent}>
                 <View style={styles.tierIcon}>

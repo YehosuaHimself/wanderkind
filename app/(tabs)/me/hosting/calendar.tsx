@@ -63,13 +63,13 @@ function CalendarMonth({ monthIndex }: { monthIndex: number }) {
                 <View
                   style={[
                     styles.dayButton,
-                    isBooked && styles.dayButtonBooked,
+                    !!isBooked && styles.dayButtonBooked,
                   ]}
                 >
                   <Text
                     style={[
                       styles.dayText,
-                      isBooked && styles.dayTextBooked,
+                      !!isBooked && styles.dayTextBooked,
                     ]}
                   >
                     {day}

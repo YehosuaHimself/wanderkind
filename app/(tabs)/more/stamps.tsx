@@ -153,7 +153,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
 
   const renderEmpty = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="stamp" size={48} color={colors.amberLine} />
+      <Ionicons name="ribbon-outline" size={48} color={colors.amberLine} />
       <Text style={styles.emptyTitle}>No stamps yet</Text>
       <Text style={styles.emptyText}>Your collection will grow as you stay with hosts.</Text>
     </View>

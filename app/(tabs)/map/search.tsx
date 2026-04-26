@@ -168,11 +168,11 @@ export default function Search() {
         />
       ) : (
         <FlatList
-          data={currentResults}
+          data={currentResults as any[]}
           renderItem={
-            activeTab === 'hosts' ? renderHostResult :
+            (activeTab === 'hosts' ? renderHostResult :
             activeTab === 'wanderkinder' ? renderWandererResult :
-            renderRouteResult
+            renderRouteResult) as any
           }
           keyExtractor={item => item.id}
           contentContainerStyle={styles.resultsList}

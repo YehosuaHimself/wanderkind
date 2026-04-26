@@ -111,7 +111,7 @@ export default function CampingDetail() {
           <WKCard variant="gold">
             <View style={[styles.typeBadge, { backgroundColor: `${typeColor}15` }]}>
               <Ionicons
-                name={spot.type === 'official' ? 'home' : 'camping'}
+                name={spot.type === 'official' ? 'home' : 'bed-outline'}
                 size={14}
                 color={typeColor}
               />
