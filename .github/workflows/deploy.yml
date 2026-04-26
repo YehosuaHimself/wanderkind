@@ -34,17 +34,26 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Add service worker kill switch (unregister old Vite PWA)
+      - name: Add minimal service worker for PWA support
         run: |
           cat > dist/sw.js << 'SWEOF'
+          // Minimal service worker — enables PWA install + standalone mode
+          // Cleans old Vite PWA caches but stays registered for Add to Home Screen
+          const CACHE_NAME = 'wanderkind-v1';
+
           self.addEventListener('install', () => self.skipWaiting());
+
           self.addEventListener('activate', (event) => {
             event.waitUntil(
-              caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
-                .then(() => self.clients.matchAll())
-                .then(clients => clients.forEach(c => c.navigate(c.url)))
-                .then(() => self.registration.unregister())
+              caches.keys().then(keys =>
+                Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+              ).then(() => self.clients.claim())
             );
+          });
+
+          self.addEventListener('fetch', (event) => {
+            // Network-first strategy — serve from network, fall through on failure
+            event.respondWith(fetch(event.request));
           });
           SWEOF
           cp dist/sw.js dist/service-worker.js
