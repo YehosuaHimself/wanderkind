@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import QRCodeLib from 'qrcode';
+
+// qrcode is dynamically imported below to reduce initial bundle size
 
 interface QRCodeProps {
   /** The data to encode */
@@ -29,26 +30,26 @@ export function QRCode({
   useEffect(() => {
     let cancelled = false;
 
-    try {
-      QRCodeLib.toDataURL(value, {
-        width: size * 2, // 2x for retina
-        margin: 0,
-        color: {
-          dark: color,
-          light: backgroundColor === 'transparent' ? '#00000000' : backgroundColor,
-        },
-        errorCorrectionLevel: 'M',
-      })
-        .then((url: string) => {
-          if (!cancelled) setDataUrl(url);
-        })
-        .catch((err: Error) => {
-          console.warn('QR generation failed:', err?.message);
-          if (!cancelled) setFailed(true);
+    const generateQRCode = async () => {
+      try {
+        const QRCodeLib = (await import('qrcode')).default;
+        const url = await QRCodeLib.toDataURL(value, {
+          width: size * 2, // 2x for retina
+          margin: 0,
+          color: {
+            dark: color,
+            light: backgroundColor === 'transparent' ? '#00000000' : backgroundColor,
+          },
+          errorCorrectionLevel: 'M',
         });
-    } catch (err: any) {
-      console.warn('QR library error:', err?.message);
-    }
+        if (!cancelled) setDataUrl(url);
+      } catch (err: any) {
+        console.warn('QR generation failed:', err?.message);
+        if (!cancelled) setFailed(true);
+      }
+    };
+
+    generateQRCode();
 
     return () => {
       cancelled = true;

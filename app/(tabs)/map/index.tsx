@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch, ScrollView, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,8 +8,9 @@ import { toast } from '../../../src/lib/toast';
 import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
-import { SEED_HOSTS } from '../../../src/data/seed-hosts';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
+
+type SeedProfile = (typeof SEED_PROFILES)[number];
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../src/stores/favorites';
 import { useAuthStore } from '../../../src/stores/auth';
@@ -103,9 +104,6 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 const HOST_CARD_WIDTH = width - 48;
-
-// Get walking seed profiles for map markers
-const walkingSeedProfiles = SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng);
 
 // Sample POI data — churches, parishes, wifi hotspots, mountains along major routes
 const POI_DATA = {
@@ -267,7 +265,7 @@ function WebMapComponent({
   hosts: Host[];
   filter: FilterMode;
   onHostPress: (id: string) => void;
-  walkers: typeof walkingSeedProfiles;
+  walkers: SeedProfile[];
   onWalkerPress: (id: string) => void;
   layers: LayerState;
   mapMode: MapMode;
@@ -842,7 +840,7 @@ export default function MapHome() {
   const [showMapModes, setShowMapModes] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
-  const [liveWalkers, setLiveWalkers] = useState<typeof walkingSeedProfiles>([]);
+  const [liveWalkers, setLiveWalkers] = useState<SeedProfile[]>([]);
   const [mapMode, setMapMode] = useState<MapMode>('normal');
   const hostListRef = useRef<FlatList>(null);
   const [layers, setLayers] = useState<LayerState>({
@@ -859,6 +857,12 @@ export default function MapHome() {
   const [showCommunityFAB, setShowCommunityFAB] = useState(false);
   const [showCommunityInfo, setShowCommunityInfo] = useState(false);
   const [communityPins, setCommunityPins] = useState<CommunityPin[]>(SEED_COMMUNITY_PINS);
+
+  // Memoize walking seed profiles for efficient filtering
+  const walkingSeedProfiles = useMemo(
+    () => SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng),
+    []
+  );
 
   // Roof Tonight — emergency accommodation request
   const [showRoofTonight, setShowRoofTonight] = useState(false);
@@ -998,8 +1002,9 @@ export default function MapHome() {
         console.error('Failed to fetch hosts from Supabase:', err);
       }
 
-      // Fallback to seed data
-      setHosts(SEED_HOSTS as unknown as Host[]);
+      // Fallback to seed data — dynamically imported for bundle optimization
+      const { default: seedHosts } = await import('../../../src/data/seed-hosts.json');
+      setHosts(seedHosts as unknown as Host[]);
     } catch (err) {
       console.error('Failed to load hosts:', err);
       toast.error('Could not load hosts');
