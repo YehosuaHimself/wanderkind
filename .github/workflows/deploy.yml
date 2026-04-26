@@ -34,6 +34,14 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      - name: Inject PWA meta tags into HTML
+        run: |
+          # Expo ignores +html.tsx — inject PWA tags directly into built HTML
+          # Insert manifest link, Apple meta tags, theme-color, and SW registration
+          sed -i 's|</head>|<link rel="manifest" href="/manifest.json" />\n<meta name="theme-color" content="#C8762A" />\n<meta name="apple-mobile-web-app-capable" content="yes" />\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />\n<meta name="apple-mobile-web-app-title" content="Wanderkind" />\n<link rel="apple-touch-icon" href="/apple-touch-icon.png" />\n<meta name="mobile-web-app-capable" content="yes" />\n<meta name="application-name" content="Wanderkind" />\n<meta name="msapplication-TileColor" content="#C8762A" />\n<meta name="msapplication-TileImage" content="/icon-144.png" />\n</head>|' dist/index.html
+          # Insert service worker registration before </body>
+          sed -i 's|</body>|<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})})}</script>\n</body>|' dist/index.html
+
       - name: Add minimal service worker for PWA support
         run: |
           cat > dist/sw.js << 'SWEOF'
