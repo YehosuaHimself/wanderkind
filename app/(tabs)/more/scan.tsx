@@ -227,7 +227,7 @@ function NativeScanScreen() {
             if (scannedData.type === 'check-in') {
               router.back();
             } else if (scannedData.type === 'profile') {
-              router.push(`/(tabs)/profile/${scannedData.id}` as any);
+              router.push(`/(tabs)/me/profile/${scannedData.id}` as any);
             }
           },
         },

@@ -178,7 +178,7 @@ export default function HostListingScreen() {
       <View style={styles.actions}>
         <WKButton
           title="Edit Listing"
-          onPress={() => router.push('/(tabs)/me/hosting/edit' as any)}
+          onPress={() => router.push('/(tabs)/me/hosting/listing-edit' as any)}
           variant="secondary"
           size="lg"
           fullWidth

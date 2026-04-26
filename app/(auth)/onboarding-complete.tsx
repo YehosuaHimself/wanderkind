@@ -79,7 +79,7 @@ export default function OnboardingCompleteScreen() {
 
   const handleContinue = () => {
     setOnboarded();
-    router.replace('/(app)');
+    router.replace('/(tabs)');
   };
 
   // Create confetti particles
