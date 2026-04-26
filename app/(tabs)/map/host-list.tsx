@@ -18,6 +18,16 @@ import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, HostType } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../src/stores/favorites';
+import { useAuthStore } from '../../../src/stores/auth';
+import { getRouteRelativeDistance } from '../../../src/lib/route-distance';
+
+// Simplified route lookup for host list
+const ROUTE_LOOKUP: Record<string, [number, number][]> = {
+  'koenigsweg': [[47.63,13],[47.42,13.07],[47.27,12.39],[47.26,11.39],[47.17,10.21],[47.37,9.75],[47.43,9.38],[47.13,8.75],[47,8],[46.95,7.44],[46.52,6.63],[46.2,6.14],[45.9,5.77],[45.44,4.39],[45.05,3.89],[44.84,3.18],[44.37,2.58],[43.93,2.15],[43.6,1.44],[43.3,0.5],[42.88,-0.3],[42.82,-1.64],[42.47,-2.33],[42.34,-3.7],[42.6,-5.57],[42.46,-6.05],[42.44,-7.01],[42.88,-8.54]],
+  'camino-frances': [[43.01,-1.32],[42.97,-1.39],[42.82,-1.64],[42.67,-2.03],[42.47,-2.33],[42.34,-3.7],[42.27,-4.54],[42.6,-5.57],[42.46,-6.05],[42.44,-7.01],[42.88,-8.54]],
+  'via-francigena': [[51.28,1.08],[50.94,1.86],[49.9,2.3],[49.25,4.03],[48.3,5.38],[47.47,7.35],[46.95,7.44],[46.52,6.63],[46,8.95],[45.46,9.19],[44.72,10.35],[43.77,11.25],[43.32,11.33],[42.73,11.79],[42.29,12.24],[41.9,12.45]],
+  'camino-portugues': [[41.15,-8.61],[41.37,-8.76],[41.69,-8.83],[42.05,-8.63],[42.43,-8.64],[42.63,-8.62],[42.88,-8.54]],
+};
 
 type FilterMode = HostType | 'all' | 'saved';
 
@@ -30,6 +40,19 @@ export default function HostList() {
   const [filter, setFilter] = useState<FilterMode>('all');
   const [loading, setLoading] = useState(true);
   const { favoriteHostIds, loadFavorites } = useFavoritesStore();
+  const { profile } = useAuthStore();
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
+
+  // Get user location for route-relative distance
+  useEffect(() => {
+    if (Platform.OS === 'web' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { setUserLat(pos.coords.latitude); setUserLng(pos.coords.longitude); },
+        () => {}
+      );
+    }
+  }, []);
 
   useEffect(() => {
     fetchHosts();
@@ -66,7 +89,19 @@ export default function HostList() {
   const renderHostCard = useCallback(
     ({ item: host }: { item: Host }) => {
       const config = hostTypeConfig[host.host_type];
-      const distance = host.route_km ? `${host.route_km} km` : 'Nearby';
+      // Route-relative distance when user has active way + location
+      let distance = host.route_km ? `${host.route_km} km` : 'Nearby';
+      if (userLat != null && userLng != null && profile?.current_way) {
+        const routeCoords = ROUTE_LOOKUP[profile.current_way];
+        if (routeCoords) {
+          const rel = getRouteRelativeDistance(userLat, userLng, host.lat, host.lng, routeCoords);
+          if (rel) {
+            const d = rel.distanceKm;
+            const label = rel.ahead ? 'ahead' : 'behind';
+            distance = d < 1 ? `${Math.round(d * 1000)} m ${label}` : d < 100 ? `${d.toFixed(1)} km ${label}` : `${Math.round(d)} km ${label}`;
+          }
+        }
+      }
       const { toggleFavorite, isFavorite } = useFavoritesStore();
       const isFav = isFavorite(host.id);
 

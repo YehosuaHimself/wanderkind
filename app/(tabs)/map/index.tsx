@@ -11,6 +11,8 @@ import { SEED_HOSTS } from '../../../src/data/seed-hosts';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../src/stores/favorites';
+import { useAuthStore } from '../../../src/stores/auth';
+import { getRouteRelativeDistance } from '../../../src/lib/route-distance';
 
 const { width, height } = Dimensions.get('window');
 
@@ -471,6 +473,7 @@ function LayersPanel({ layers, onToggle, onClose }: {
 export default function MapHome() {
   useAuthGuard(); // Track auth but don't block map rendering
   const router = useRouter();
+  const { profile } = useAuthStore();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('all');
@@ -676,9 +679,28 @@ export default function MapHome() {
     } catch {}
   };
 
-  // Format distance for display
+  // Find route coords for user's active way
+  const activeRouteCoords = React.useMemo(() => {
+    if (!profile?.current_way) return null;
+    const route = ROUTE_LINES.find(r => r.id === profile.current_way);
+    return route?.coords ?? null;
+  }, [profile?.current_way]);
+
+  // Format distance for display — prefer route-relative when available
   const formatDistance = (host: Host): string => {
     if (userLat != null && userLng != null) {
+      // Try route-relative distance first
+      if (activeRouteCoords) {
+        const rel = getRouteRelativeDistance(userLat, userLng, host.lat, host.lng, activeRouteCoords);
+        if (rel) {
+          const d = rel.distanceKm;
+          const label = rel.ahead ? 'ahead' : 'behind';
+          if (d < 1) return `${Math.round(d * 1000)} m ${label}`;
+          if (d < 100) return `${d.toFixed(1)} km ${label}`;
+          return `${Math.round(d)} km ${label}`;
+        }
+      }
+      // Fallback to straight-line distance
       const d = haversineKm(userLat, userLng, host.lat, host.lng);
       if (d < 1) return `${Math.round(d * 1000)} m`;
       if (d < 100) return `${d.toFixed(1)} km`;

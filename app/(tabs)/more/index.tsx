@@ -79,6 +79,13 @@ const menuItems: MenuItem[] = [
     route: '/(tabs)/me/emergency-contacts',
   },
   {
+    icon: 'analytics-outline',
+    title: 'Analytics',
+    subtitle: 'Network stats, host coverage & insights',
+    route: '/(tabs)/more/analytics',
+    accent: colors.blue,
+  },
+  {
     icon: 'information-circle-outline',
     title: 'About',
     subtitle: 'About Wanderkind',

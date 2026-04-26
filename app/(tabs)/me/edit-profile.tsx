@@ -14,6 +14,11 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 const LANGUAGES = ['English', 'German', 'French', 'Spanish', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
 const EXPERIENCE_LEVELS = ['First Time', 'Casual Walker', 'Experienced', 'Seasoned', 'Guide'];
+const MOBILITY_TYPES = [
+  { id: 'walk', label: 'Walking', icon: 'walk' },
+  { id: 'cycle', label: 'Cycling', icon: 'bicycle' },
+  { id: 'run', label: 'Running', icon: 'fitness' },
+] as const;
 
 export default function EditProfileScreen() {
   useAuthGuard();
@@ -28,6 +33,7 @@ export default function EditProfileScreen() {
   const [skills, setSkills] = useState('');
   const [quietMode, setQuietMode] = useState(false);
   const [privateProfile, setPrivateProfile] = useState(false);
+  const [mobilityType, setMobilityType] = useState<'walk' | 'cycle' | 'run'>('walk');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +48,7 @@ export default function EditProfileScreen() {
       setSkills(profile.skills?.join(', ') || '');
       setQuietMode(profile.quiet_mode || false);
       setPrivateProfile(!profile.searchable);
+      setMobilityType((profile as any).mobility_type || 'walk');
     }
   }, [profile]);
 
@@ -76,6 +83,7 @@ export default function EditProfileScreen() {
       // Only include optional fields if they have values (avoids column-not-found errors)
       if (homeCountry) updates.home_country = homeCountry;
       if (experience) updates.walking_experience = experience;
+      updates.mobility_type = mobilityType;
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -194,6 +202,36 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        {/* Mobility Type */}
+        <Text style={styles.label}>How You Travel</Text>
+        <View style={styles.experienceGrid}>
+          {MOBILITY_TYPES.map(m => (
+            <TouchableOpacity
+              key={m.id}
+              style={[
+                styles.expButton,
+                mobilityType === m.id && styles.expButtonActive,
+              ]}
+              onPress={() => setMobilityType(m.id)}
+            >
+              <Ionicons
+                name={m.icon as any}
+                size={16}
+                color={mobilityType === m.id ? '#fff' : colors.ink2}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.expText,
+                  mobilityType === m.id && styles.expTextActive,
+                ]}
+              >
+                {m.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* Privacy Settings */}
         <Text style={styles.label}>Privacy</Text>
         <View style={styles.toggleRow}>

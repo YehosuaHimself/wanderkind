@@ -120,6 +120,8 @@ export interface ProfileRow {
   fountains_marked: number;
   // Way
   current_way: string | null;
+  // Mobility
+  mobility_type: 'walk' | 'cycle' | 'run' | null;
   // Timestamps
   created_at: string;
   updated_at: string;

@@ -23,10 +23,12 @@ import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Host, GuestbookEntry } from '../../../src/types/database';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../../src/stores/favorites';
+import { useAuthStore } from '../../../../src/stores/auth';
 
 export default function HostDetail() {
   const { user, isLoading } = useAuthGuard();
   if (isLoading) return null;
+  const { profile } = useAuthStore();
 
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -116,14 +118,17 @@ export default function HostDetail() {
   const openDirections = () => {
     if (!host) return;
     const { lat, lng, name } = host;
-    const label = encodeURIComponent(name);
+    const mobility = (profile as any)?.mobility_type || 'walk';
+    // Map mobility type to platform-specific travel modes
+    const iosModes: Record<string, string> = { walk: 'w', cycle: 'b', run: 'w' };
+    const androidModes: Record<string, string> = { walk: 'w', cycle: 'b', run: 'w' };
+    const webModes: Record<string, string> = { walk: 'walking', cycle: 'bicycling', run: 'walking' };
     if (Platform.OS === 'ios') {
-      Linking.openURL(`maps:?daddr=${lat},${lng}&dirflg=w`);
+      Linking.openURL(`maps:?daddr=${lat},${lng}&dirflg=${iosModes[mobility] || 'w'}`);
     } else if (Platform.OS === 'android') {
-      Linking.openURL(`google.navigation:q=${lat},${lng}&mode=w`);
+      Linking.openURL(`google.navigation:q=${lat},${lng}&mode=${androidModes[mobility] || 'w'}`);
     } else {
-      // Web — open Google Maps walking directions
-      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`);
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=${webModes[mobility] || 'walking'}`);
     }
   };
 
