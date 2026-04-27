@@ -97,7 +97,7 @@ function RootLayoutInner() {
 
     // Signal to the DOM fallback that React mounted successfully
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      (window as any).__wkAppMounted?.();
+      (window as any).__wkMounted?.();
     }
   }, []);
 

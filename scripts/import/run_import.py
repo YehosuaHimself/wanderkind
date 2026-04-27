@@ -41,6 +41,7 @@ def load_all_importers():
     from sources.uk_ireland            import UKIrelandImporter
     from sources.central_eastern_europe import CentralEasternEuropeImporter
     from sources.wikidata              import WikidataImporter
+    from sources.north_america         import NorthAmericaImporter
 
     return {
         "osm":               OSMImporter,
@@ -57,6 +58,7 @@ def load_all_importers():
         "uk_ireland":        UKIrelandImporter,
         "central_east":      CentralEasternEuropeImporter,
         "wikidata":          WikidataImporter,
+        "north_america":     NorthAmericaImporter,
     }
 
 # Run order — OSM and Wikidata first (largest coverage, open data)
@@ -76,6 +78,7 @@ DEFAULT_ORDER = [
     "italy",          # Italian cammini
     "uk_ireland",     # Britain + Ireland
     "central_east",   # Poland, Czech, etc.
+    "north_america",  # USA + Canada pilgrim routes
 ]
 
 

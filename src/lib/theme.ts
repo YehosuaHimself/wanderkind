@@ -130,12 +130,30 @@ export const tierColors: Record<string, string> = {
 };
 
 // Host type label + color
-export const hostTypeConfig = {
-  free: { label: 'FREE STAY', color: '#27864A', bg: 'rgba(39,134,74,0.08)' },
-  donativo: { label: 'PAY WHAT YOU CAN', color: '#D4A017', bg: 'rgba(212,160,23,0.1)' },
-  budget: { label: 'LOW COST', color: '#2E6DA4', bg: 'rgba(46,109,164,0.08)' },
-  paid: { label: 'PAID', color: '#9B8E7E', bg: 'rgba(155,142,126,0.08)' },
-} as const;
+export const hostTypeConfig: Record<string, { label: string; color: string; bg: string }> = {
+  // Core pricing tiers
+  free:                 { label: 'FREE STAY',        color: '#27864A', bg: 'rgba(39,134,74,0.08)' },
+  donativo:             { label: 'DONATIVO',          color: '#D4A017', bg: 'rgba(212,160,23,0.1)' },
+  budget:               { label: 'LOW COST',          color: '#2E6DA4', bg: 'rgba(46,109,164,0.08)' },
+  paid:                 { label: 'PAID',              color: '#9B8E7E', bg: 'rgba(155,142,126,0.08)' },
+  // Albergue subtypes
+  albergue_municipal:   { label: 'MUNICIPAL',         color: '#1D6FA4', bg: 'rgba(29,111,164,0.08)' },
+  albergue_privado:     { label: 'PRIVATE ALBERGUE',  color: '#C8762A', bg: 'rgba(200,118,42,0.08)' },
+  albergue_parroquial:  { label: 'PARISH',            color: '#6B21A8', bg: 'rgba(107,33,168,0.08)' },
+  albergue_asociacion:  { label: 'ASSOCIATION',       color: '#0E7490', bg: 'rgba(14,116,144,0.08)' },
+  // Religious
+  monastery:            { label: 'MONASTERY',         color: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
+  church:               { label: 'CHURCH',            color: '#8B4513', bg: 'rgba(139,69,19,0.08)' },
+  // Accommodation types
+  gite_etape:           { label: "GÎTE D'ÉTAPE",     color: '#047857', bg: 'rgba(4,120,87,0.08)' },
+  refuge:               { label: 'REFUGE',            color: '#374151', bg: 'rgba(55,65,81,0.08)' },
+  camping:              { label: 'CAMPING',           color: '#059669', bg: 'rgba(5,150,105,0.08)' },
+  pension:              { label: 'PENSION',           color: '#B45309', bg: 'rgba(180,83,9,0.08)' },
+  hotel_budget:         { label: 'HOTEL',             color: '#6B7280', bg: 'rgba(107,114,128,0.08)' },
+  private_host:         { label: 'PRIVATE HOST',      color: '#C8762A', bg: 'rgba(200,118,42,0.06)' },
+  tourist_info:         { label: 'TOURIST INFO',      color: '#0284C7', bg: 'rgba(2,132,199,0.08)' },
+  community:            { label: 'COMMUNITY',         color: '#9B8E7E', bg: 'rgba(155,142,126,0.08)' },
+};
 
 // Trust Layer — freshness badges based on last_confirmed date
 export function getFreshnessBadge(lastConfirmed: string | null | undefined): { label: string; color: string; bg: string; icon: string } {
