@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
@@ -113,7 +113,7 @@ export default function VerificationScreen() {
               {isCurrent && (
                 <WKButton
                   title="Learn More"
-                  onPress={() => {}}
+                  onPress={() => Linking.openURL('https://wanderkind.love/verification-guide')}
                   variant="outline"
                   size="sm"
                   style={styles.learnButton}
