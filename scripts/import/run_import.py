@@ -71,6 +71,12 @@ def load_all_importers():
         "via_dinarica":      ViaDinaricaImporter,
         "shikoku_japan":     ShikokuJapanImporter,
         "australia_routes": AustraliaRoutesImporter,
+        "latin_america":    LatinAmericaImporter,
+        "east_asia":        EastAsiaImporter,
+        "southeast_asia":   SoutheastAsiaImporter,
+        "india_himalaya":   IndiaHimalayaImporter,
+        "africa_pilgrim":   AfricaPilgrimImporter,
+        "middle_east_safe": MiddleEastSafeImporter,
     }
 
 # Run order — OSM and Wikidata first (largest coverage, open data)
