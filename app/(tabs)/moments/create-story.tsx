@@ -20,7 +20,7 @@ import { colors, typography, spacing } from '../../../src/lib/theme';
 import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 import { showAlert } from '../../../src/lib/alert';
 import { toast } from '../../../src/lib/toast';
-import { sanitizeText, enforceMaxLength, validatePhoto, canPerformAction, LIMITS } from '../../../src/lib/validate';
+import { sanitizeText, enforceMaxLength, canPerformAction, LIMITS } from '../../../src/lib/validate';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { useAuth } from '../../../src/stores/auth';

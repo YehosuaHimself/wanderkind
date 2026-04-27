@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
   RefreshControl, Switch, Dimensions, Platform, ActivityIndicator, Modal, Share,
@@ -6,7 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows, tierColors } from '../../../src/lib/theme';
+import { colors, shadows, tierColors } from '../../../src/lib/theme';
 import { useWKImagePicker } from '../../../src/hooks/useWKImagePicker';
 import { toast } from '../../../src/lib/toast';
 import { useAuth } from '../../../src/stores/auth';

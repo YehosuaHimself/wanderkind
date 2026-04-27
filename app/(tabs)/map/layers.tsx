@@ -10,8 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
-import { WKHeader } from '../../../src/components/ui/WKHeader';
+import { colors, typography, spacing } from '../../../src/lib/theme';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 

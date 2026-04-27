@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, ScrollView, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,9 +8,6 @@ import { toast } from '../../../src/lib/toast';
 import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Host } from '../../../src/types/database';
-import { SEED_PROFILES } from '../../../src/data/seed-profiles';
-
-type SeedProfile = (typeof SEED_PROFILES)[number];
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../src/stores/favorites';
 import { useAuthStore } from '../../../src/stores/auth';
@@ -262,12 +259,12 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange
+  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange
 }: {
   hosts: Host[];
   activeFilters: Set<HostFilter>;
   onHostPress: (id: string) => void;
-  walkers: SeedProfile[];
+  walkers: Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>;
   onWalkerPress: (id: string) => void;
   layers: LayerState;
   mapMode: MapMode;
@@ -734,14 +731,14 @@ export default function MapHome() {
     });
   };
   const [nearbyHosts, setNearbyHosts] = useState<Host[]>([]);
-  const [activeHostIndex, setActiveHostIndex] = useState(0);
+  const [_activeHostIndex, setActiveHostIndex] = useState(0);
   const [showLayers, setShowLayers] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showPastStays, setShowPastStays] = useState(false);
   const [showMapModes, setShowMapModes] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
-  const [liveWalkers, setLiveWalkers] = useState<SeedProfile[]>([]);
+  const [liveWalkers, setLiveWalkers] = useState<Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>>([]);
   const [mapMode, setMapMode] = useState<MapMode>('normal');
   const hostListRef = useRef<FlatList>(null);
   const [layers, setLayers] = useState<LayerState>({
@@ -757,14 +754,6 @@ export default function MapHome() {
   });
   const [showCommunityFAB, setShowCommunityFAB] = useState(false);
   const [showCommunityInfo, setShowCommunityInfo] = useState(false);
-  const [communityPins, setCommunityPins] = useState<CommunityPin[]>(SEED_COMMUNITY_PINS);
-
-  // Memoize walking seed profiles for efficient filtering
-  const walkingSeedProfiles = useMemo(
-    () => SEED_PROFILES.filter(p => p.is_walking && (p as any).lat && (p as any).lng),
-    []
-  );
-
   // Roof Tonight — emergency accommodation request
   const [showRoofTonight, setShowRoofTonight] = useState(false);
   const [roofSentCount, setRoofSentCount] = useState(0); // 0 = not sent, 1 = 5km sent, 2 = 10km sent
@@ -777,9 +766,6 @@ export default function MapHome() {
   }, []);
 
   const isRoofActive = currentHour >= 18; // Active after 6pm
-  const canSendFirst = isRoofActive && roofSentCount === 0;
-  const canSendSecond = isRoofActive && currentHour >= 19 && roofSentCount === 1;
-
   const handleRoofTonight = useCallback(() => {
     if (!isRoofActive) {
       toast.info('Roof Tonight activates at 6:00 PM');
@@ -1227,7 +1213,7 @@ export default function MapHome() {
           hosts={hosts}
           activeFilters={activeFilters}
           onHostPress={handleHostPress}
-          walkers={[...walkingSeedProfiles, ...liveWalkers.filter(lw => !walkingSeedProfiles.some(sp => sp.id === lw.id))]}
+          walkers={liveWalkers}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
           layers={layers}
           mapMode={mapMode}

@@ -19,7 +19,6 @@ import { supabase } from '../../../src/lib/supabase';
 import { unblockUser } from '../../../src/lib/blocking';
 import { ProfileRow } from '../../../src/types/database';
 import { toast } from '../../../src/lib/toast';
-import { showAlert } from '../../../src/lib/alert';
 
 interface BlockedUserData {
   id: string;
