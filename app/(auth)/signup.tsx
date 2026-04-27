@@ -198,15 +198,13 @@ export default function SignUpScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.appleBtn}
-          onPress={async () => {
-            const { error } = await signInWithApple();
-            if (error) setErrors({ form: error.message });
-          }}
-          activeOpacity={0.7}
+          style={[styles.appleBtn, styles.appleBtnDisabled]}
+          activeOpacity={1}
+          disabled
         >
-          <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
-          <Text style={styles.appleBtnText}>Continue with Apple</Text>
+          <Ionicons name="logo-apple" size={20} color="rgba(255,255,255,0.5)" />
+          <Text style={[styles.appleBtnText, { color: 'rgba(255,255,255,0.5)' }]}>Continue with Apple</Text>
+          <Text style={styles.comingSoonBadge}>Soon</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -333,5 +331,15 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  appleBtnDisabled: {
+    opacity: 0.6,
+  },
+  comingSoonBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.5,
+    marginLeft: 4,
   },
 });

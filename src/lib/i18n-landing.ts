@@ -94,13 +94,13 @@ const en: Translations = {
   guideTitle: 'Install Wanderkind',
   guideSubtitle: '3 quick steps — takes 10 seconds',
   guideStep1Title: 'Tap the Share button',
-  guideStep1Desc: 'The square with an upward arrow — at the bottom of Safari',
-  guideStep1DescIPad: 'The square with an upward arrow — at the top right of Safari',
+  guideStep1Desc: 'The square with an upward arrow — at the bottom of your browser',
+  guideStep1DescIPad: 'The square with an upward arrow — at the top right of your browser',
   guideStep2Title: '"Add to Home Screen"',
-  guideStep2Desc: 'Scroll down the list — it\'s hidden below the first options. Look for the + icon',
+  guideStep2Desc: 'Scroll down the list — below the first options. Look for the + icon',
   guideStep3Title: 'Tap "Add"',
   guideStep3Desc: 'Wanderkind appears on your home screen — open it like any app',
-  guidePointer: 'Share button is down here in Safari',
+  guidePointer: 'Share button is down here',
   guideNext: 'NEXT',
 
   welcomeHome: 'Welcome home, wanderer.',
@@ -111,7 +111,7 @@ const en: Translations = {
   ways: 'WAYS',
   countries: 'COUNTRIES',
 
-  badgeLine1: 'INDEPENDENT',
+  badgeLine1: 'SECURE',
   badgeLine2: 'Direct Install',
 };
 
@@ -136,13 +136,13 @@ const de: Translations = {
   guideTitle: 'Wanderkind installieren',
   guideSubtitle: '3 kurze Schritte — dauert 10 Sekunden',
   guideStep1Title: 'Tippe auf Teilen',
-  guideStep1Desc: 'Das Quadrat mit dem Pfeil nach oben — unten in Safari',
-  guideStep1DescIPad: 'Das Quadrat mit dem Pfeil nach oben — oben rechts in Safari',
+  guideStep1Desc: 'Das Quadrat mit dem Pfeil nach oben — unten im Browser',
+  guideStep1DescIPad: 'Das Quadrat mit dem Pfeil nach oben — oben rechts im Browser',
   guideStep2Title: '„Zum Home-Bildschirm"',
-  guideStep2Desc: 'Scrolle in der Liste nach unten — die Option versteckt sich weiter unten. Achte auf das + Symbol',
+  guideStep2Desc: 'Scrolle in der Liste nach unten — unter den ersten Optionen. Achte auf das + Symbol',
   guideStep3Title: 'Tippe auf „Hinzufügen"',
   guideStep3Desc: 'Wanderkind erscheint auf deinem Startbildschirm — öffne es wie jede App',
-  guidePointer: 'Teilen-Button ist hier unten in Safari',
+  guidePointer: 'Teilen-Button ist hier unten',
   guideNext: 'WEITER',
 
   welcomeHome: 'Willkommen zu Hause, Wanderer.',
@@ -153,7 +153,7 @@ const de: Translations = {
   ways: 'WEGE',
   countries: 'LÄNDER',
 
-  badgeLine1: 'UNABHÄNGIG',
+  badgeLine1: 'SICHER',
   badgeLine2: 'Direkt installieren',
 };
 
@@ -178,13 +178,13 @@ const es: Translations = {
   guideTitle: 'Instalar Wanderkind',
   guideSubtitle: '3 pasos rápidos — 10 segundos',
   guideStep1Title: 'Toca el botón Compartir',
-  guideStep1Desc: 'El cuadrado con la flecha hacia arriba — en la parte inferior de Safari',
-  guideStep1DescIPad: 'El cuadrado con la flecha hacia arriba — arriba a la derecha en Safari',
+  guideStep1Desc: 'El cuadrado con la flecha hacia arriba — en la parte inferior del navegador',
+  guideStep1DescIPad: 'El cuadrado con la flecha hacia arriba — arriba a la derecha en el navegador',
   guideStep2Title: '"Añadir a pantalla de inicio"',
-  guideStep2Desc: 'Desplázate hacia abajo en la lista — está oculto debajo de las primeras opciones. Busca el icono +',
+  guideStep2Desc: 'Desplázate hacia abajo en la lista — debajo de las primeras opciones. Busca el icono +',
   guideStep3Title: 'Toca "Añadir"',
   guideStep3Desc: 'Wanderkind aparece en tu pantalla de inicio — ábrelo como cualquier app',
-  guidePointer: 'El botón Compartir está aquí abajo en Safari',
+  guidePointer: 'El botón Compartir está aquí abajo',
   guideNext: 'SIGUIENTE',
 
   welcomeHome: 'Bienvenido a casa, caminante.',
@@ -195,7 +195,7 @@ const es: Translations = {
   ways: 'CAMINOS',
   countries: 'PAÍSES',
 
-  badgeLine1: 'INDEPENDIENTE',
+  badgeLine1: 'SEGURO',
   badgeLine2: 'Instalación directa',
 };
 
@@ -220,13 +220,13 @@ const fr: Translations = {
   guideTitle: 'Installer Wanderkind',
   guideSubtitle: '3 étapes rapides — 10 secondes',
   guideStep1Title: 'Appuie sur Partager',
-  guideStep1Desc: "Le carré avec la flèche vers le haut — en bas de Safari",
-  guideStep1DescIPad: "Le carré avec la flèche vers le haut — en haut à droite de Safari",
+  guideStep1Desc: "Le carré avec la flèche vers le haut — en bas du navigateur",
+  guideStep1DescIPad: "Le carré avec la flèche vers le haut — en haut à droite du navigateur",
   guideStep2Title: "\"Ajouter à l'écran d'accueil\"",
-  guideStep2Desc: 'Fais défiler la liste vers le bas — c\'est caché sous les premières options. Cherche l\'icône +',
+  guideStep2Desc: 'Fais défiler la liste vers le bas — sous les premières options. Cherche l\'icône +',
   guideStep3Title: 'Appuie sur "Ajouter"',
   guideStep3Desc: "Wanderkind apparaît sur ton écran d'accueil — ouvre-le comme n'importe quelle app",
-  guidePointer: 'Le bouton Partager est ici en bas dans Safari',
+  guidePointer: 'Le bouton Partager est ici en bas',
   guideNext: 'SUIVANT',
 
   welcomeHome: 'Bienvenue chez toi, marcheur.',
@@ -237,7 +237,7 @@ const fr: Translations = {
   ways: 'CHEMINS',
   countries: 'PAYS',
 
-  badgeLine1: 'INDÉPENDANT',
+  badgeLine1: 'SÉCURISÉ',
   badgeLine2: 'Installation directe',
 };
 
@@ -262,13 +262,13 @@ const pt: Translations = {
   guideTitle: 'Instalar Wanderkind',
   guideSubtitle: '3 passos rápidos — 10 segundos',
   guideStep1Title: 'Toca no botão Partilhar',
-  guideStep1Desc: 'O quadrado com a seta para cima — na parte inferior do Safari',
-  guideStep1DescIPad: 'O quadrado com a seta para cima — no canto superior direito do Safari',
+  guideStep1Desc: 'O quadrado com a seta para cima — na parte inferior do navegador',
+  guideStep1DescIPad: 'O quadrado com a seta para cima — no canto superior direito do navegador',
   guideStep2Title: '"Adicionar ao ecrã inicial"',
-  guideStep2Desc: 'Desliza a lista para baixo — está escondido abaixo das primeiras opções. Procura o ícone +',
+  guideStep2Desc: 'Desliza a lista para baixo — abaixo das primeiras opções. Procura o ícone +',
   guideStep3Title: 'Toca em "Adicionar"',
   guideStep3Desc: 'Wanderkind aparece no teu ecrã — abre-o como qualquer app',
-  guidePointer: 'O botão Partilhar está aqui em baixo no Safari',
+  guidePointer: 'O botão Partilhar está aqui em baixo',
   guideNext: 'SEGUINTE',
 
   welcomeHome: 'Bem-vindo a casa, caminhante.',
@@ -279,7 +279,7 @@ const pt: Translations = {
   ways: 'CAMINHOS',
   countries: 'PAÍSES',
 
-  badgeLine1: 'INDEPENDENTE',
+  badgeLine1: 'SEGURO',
   badgeLine2: 'Instalação direta',
 };
 
@@ -304,13 +304,13 @@ const it: Translations = {
   guideTitle: 'Installa Wanderkind',
   guideSubtitle: '3 passi veloci — 10 secondi',
   guideStep1Title: 'Tocca il pulsante Condividi',
-  guideStep1Desc: 'Il quadrato con la freccia verso l\'alto — in basso in Safari',
-  guideStep1DescIPad: 'Il quadrato con la freccia verso l\'alto — in alto a destra in Safari',
+  guideStep1Desc: 'Il quadrato con la freccia verso l\'alto — in basso nel browser',
+  guideStep1DescIPad: 'Il quadrato con la freccia verso l\'alto — in alto a destra nel browser',
   guideStep2Title: '"Aggiungi alla schermata Home"',
-  guideStep2Desc: 'Scorri la lista verso il basso — è nascosto sotto le prime opzioni. Cerca l\'icona +',
+  guideStep2Desc: 'Scorri la lista verso il basso — sotto le prime opzioni. Cerca l\'icona +',
   guideStep3Title: 'Tocca "Aggiungi"',
   guideStep3Desc: 'Wanderkind appare sulla tua schermata — aprilo come qualsiasi app',
-  guidePointer: 'Il pulsante Condividi è qui in basso in Safari',
+  guidePointer: 'Il pulsante Condividi è qui in basso',
   guideNext: 'AVANTI',
 
   welcomeHome: 'Bentornato a casa, camminatore.',
@@ -321,7 +321,7 @@ const it: Translations = {
   ways: 'CAMMINI',
   countries: 'PAESI',
 
-  badgeLine1: 'INDIPENDENTE',
+  badgeLine1: 'SICURO',
   badgeLine2: 'Installazione diretta',
 };
 
@@ -346,13 +346,13 @@ const nl: Translations = {
   guideTitle: 'Wanderkind installeren',
   guideSubtitle: '3 snelle stappen — 10 seconden',
   guideStep1Title: 'Tik op Delen',
-  guideStep1Desc: 'Het vierkant met de pijl omhoog — onderaan Safari',
-  guideStep1DescIPad: 'Het vierkant met de pijl omhoog — rechtsboven in Safari',
+  guideStep1Desc: 'Het vierkant met de pijl omhoog — onderaan je browser',
+  guideStep1DescIPad: 'Het vierkant met de pijl omhoog — rechtsboven in je browser',
   guideStep2Title: '"Zet op beginscherm"',
-  guideStep2Desc: 'Scroll naar beneden in de lijst — het staat verborgen onder de eerste opties. Zoek het + icoon',
+  guideStep2Desc: 'Scroll naar beneden in de lijst — onder de eerste opties. Zoek het + icoon',
   guideStep3Title: 'Tik op "Voeg toe"',
   guideStep3Desc: 'Wanderkind verschijnt op je beginscherm — open het als elke app',
-  guidePointer: 'Deelknop is hier beneden in Safari',
+  guidePointer: 'Deelknop is hier beneden',
   guideNext: 'VOLGENDE',
 
   welcomeHome: 'Welkom thuis, wandelaar.',
@@ -363,7 +363,7 @@ const nl: Translations = {
   ways: 'WEGEN',
   countries: 'LANDEN',
 
-  badgeLine1: 'ONAFHANKELIJK',
+  badgeLine1: 'VEILIG',
   badgeLine2: 'Directe installatie',
 };
 

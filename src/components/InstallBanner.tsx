@@ -43,7 +43,7 @@ function IOSInstallGuide({ visible, onClose }: { visible: boolean; onClose: () =
     {
       icon: 'share-outline' as const,
       title: 'Tap the Share button',
-      desc: 'Find the share icon at the bottom of Safari',
+      desc: 'Find the share icon at the bottom of your browser',
       highlight: 'Look for the square with an upward arrow',
     },
     {
@@ -127,11 +127,14 @@ function IOSInstallGuide({ visible, onClose }: { visible: boolean; onClose: () =
             })}
           </View>
 
-          {/* Safari share icon pointer */}
+          {/* Share icon pointer */}
           {activeStep === 0 && (
             <View style={styles.pointerContainer}>
               <Ionicons name="arrow-down" size={28} color={colors.amber} />
-              <Text style={styles.pointerText}>Share button is down here in Safari</Text>
+              <Text style={styles.pointerText}>Share button is down here</Text>
+              <View style={styles.pointerShareIcon}>
+                <Ionicons name="share-outline" size={22} color={colors.amber} />
+              </View>
             </View>
           )}
         </Animated.View>
@@ -602,5 +605,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.ink3,
     fontWeight: '500',
+  },
+  pointerShareIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
   },
 });

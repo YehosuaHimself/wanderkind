@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function IndependentBadge({
-  line1 = 'INDEPENDENT',
+  line1 = 'SECURE',
   line2 = 'Direct Install',
   width,
 }: Props) {
@@ -86,10 +86,11 @@ export function IndependentBadge({
           />
         </g>
 
-        {/* Top line — small caps label */}
+        {/* Top line — small caps label, centered in text area */}
         <text
-          x="40"
+          x={w / 2 + 10}
           y="18"
+          textAnchor="middle"
           fontFamily="system-ui, -apple-system, 'Segoe UI', sans-serif"
           fontSize="9"
           fontWeight="600"
@@ -99,10 +100,11 @@ export function IndependentBadge({
           {line1}
         </text>
 
-        {/* Bottom line — larger, orange, like "Download on the App Store" */}
+        {/* Bottom line — larger, orange, centered in text area */}
         <text
-          x="40"
+          x={w / 2 + 10}
           y="34"
+          textAnchor="middle"
           fontFamily="system-ui, -apple-system, 'Segoe UI', sans-serif"
           fontSize="14.5"
           fontWeight="700"
