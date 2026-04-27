@@ -304,7 +304,7 @@ function WebMapComponent({
     if (!mapReady || !iframeRef.current?.contentWindow) return;
     const hostData = hosts.map(h => ({
       id: h.id, name: h.name, lat: h.lat, lng: h.lng,
-      host_type: h.host_type, color: getMarkerColor(h.host_type),
+      host_type: h.host_type, color: getMarkerColor(((h as any).category ?? h.host_type)),
     }));
     const dataKey = JSON.stringify(hostData.map(h => h.id));
     if (dataKey === prevDataRef.current) return;
@@ -343,7 +343,7 @@ function WebMapComponent({
     // Pre-compute initial data for embedding
     const initialHosts = hosts.map(h => ({
       id: h.id, name: h.name, lat: h.lat, lng: h.lng,
-      host_type: h.host_type, color: getMarkerColor(h.host_type),
+      host_type: h.host_type, color: getMarkerColor(((h as any).category ?? h.host_type)),
     }));
     const initialWalkers = walkers.map(w => ({
       id: w.id, trail_name: w.trail_name,
@@ -433,12 +433,13 @@ function WebMapComponent({
       if (!currentLayers.hosts) return;
       allHosts.forEach(function(host) {
         var activeTypes = currentFilter.split(',');
-        if (activeTypes.length > 0 && !activeTypes.includes(host.host_type)) return;
+        var hostCat = host.category || host.host_type;
+        if (activeTypes.length > 0 && !activeTypes.includes(hostCat)) return;
         var mc = host.color || '#999';
         L.circleMarker([host.lat, host.lng], {
           radius: 7, fillColor: mc, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
         })
-        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + host.name + '</strong><br/><span style="color:' + mc + ';font-size:10px;text-transform:uppercase;">' + host.host_type + '</span></div>')
+        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + host.name + '</strong><br/><span style="color:' + mc + ';font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:1px;">' + (host.category || host.host_type).toUpperCase() + '</span>' + (host.labels && host.labels.length ? '<br/><span style="font-size:9px;color:#9B8E7E;text-transform:lowercase;">' + host.labels.slice(0,3).join(' · ') + '</span>' : '') + '</div>')
         .on('click', function() {
           window.parent.postMessage({ type: 'host-click', hostId: host.id }, '*');
         })
@@ -863,7 +864,7 @@ export default function MapHome() {
       sorted = [...hosts].sort((a, b) => (b.total_hosted ?? 0) - (a.total_hosted ?? 0));
     }
     // Apply filter
-    const filtered = sorted.filter(h => activeFilters.has(h.host_type as HostFilter));
+    const filtered = sorted.filter(h => activeFilters.has(((h as any).category ?? h.host_type) as HostFilter));
     setNearbyHosts(filtered);
     setActiveHostIndex(0);
   }, [hosts, userLat, userLng, activeFilters]);
@@ -875,7 +876,10 @@ export default function MapHome() {
           .from('hosts')
           .select('*')
           .eq('is_available', true)
-          .order('total_hosted', { ascending: false });
+          .or('hidden_from_map.is.null,hidden_from_map.eq.false')
+          .order('quality_score', { ascending: false, nullsFirst: false })
+          .order('total_hosted', { ascending: false })
+          .limit(2000);
 
         if (data && data.length > 0) {
           setHosts(data as Host[]);

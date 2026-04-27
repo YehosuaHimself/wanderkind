@@ -259,6 +259,39 @@ export default function HostDetail() {
               )}
             </View>
 
+            {/* PRIMARY CATEGORY — Free / Donativo / Budget — the brand axis */}
+            {(host as any).category ? (
+              <View style={[styles.categoryRow, {
+                backgroundColor: (host as any).category === 'free' ? '#E2EFD9'
+                  : (host as any).category === 'donativo' ? '#FBEFD9'
+                  : '#F4E5C8',
+                borderColor: (host as any).category === 'free' ? '#5A7A2B'
+                  : (host as any).category === 'donativo' ? '#C8762A'
+                  : '#B8862C',
+              }]}>
+                <Text style={[styles.categoryLabel, {
+                  color: (host as any).category === 'free' ? '#3F6112'
+                    : (host as any).category === 'donativo' ? '#8C6010'
+                    : '#7A4F1E',
+                }]}>
+                  {(host as any).category === 'free' ? '✦ FREE'
+                    : (host as any).category === 'donativo' ? '✦ DONATIVO — pay what you can'
+                    : '✦ BUDGET — under €50'}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Secondary labels (parish, monastery, hostel, refuge, camping, …) */}
+            {Array.isArray((host as any).labels) && (host as any).labels.length > 0 ? (
+              <View style={styles.labelsRow}>
+                {((host as any).labels as string[]).map((lbl) => (
+                  <View key={lbl} style={styles.labelChip}>
+                    <Text style={styles.labelChipText}>{lbl}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
             {/* Trust Badges */}
             <View style={styles.trustRow}>
               <TrustTierBadge quality_score={(host as any).quality_score} showScore />
@@ -537,6 +570,24 @@ function StatItem({ icon, label, value }: { icon: string; label: string; value: 
 }
 
 const styles = StyleSheet.create({
+  categoryRow: {
+    marginTop: 12, marginBottom: 8, paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 8, borderWidth: 1.5, alignSelf: 'flex-start',
+  },
+  categoryLabel: {
+    fontFamily: 'Courier New', fontSize: 12, letterSpacing: 1.5, fontWeight: '800',
+  },
+  labelsRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10,
+  },
+  labelChip: {
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
+    backgroundColor: '#F2EBDD', borderWidth: 1, borderColor: '#E6DCC8',
+  },
+  labelChipText: {
+    fontSize: 10, fontWeight: '600', color: '#5C5147', letterSpacing: 0.4,
+    textTransform: 'lowercase',
+  },
   container: {
     flex: 1,
     backgroundColor: colors.bg,

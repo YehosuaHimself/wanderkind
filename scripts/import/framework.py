@@ -179,8 +179,12 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
             continue
 
         # last_confirmed kept null on import — community sets it via the UI.
+        cat, lbls = classify(rec.host_type)
         payload = {
             "quality_score": compute_quality_score(rec),
+            "category": cat,
+            "labels": lbls,
+            "hidden_from_map": cat is None,
             "name": rec.name.strip(),
             "lat": rec.lat,
             "lng": rec.lng,
@@ -257,6 +261,54 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
     return stats
 
 
+
+
+
+
+# ── Brand axis: free / donativo / budget (<€50) ────────────────────────────────
+# Every host is one of three categories on the map. Parish, monastery, hostel,
+# refuge, camping, gite, albergue — those are *labels*, secondary tags inside
+# one of the three categories above.
+
+CATEGORY_FROM_TYPE = {
+    # FREE — explicitly no money
+    "free": "free", "albergue_municipal": "free", "church": "free", "community": "free",
+    # DONATIVO — pay what you can
+    "donativo": "donativo", "albergue_parroquial": "donativo", "monastery": "donativo",
+    # BUDGET — under €50
+    "albergue_privado": "budget", "albergue_asociacion": "budget",
+    "gite_etape": "budget", "refuge": "budget", "camping": "budget",
+    "budget": "budget", "hotel_budget": "budget", "pension": "budget",
+    "private_host": "budget",  # default; Wanderhost claim flow promotes to free/donativo
+    "paid": "budget",
+    # Hidden from map
+    "tourist_info": None,
+}
+
+LABELS_FROM_TYPE = {
+    "monastery":           ["monastery"],
+    "church":              ["church"],
+    "albergue_municipal":  ["albergue", "public"],
+    "albergue_parroquial": ["albergue", "parish"],
+    "albergue_asociacion": ["albergue", "association"],
+    "albergue_privado":    ["albergue"],
+    "gite_etape":          ["gite"],
+    "refuge":              ["refuge"],
+    "camping":             ["camping"],
+    "pension":             ["pension"],
+    "hotel_budget":        ["hotel"],
+    "private_host":        ["wanderhost"],
+    "community":           ["community"],
+    "tourist_info":        ["info"],
+    "free":                [],
+    "donativo":            [],
+    "budget":              [],
+    "paid":                [],
+}
+
+def classify(host_type: str) -> tuple[Optional[str], list[str]]:
+    """Return (category, labels) for a given host_type."""
+    return CATEGORY_FROM_TYPE.get(host_type, "budget"), list(LABELS_FROM_TYPE.get(host_type, []))
 
 
 # ── Quality scoring ────────────────────────────────────────────────────────────
