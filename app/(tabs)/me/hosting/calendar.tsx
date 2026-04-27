@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: CELL_GAP },
   dayCell: {
-    width: `${(100 / 7).toFixed(4)}%`,
+    width: "14.2857%" as `${number}%`,
     aspectRatio: 1,
     alignItems: 'center', justifyContent: 'center',
     borderRadius: 6,
