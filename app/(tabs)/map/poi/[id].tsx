@@ -52,8 +52,6 @@ export default function POIDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [poi, setPoi] = useState<POI | null>(null);
   const [loading, setLoading] = useState(true);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     if (id) {
@@ -101,6 +99,8 @@ export default function POIDetail() {
     if (category === 'Monastery') return colors.amber;
     return colors.blue;
   };
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

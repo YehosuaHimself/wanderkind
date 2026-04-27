@@ -47,8 +47,6 @@ export default function StampDetailScreen() {
   const [error, setError] = useState('');
   const [stampCount, setStampCount] = useState(0);
   const [chainPosition, setChainPosition] = useState(0);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     fetchStamp();
@@ -113,6 +111,8 @@ export default function StampDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

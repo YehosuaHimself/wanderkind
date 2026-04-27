@@ -30,8 +30,6 @@ export default function Wanderkinder() {
   const [wanderers, setWanderers] = useState<NearbyWanderer[]>([]);
   const [loading, setLoading] = useState(true);
 
-  if (isLoading) return null;
-
   useEffect(() => {
     fetchNearbyWanderers();
     const interval = setInterval(fetchNearbyWanderers, 10000);
@@ -106,6 +104,8 @@ export default function Wanderkinder() {
       </TouchableOpacity>
     );
   };
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

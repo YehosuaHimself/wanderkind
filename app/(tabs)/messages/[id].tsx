@@ -19,7 +19,6 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Message, Profile, Thread } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { encryptMessage, decryptMessage, isEncrypted, isE2EAvailable } from '../../../src/lib/encryption';
 
 type MessageWithAuthor = Message & { sender?: Profile };
@@ -36,7 +35,6 @@ export default function ChatThread() {
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [isSeedProfile, setIsSeedProfile] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -45,48 +43,6 @@ export default function ChatThread() {
 
   const fetchThread = useCallback(async () => {
     try {
-      // Check if this is a seed profile (starts with 'p-')
-      if (typeof threadId === 'string' && threadId.startsWith('p-')) {
-        setIsSeedProfile(true);
-        const seedProfile = SEED_PROFILES.find(p => p.id === threadId);
-        if (seedProfile) {
-          setOtherUser({
-            id: seedProfile.id,
-            trail_name: seedProfile.trail_name,
-            avatar_url: seedProfile.avatar_url,
-            tier: seedProfile.tier,
-          } as Profile);
-        }
-
-        // Check for pending message from new.tsx (sent before navigating here)
-        const pendingMessages: MessageWithAuthor[] = [];
-        if (typeof window !== 'undefined' && window.sessionStorage) {
-          const pendingKey = `wk-pending-msg-${threadId}`;
-          const pendingRaw = window.sessionStorage.getItem(pendingKey);
-          if (pendingRaw) {
-            try {
-              const pending = JSON.parse(pendingRaw);
-              pendingMessages.push({
-                id: `local-${Date.now()}`,
-                thread_id: threadId,
-                sender_id: pending.sender_id,
-                content: pending.content,
-                message_type: 'text',
-                metadata: null,
-                created_at: pending.created_at,
-                read_at: null,
-                sender: user as unknown as Profile,
-              });
-            } catch {}
-            window.sessionStorage.removeItem(pendingKey);
-          }
-        }
-
-        setMessages(pendingMessages);
-        setLoading(false);
-        return;
-      }
-
       const { data: threadData } = await supabase
         .from('threads')
         .select('*')
@@ -158,27 +114,10 @@ export default function ChatThread() {
       const participantIds = thread?.participant_ids || [];
       const threadIdStr = typeof threadId === 'string' ? threadId : String(threadId);
       let contentToSend = sanitized;
-      if (isE2EAvailable() && participantIds.length > 0 && !isSeedProfile) {
+      if (isE2EAvailable() && participantIds.length > 0 ) {
         contentToSend = await encryptMessage(sanitized, threadIdStr, participantIds);
       }
-
-      if (isSeedProfile) {
-        // For seed profiles, just add message to local state
-        const localMessage: MessageWithAuthor = {
-          id: Date.now().toString(),
-          thread_id: threadIdStr,
-          sender_id: user.id,
-          content: sanitized,
-          message_type: 'text',
-          metadata: null,
-          created_at: new Date().toISOString(),
-          read_at: null,
-          sender: user as unknown as Profile,
-        };
-        setMessages([...messages, localMessage]);
-        setMessageText('');
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-      } else {
+ else {
         const { data, error } = await supabase
           .from('messages')
           .insert({
@@ -296,7 +235,7 @@ export default function ChatThread() {
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{otherUser?.trail_name || 'Wanderkind'}</Text>
           <View style={styles.headerSubRow}>
-            {isE2EAvailable() && !isSeedProfile && (
+            {isE2EAvailable()  && (
               <View style={styles.e2eBadge}>
                 <Ionicons name="lock-closed" size={8} color={colors.green} />
                 <Text style={styles.e2eText}>E2E</Text>

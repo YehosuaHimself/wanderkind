@@ -68,8 +68,6 @@ function GuestCheckInItem({
 
 export default function CheckInScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [guests, setGuests] = useState(MOCK_GUESTS);
   const [searchName, setSearchName] = useState('');
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -81,6 +79,8 @@ export default function CheckInScreen() {
   };
 
   const checkedCount = guests.filter((g) => g.checked).length;
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

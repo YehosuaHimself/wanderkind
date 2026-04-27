@@ -39,8 +39,6 @@ export default function HostDetail() {
   const [confirmCount, setConfirmCount] = useState(0);
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     if (id) {
@@ -213,6 +211,8 @@ export default function HostDetail() {
   const freshness = getFreshnessBadge((host as any).last_confirmed);
   const responseTime = getResponseTimeBadge((host as any).avg_response_minutes);
   const dataSource = dataSourceConfig[(host as any).data_source] || dataSourceConfig.community_report;
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

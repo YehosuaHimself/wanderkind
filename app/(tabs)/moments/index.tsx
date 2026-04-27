@@ -55,8 +55,6 @@ export default function MomentsFeed() {
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
 
-  if (isLoading) return null;
-
   // ── Get user location ─────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -397,6 +395,8 @@ export default function MomentsFeed() {
       <Text style={styles.emptyText}>Share your first moment from the road.{'\n'}Photos, thoughts, a sunrise.</Text>
     </View>
   );
+
+  if (isLoading) return null;
 
   return (
     <RouteErrorBoundary routeName="Moments">

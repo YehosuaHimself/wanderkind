@@ -25,8 +25,6 @@ export default function NextFreeBed() {
   const router = useRouter();
   const [host, setHost] = useState<Host | null>(null);
   const [loading, setLoading] = useState(true);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     fetchNextFreeBed();
@@ -77,6 +75,8 @@ export default function NextFreeBed() {
   const config = hostTypeConfig[host.host_type];
   const distance = host.route_km || 0;
   const walkingTime = Math.ceil(distance / 4); // Assume 4km/hour average
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

@@ -28,8 +28,6 @@ export default function RouteDetail() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     if (id) {
@@ -92,6 +90,8 @@ export default function RouteDetail() {
   const difficultyColor = route.difficulty === 'easy' ? colors.green
     : route.difficulty === 'moderate' ? colors.amber
     : colors.red;
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

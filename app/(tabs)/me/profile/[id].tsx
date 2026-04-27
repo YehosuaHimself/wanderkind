@@ -33,8 +33,6 @@ export default function PublicProfileScreen() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  if (isLoading) return null;
-
 
   useEffect(() => {
     fetchProfile();
@@ -127,6 +125,8 @@ export default function PublicProfileScreen() {
   }
 
   const tierColor = tierColors[profile.tier] || colors.ink3;
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl, Platform, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,6 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
-import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 type Thread = {
   id: string;
@@ -32,18 +31,24 @@ export default function MessagesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<{id:string;trail_name:string;avatar_url:string|null;bio:string|null}>>([]);
 
-  // Search wanderkinder by name or @handle
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase().replace(/^@/, '');
-    return SEED_PROFILES
-      .filter(p => {
-        if (user && p.id === user.id) return false;
-        const name = (p.trail_name || '').toLowerCase().replace(/^@/, '');
-        return name.includes(q);
-      })
-      .slice(0, 10);
+  // Search wanderkinder by trail_name in Supabase
+  useEffect(() => {
+    const q = searchQuery.trim().replace(/^@/, '');
+    if (!q) { setSearchResults([]); return; }
+    let cancelled = false;
+    const run = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, trail_name, avatar_url, bio')
+        .ilike('trail_name', `%${q}%`)
+        .neq('id', user?.id ?? '')
+        .limit(10);
+      if (!cancelled) setSearchResults(data ?? []);
+    };
+    run();
+    return () => { cancelled = true; };
   }, [searchQuery, user]);
 
   const fetchThreads = useCallback(async () => {
@@ -182,13 +187,7 @@ export default function MessagesScreen() {
               onPress={() => {
                 setSearchQuery('');
                 setIsSearching(false);
-                // Seed profiles: go directly to chat thread (handled locally)
-                // Real users: go through new message flow
-                if (item.id.startsWith('p-')) {
-                  router.push(`/(tabs)/messages/${item.id}` as any);
-                } else {
-                  router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
-                }
+                router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
               }}
               activeOpacity={0.7}
             >

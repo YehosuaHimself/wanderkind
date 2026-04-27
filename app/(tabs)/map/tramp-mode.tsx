@@ -61,8 +61,6 @@ export default function TrampMode() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.4)).current;
 
-  if (isLoading) return null;
-
   useEffect(() => {
     if (signalActive) {
       // Gentle pulse on the W
@@ -281,6 +279,8 @@ export default function TrampMode() {
   }
 
   // ── Main settings / dashboard view ─────────────────────────────────
+  if (isLoading) return null;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Hitchhike" showBack />

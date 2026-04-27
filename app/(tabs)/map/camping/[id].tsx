@@ -60,8 +60,6 @@ export default function CampingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [spot, setSpot] = useState<CampingSpot | null>(null);
   const [loading, setLoading] = useState(true);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     if (id) {
@@ -96,6 +94,8 @@ export default function CampingDetail() {
 
   const typeColor = spot.type === 'official' ? colors.blue : colors.tramp;
   const typeLabel = spot.type === 'official' ? 'OFFICIAL CAMPGROUND' : 'WILD CAMPING';
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

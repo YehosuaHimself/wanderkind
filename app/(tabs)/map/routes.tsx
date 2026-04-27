@@ -23,8 +23,6 @@ export default function Routes() {
   const router = useRouter();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
-  if (isLoading) return null;
-
 
   useEffect(() => {
     fetchRoutes();
@@ -105,6 +103,8 @@ export default function Routes() {
       </TouchableOpacity>
     );
   };
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

@@ -86,9 +86,9 @@ function CalendarMonth({ monthIndex }: { monthIndex: number }) {
 
 export default function CalendarScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [selectedMonth, setSelectedMonth] = useState(4); // May
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
