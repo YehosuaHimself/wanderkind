@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -129,15 +129,19 @@ export default function HostPushScreen() {
               {/* Optional custom message */}
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>CUSTOM MESSAGE (OPTIONAL)</Text>
-                <TouchableOpacity
-                  style={styles.messageBox}
-                  activeOpacity={1}
-                  onPress={() => {}}
-                >
-                  <Text style={styles.messageDefault}>
-                    "A WanderHost nearby needs help tonight. Can you take in one more?"
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.messageBox}>
+                  <TextInput
+                    value={message}
+                    onChangeText={setMessage}
+                    placeholder={'A WanderHost nearby needs help tonight. Can you take in one more?'}
+                    placeholderTextColor={colors.ink3}
+                    multiline
+                    maxLength={280}
+                    textAlignVertical="top"
+                    style={styles.messageInput}
+                  />
+                  <Text style={styles.messageCounter}>{message.length}/280</Text>
+                </View>
               </View>
 
               {status === 'error' && (
@@ -227,6 +231,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   messageDefault: { fontSize: 14, color: colors.ink3, fontStyle: 'italic', lineHeight: 20 },
+  messageInput: {
+    fontSize: 14,
+    color: colors.ink,
+    minHeight: 88,
+    lineHeight: 20,
+    padding: 0,
+  },
+  messageCounter: {
+    fontSize: 11,
+    color: colors.ink3,
+    textAlign: 'right',
+    marginTop: 6,
+  },
   errorText: { fontSize: 13, color: colors.red, marginBottom: 12, textAlign: 'center' },
   sendBtn: {
     flexDirection: 'row',
