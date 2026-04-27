@@ -25,7 +25,7 @@ export default function SignUpScreen() {
 
   const isMinor = birthYear ? (new Date().getFullYear() - parseInt(birthYear, 10)) < 18 : false;
 
-  const { signUp, signInWithGoogle } = useAuthStore();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuthStore();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -198,6 +198,18 @@ export default function SignUpScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={styles.appleBtn}
+          onPress={async () => {
+            const { error } = await signInWithApple();
+            if (error) setErrors({ form: error.message });
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+          <Text style={styles.appleBtnText}>Continue with Apple</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push('/(auth)/signin')}
         >
@@ -305,6 +317,21 @@ const styles = StyleSheet.create({
   googleBtnText: {
     ...typography.body,
     color: colors.ink,
+    fontWeight: '600',
+  },
+  appleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: 12,
+    paddingVertical: 14,
+    backgroundColor: '#000000',
+    marginTop: 10,
+  },
+  appleBtnText: {
+    ...typography.body,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
 });

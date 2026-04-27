@@ -15,6 +15,7 @@ type AuthState = {
   signUp: (email: string, password: string, trailName: string, role: 'walker' | 'host' | 'both', language: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithApple: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   fetchProfile: () => Promise<void>;
@@ -171,6 +172,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       // If in standalone mode, open the URL in Safari via window.open
+      if (isStandalone && data?.url) {
+        window.open(data.url, '_blank');
+      }
+
+      return { error };
+    } catch (err) {
+      return { error: err as Error };
+    }
+  },
+
+  signInWithApple: async () => {
+    try {
+      const isStandalone = Platform.OS === 'web' && typeof window !== 'undefined' &&
+        ((window.navigator as any).standalone === true ||
+         window.matchMedia('(display-mode: standalone)').matches);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: Platform.OS === 'web'
+            ? `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`
+            : 'wanderkind://auth/callback',
+          skipBrowserRedirect: isStandalone,
+        },
+      });
+
       if (isStandalone && data?.url) {
         window.open(data.url, '_blank');
       }
