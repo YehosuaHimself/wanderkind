@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   text_ghost: { color: colors.amber },
   text_danger: { color: colors.red },
 
-  textSize_sm: { fontSize: 10 },
-  textSize_md: { fontSize: 11 },
-  textSize_lg: { fontSize: 12 },
+  textSize_sm: { fontSize: 12 },
+  textSize_md: { fontSize: 13 },
+  textSize_lg: { fontSize: 14 },
 });

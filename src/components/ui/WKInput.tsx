@@ -114,14 +114,15 @@ function WebInput({
     borderRadius: radii.md,
     paddingLeft: 16,
     paddingRight: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 14,
+    paddingBottom: 14,
     fontSize: 16,
+    lineHeight: 1.5,
     color: colors.ink,
     width: '100%',
     boxSizing: 'border-box' as const,
     outline: 'none',
-    fontFamily: 'inherit',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
     WebkitAppearance: 'none' as any,
     appearance: 'none' as any,
     // Explicitly enable text interaction — the whole point of this component
@@ -136,24 +137,27 @@ function WebInput({
   };
 
   const labelStyle: React.CSSProperties = {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 600,
     color: colors.ink2,
-    marginBottom: 6,
-    letterSpacing: 0.5,
+    marginBottom: 8,
+    letterSpacing: 0.3,
     display: 'block',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
   };
 
   const errorStyle: React.CSSProperties = {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.red,
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 1.4,
   };
 
   const helperStyle: React.CSSProperties = {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.ink3,
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 1.4,
   };
 
   const sharedProps = {
@@ -209,11 +213,11 @@ function WebInput({
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.ink2,
-    marginBottom: 6,
-    letterSpacing: 0.5,
+    marginBottom: 8,
+    letterSpacing: 0.3,
   },
   input: {
     backgroundColor: colors.surface,
@@ -221,9 +225,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 16,
     color: colors.ink,
+    lineHeight: 24,
   },
   inputFocused: {
     borderColor: colors.amber,
@@ -232,13 +237,15 @@ const styles = StyleSheet.create({
     borderColor: colors.red,
   },
   error: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.red,
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 18,
   },
   helper: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.ink3,
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 18,
   },
 });

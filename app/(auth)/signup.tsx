@@ -241,10 +241,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   error: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.red,
-    marginTop: -10,
+    marginTop: -8,
     marginBottom: spacing.md,
+    lineHeight: 18,
   },
   termsContainer: {
     flexDirection: 'row',

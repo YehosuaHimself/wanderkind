@@ -148,7 +148,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signInWithGoogle: async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // In iOS PWA standalone mode, text inputs don't work inside the
+      // webview. We get the OAuth URL from Supabase but open it in a
+      // real Safari window instead of doing an in-page redirect.
+      const isStandalone = Platform.OS === 'web' && typeof window !== 'undefined' &&
+        ((window.navigator as any).standalone === true ||
+         window.matchMedia('(display-mode: standalone)').matches);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: Platform.OS === 'web'
@@ -158,8 +165,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             access_type: 'offline',
             prompt: 'consent',
           },
+          // In standalone PWA, don't let Supabase redirect — we'll open in Safari
+          skipBrowserRedirect: isStandalone,
         },
       });
+
+      // If in standalone mode, open the URL in Safari via window.open
+      if (isStandalone && data?.url) {
+        window.open(data.url, '_blank');
+      }
+
       return { error };
     } catch (err) {
       return { error: err as Error };

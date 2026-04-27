@@ -414,17 +414,17 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   primaryBtnText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
   signinLink: {
     paddingVertical: 12,
     alignItems: 'center',
   },
   signinText: {
-    fontSize: 14,
+    ...typography.bodySm,
     fontWeight: '600',
     color: colors.amber,
   },
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   trustText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.ink2,
   },
@@ -573,13 +573,13 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   installBtnText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1.5,
   },
   installNote: {
-    fontSize: 13,
+    ...typography.bodySm,
     color: colors.ink3,
     marginTop: 10,
     fontWeight: '500',
@@ -592,9 +592,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   techNoteText: {
-    fontSize: 11,
+    ...typography.caption,
     color: colors.ink3,
-    lineHeight: 16,
   },
 
   // Stats row (shared between both states)
@@ -614,7 +613,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: 'Courier New',
-    fontSize: 8,
+    fontSize: 10,
     letterSpacing: 2,
     color: colors.ink3,
     marginTop: 2,
@@ -691,12 +690,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   guideTitle: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '800',
     color: colors.ink,
   },
   guideSubtitle: {
-    fontSize: 13,
+    ...typography.bodySm,
     color: colors.ink3,
     marginTop: 2,
   },
