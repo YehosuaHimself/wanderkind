@@ -84,6 +84,25 @@ const appErrStyles = {
 };
 
 
+
+function RootLayoutInner() {
+  const initialize = useAuthStore(s => s.initialize);
+
+  useEffect(() => {
+    initialize();
+  }, []);
+
+  return (
+    <>
+      <StatusBar style="dark" />
+      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 250, gestureEnabled: true }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
+  );
+}
+
 export default function RootLayout() {
   return (
     <AppErrorBoundary>
