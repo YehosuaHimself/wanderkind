@@ -34,7 +34,7 @@ const FIRST_TIP = {
   title: 'How to Start the Journey',
   readTime: '3 min read',
   coverUrl: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80',
-  authorName: 'Yehosua',
+  authorName: 'Joschua',
   authorRole: 'Founder',
   quote: '"Nothing can go wrong if You put the right foot in front of the other."',
   body: `You are reading this because something inside you already knows: it is time to walk.

@@ -24,7 +24,7 @@ export default function ImprintScreen() {
         <WKCard variant="gold" style={styles.card}>
           <Text style={[typography.h3, styles.heading]}>Organization</Text>
           <View style={styles.infoBlock}>
-            <Text style={styles.value}>Yehosua Himself</Text>
+            <Text style={styles.value}>Joschua Himself</Text>
           </View>
         </WKCard>
 
@@ -50,7 +50,7 @@ export default function ImprintScreen() {
           </View>
           <View style={styles.infoBlock}>
             <Text style={styles.label}>Represented by:</Text>
-            <Text style={styles.value}>Yehosua Himself</Text>
+            <Text style={styles.value}>Joschua Himself</Text>
           </View>
         </WKCard>
 
