@@ -168,7 +168,6 @@ export interface HostRow {
   response_time_hours: number | null;
   total_hosted: number;
   quality_score?: number;
-  last_confirmed?: string | null;
   rating: number | null;
   route_id: string | null;
   route_km: number | null;
