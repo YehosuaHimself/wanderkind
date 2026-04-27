@@ -88,6 +88,12 @@ DEFAULT_ORDER = [
     "via_dinarica",   # Balkans — Slovenia → North Macedonia
     "shikoku_japan",  # Shikoku 88 temple pilgrimage
     "australia_routes", # Bibbulmun, Heysen, GNW, C2C, Larapinta, AAWT
+    "latin_america",    # Mexico through Patagonia
+    "east_asia",        # Korea + China + Mongolia
+    "southeast_asia",   # Thailand → Indonesia (Buddhist temples + hostels)
+    "india_himalaya",   # India + Nepal + Bhutan (dharamshalas, gurudwara)
+    "africa_pilgrim",   # Morocco + Egypt + Ethiopia + sub-Saharan
+    "middle_east_safe", # Turkey + Armenia + Georgia + Jordan
 ]
 
 

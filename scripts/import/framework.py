@@ -391,3 +391,111 @@ class BaseImporter:
         stats = upsert_hosts(records, dry_run=dry_run)
         self.log.info(f"  Done: {stats}")
         return stats
+
+# ── Regional Overpass importer ────────────────────────────────────────────────
+# Generic base for scraping pilgrim-relevant accommodation from OpenStreetMap
+# Overpass within a country / corridor / route bbox. Complements the global
+# OSMImporter by:
+#   * fetching guest_house, chalet, motel, camp_site (which the global
+#     query intentionally skips to keep volume reasonable)
+#   * targeting religious-pilgrim sites by region (Buddhist temples in Asia,
+#     dharamshalas in India, monasteries in Orthodox Balkans, etc.)
+# Each subclass only declares: SOURCE_ID, COUNTRY, BBOX (S,W,N,E).
+# Optional: REGION, EXTRA_QUERY (raw Overpass QL appended inside the union),
+# TYPE_OVERRIDES (dict of (tag_name -> wk host_type)).
+
+class RegionalOverpassImporter(BaseImporter):
+    SOURCE_ID = "regional_overpass"     # override
+    COUNTRY: Optional[str] = None        # override (None to skip writing it)
+    REGION: Optional[str] = None
+    BBOX = "35.0,-10.0,72.0,40.0"        # default = Europe; override per-region
+    EXTRA_QUERY = ""                     # extra Overpass union members
+    LANGUAGES: list[str] = []            # default languages array
+
+    def _query(self) -> str:
+        bbox = self.BBOX
+        return f"""
+[out:json][timeout:90];
+(
+  node["tourism"~"hostel|guest_house|chalet|alpine_hut|camp_site|caravan_site|motel"]({bbox});
+  way ["tourism"~"hostel|guest_house|chalet|alpine_hut"]({bbox});
+  node["amenity"="monastery"]({bbox});
+  way ["amenity"="monastery"]({bbox});
+  node["historic"="monastery"]({bbox});
+  way ["historic"="monastery"]({bbox});
+  node["amenity"="shelter"]["shelter_type"~"basic_hut|lean_to|weather_shelter"]({bbox});
+  node["pilgrim_accommodation"="yes"]({bbox});
+  way ["pilgrim_accommodation"="yes"]({bbox});
+{self.EXTRA_QUERY}
+);
+out center tags;
+"""
+
+    def _map_type(self, tags: dict) -> str:
+        if tags.get("pilgrim_accommodation") == "yes": return "albergue_privado"
+        t = tags.get("tourism")
+        if t == "alpine_hut":      return "refuge"
+        if t == "camp_site":       return "camping"
+        if t == "caravan_site":    return "camping"
+        if t == "hostel":          return "budget"
+        if t == "guest_house":     return "pension"
+        if t == "chalet":          return "pension"
+        if t == "motel":           return "hotel_budget"
+        if tags.get("amenity") == "monastery": return "monastery"
+        if tags.get("historic") == "monastery": return "monastery"
+        if tags.get("amenity") == "shelter":   return "refuge"
+        return "budget"
+
+    def fetch(self) -> list[HostRecord]:
+        self.log.info(f"Querying Overpass for {self.SOURCE_ID} ({self.COUNTRY or 'region'})…")
+        try:
+            r = self.session.post("https://overpass-api.de/api/interpreter",
+                                   data={"data": self._query()}, timeout=180)
+            r.raise_for_status()
+            data = r.json()
+        except Exception as e:
+            self.log.warning(f"Overpass fetch failed for {self.SOURCE_ID}: {e}")
+            return []
+
+        out: list[HostRecord] = []
+        for el in data.get("elements", []):
+            tags = el.get("tags", {})
+            name = tags.get("name:en") or tags.get("name")
+            if not name: continue
+            lat = el.get("lat") or (el.get("center") or {}).get("lat")
+            lng = el.get("lon") or (el.get("center") or {}).get("lon")
+            if lat is None or lng is None: continue
+            try:
+                cap = int(tags.get("capacity") or tags.get("beds") or 0) or None
+            except (ValueError, TypeError):
+                cap = None
+            sid = f"{self.SOURCE_ID}:osm/{el.get('type','node')}/{el.get('id')}"
+            out.append(HostRecord(
+                name=str(name)[:200],
+                lat=float(lat),
+                lng=float(lng),
+                host_type=self._map_type(tags),
+                data_source=self.SOURCE_ID,
+                source_id=sid,
+                country=self.COUNTRY,
+                region=self.REGION,
+                description=tags.get("description") or None,
+                phone=tags.get("phone") or tags.get("contact:phone"),
+                email=tags.get("email") or tags.get("contact:email"),
+                website=tags.get("website") or tags.get("contact:website"),
+                source_url=f"https://www.openstreetmap.org/{el.get('type','node')}/{el.get('id')}",
+                capacity=cap,
+                amenities=[a for a in [
+                    "shower" if tags.get("shower") == "yes" else None,
+                    "kitchen" if tags.get("kitchen") == "yes" else None,
+                    "wifi" if tags.get("internet_access") in ("yes","wlan","wifi") else None,
+                    "laundry" if tags.get("laundry_service") == "yes" else None,
+                ] if a],
+                languages=list(self.LANGUAGES),
+                is_pilgrim_only=tags.get("pilgrim_accommodation") == "yes",
+            ))
+        self.log.info(f"  {len(out)} candidate records")
+        return out
+
+
+
