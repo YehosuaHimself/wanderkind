@@ -191,7 +191,10 @@ export function InAppBrowserPrompt() {
   return createPortal(
     <div style={overlay}>
       <div style={card}>
-        <img src="/wanderkind-logo.png" style={logoImg} alt="Wanderkind" />
+        <picture>
+          <source srcSet="/wanderkind-logo.webp" type="image/webp" />
+          <img src="/wanderkind-logo.png" style={logoImg} alt="Wanderkind" />
+        </picture>
 
         <h1 style={title}>Open Wanderkind in your browser</h1>
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, Switch, ScrollView, FlatList, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, ScrollView, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +16,8 @@ import { useFavoritesStore } from '../../../src/stores/favorites';
 import { useAuthStore } from '../../../src/stores/auth';
 import { getRouteRelativeDistance } from '../../../src/lib/route-distance';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { MapModesPanel } from '../../../src/components/map/MapModesPanel';
+import { LayersPanel } from '../../../src/components/map/LayersPanel';
 
 const { width, height } = Dimensions.get('window');
 
@@ -713,114 +715,6 @@ function WebMapComponent({
           />
         </>
       )}
-    </View>
-  );
-}
-
-// Map modes panel overlay
-function MapModesPanel({ mapMode, onModeChange, onClose }: {
-  mapMode: MapMode;
-  onModeChange: (mode: MapMode) => void;
-  onClose: () => void;
-}) {
-  const modes: { id: MapMode; label: string; description: string; icon: string }[] = [
-    { id: 'normal', label: 'Normal', description: 'OpenStreetMap (Default)', icon: 'map' },
-    { id: 'greyscale', label: 'Grey/Orange', description: 'CartoDB Positron - Clean', icon: 'contrast' },
-    { id: 'explorer', label: 'Terrain', description: 'OpenTopoMap - Topographic', icon: 'mountain' },
-  ];
-
-  return (
-    <View style={styles.mapModesPanel}>
-      <View style={styles.mapModesPanelHeader}>
-        <Text style={styles.mapModesPanelTitle}>MAP STYLE</Text>
-        <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="close" size={20} color={colors.ink} />
-        </TouchableOpacity>
-      </View>
-      {modes.map(({ id, label, description, icon }) => (
-        <TouchableOpacity
-          key={id}
-          style={[styles.mapModeRow, mapMode === id && styles.mapModeRowActive]}
-          onPress={() => {
-            onModeChange(id);
-            onClose();
-          }}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.mapModeIcon, mapMode === id && { backgroundColor: colors.amberBg }]}>
-            <Ionicons name={icon as any} size={16} color={mapMode === id ? colors.amber : colors.ink3} />
-          </View>
-          <View style={styles.mapModeInfo}>
-            <Text style={[styles.mapModeLabel, mapMode !== id && { color: colors.ink3 }]}>{label}</Text>
-            <Text style={styles.mapModeDescription}>{description}</Text>
-          </View>
-          {mapMode === id && (
-            <Ionicons name="checkmark-circle" size={20} color={colors.amber} />
-          )}
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-// Layers panel overlay
-function LayersPanel({ layers, onToggle, onClose }: {
-  layers: LayerState;
-  onToggle: (key: keyof LayerState) => void;
-  onClose: () => void;
-}) {
-  const layerConfig: { key: keyof LayerState; label: string; icon: string; color: string }[] = [
-    { key: 'hosts', label: 'Wanderhosts', icon: 'home', color: colors.amber },
-    { key: 'wanderkinder', label: 'Wanderkinder', icon: 'people', color: '#C8762A' },
-    { key: 'ways', label: 'The Ways', icon: 'map', color: colors.green },
-    { key: 'wifi', label: 'Public WiFi', icon: 'wifi', color: '#0ea5e9' },
-    { key: 'churches', label: 'Churches', icon: 'business', color: '#8B4513' },
-    { key: 'parishes', label: 'Parishes', icon: 'home', color: '#6B21A8' },
-    { key: 'mountains', label: 'Mountains', icon: 'triangle', color: '#6B7280' },
-    { key: 'camping', label: 'Camping', icon: 'bonfire', color: '#059669' },
-    { key: 'community', label: 'Community', icon: 'people-circle', color: '#C8762A' },
-  ];
-
-  return (
-    <View style={styles.layersPanel}>
-      <View style={styles.layersPanelHeader}>
-        <Text style={styles.layersPanelTitle}>MAP LAYERS</Text>
-        <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="close" size={20} color={colors.ink} />
-        </TouchableOpacity>
-      </View>
-      {layerConfig.map(({ key, label, icon, color }) => (
-        <TouchableOpacity
-          key={key}
-          style={styles.layerRow}
-          onPress={() => { haptic.selection(); onToggle(key); }}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.layerIcon, { backgroundColor: `${color}20` }]}>
-            <Ionicons name={icon as any} size={16} color={color} />
-          </View>
-          <Text style={[styles.layerLabel, !layers[key] && { color: colors.ink3 }]}>{label}</Text>
-          <Switch
-            value={layers[key]}
-            onValueChange={() => onToggle(key)}
-            trackColor={{ false: colors.borderLt, true: `${color}40` }}
-            thumbColor={layers[key] ? color : '#ccc'}
-            style={{ transform: [{ scale: 0.8 }] }}
-          />
-        </TouchableOpacity>
-      ))}
-      {/* Legend */}
-      <View style={styles.layersLegend}>
-        <Text style={styles.legendTitle}>HOST COLORS</Text>
-        <View style={styles.legendRow}>
-          {(['free', 'donativo', 'budget', 'paid'] as const).map(t => (
-            <View key={t} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: hostTypeConfig[t].color }]} />
-              <Text style={styles.legendLabel}>{hostTypeConfig[t].label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
     </View>
   );
 }
@@ -1757,89 +1651,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // Layers panel
-  layersPanel: {
-    position: 'absolute',
-    top: '35%',
-    right: 60,
-    width: 260,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: spacing.md,
-    ...shadows.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLt,
-    zIndex: 100,
-  },
-  layersPanelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  layersPanelTitle: {
-    fontFamily: 'Courier New',
-    fontSize: 10,
-    letterSpacing: 1.5,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  layerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    gap: spacing.sm,
-  },
-  layerIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   layerLabel: {
     ...typography.bodySm,
     color: colors.ink,
     fontWeight: '600',
     flex: 1,
-  },
-  layersLegend: {
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLt,
-  },
-  legendTitle: {
-    fontFamily: 'Courier New',
-    fontSize: 8,
-    letterSpacing: 1,
-    fontWeight: '600',
-    color: colors.ink3,
-    marginBottom: 6,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    fontFamily: 'Courier New',
-    fontSize: 8,
-    letterSpacing: 0.5,
-    fontWeight: '600',
-    color: colors.ink3,
   },
   rightActionStrip: {
     position: 'absolute',
@@ -2219,70 +2035,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   // Map modes panel
-  mapModesPanel: {
-    position: 'absolute',
-    top: '45%',
-    right: 60,
-    width: 280,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: spacing.md,
-    ...shadows.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLt,
-    zIndex: 100,
-  },
-  mapModesPanelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  mapModesPanelTitle: {
-    fontFamily: 'Courier New',
-    fontSize: 10,
-    letterSpacing: 1.5,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  mapModeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    gap: spacing.sm,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  mapModeRowActive: {
-    backgroundColor: colors.amberBg,
-  },
-  mapModeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(200,118,42,0.06)',
-  },
-  mapModeInfo: {
-    flex: 1,
-  },
-  mapModeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: 2,
-  },
-  mapModeDescription: {
-    fontSize: 10,
-    color: colors.ink3,
-    fontFamily: 'Courier New',
-    letterSpacing: 0.5,
-  },
   // Roof Tonight styles
   roofTonightBtn: {
     position: 'absolute',
