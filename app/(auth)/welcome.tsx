@@ -12,6 +12,8 @@ import { haptic } from '../../src/lib/haptics';
 import { supabase } from '../../src/lib/supabase';
 import { detectLanguage, getTranslations, LANG_LABELS, LangCode } from '../../src/lib/i18n-landing';
 import { IndependentBadge } from '../../src/components/web/IndependentBadge';
+import { InAppBrowserPrompt } from '../../src/components/web/InAppBrowserPrompt';
+import { isInAppBrowser } from '../../src/lib/in-app-browser';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -47,6 +49,10 @@ function renderRich(text: string) {
  */
 export default function WelcomeScreen() {
   const router = useRouter();
+  // Detect once on mount — UA doesn't change mid-session.
+  const [inAppBrowser] = useState(() =>
+    Platform.OS === 'web' ? isInAppBrowser() : false
+  );
   const {
     canNativeInstall,
     isIOS,
@@ -54,6 +60,12 @@ export default function WelcomeScreen() {
     install,
     canInstall,
   } = useInstallPrompt();
+
+  // Short-circuit when running inside Instagram/Facebook/etc. embedded webview.
+  // The install flow + OAuth do not work inside those sandboxes, so we show
+  // a focused 'Open in Safari' prompt instead.
+  // (The hooks above must still run on every render to satisfy the rules of hooks.)
+  // The actual short-circuit return happens further down via the inAppBrowser flag.
 
   const [stats, setStats] = useState({ hosts: 505, routes: 26, countries: 10 });
   const [installing, setInstalling] = useState(false);
@@ -251,6 +263,10 @@ export default function WelcomeScreen() {
   }
 
   // ─── NOT INSTALLED: The Install Gate ───
+  if (inAppBrowser) {
+    return <InAppBrowserPrompt />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView

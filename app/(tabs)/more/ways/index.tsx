@@ -12,12 +12,12 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../../src/lib/theme';
-import { haptic } from '../../../src/lib/haptics';
-import { supabase } from '../../../src/lib/supabase';
-import { Route } from '../../../src/types/database';
-import { SEED_ROUTES } from '../../../src/data/seed-routes';
-import { useAuthStore } from '../../../src/stores/auth';
+import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { haptic } from '../../../../src/lib/haptics';
+import { supabase } from '../../../../src/lib/supabase';
+import { Route } from '../../../../src/types/database';
+import { SEED_ROUTES } from '../../../../src/data/seed-routes';
+import { useAuthStore } from '../../../../src/stores/auth';
 
 /** Derive region from a route's countries list */
 const REGION_MAP: Record<string, string> = {

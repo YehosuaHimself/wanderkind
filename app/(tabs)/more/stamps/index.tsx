@@ -14,13 +14,13 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../../src/lib/theme';
-import { supabase } from '../../../src/lib/supabase';
-import { useAuth } from '../../../src/stores/auth';
-import { Stamp } from '../../../src/types/database';
-import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-import { toast } from '../../../src/lib/toast';
-import { haptic } from '../../../src/lib/haptics';
+import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { supabase } from '../../../../src/lib/supabase';
+import { useAuth } from '../../../../src/stores/auth';
+import { Stamp } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { toast } from '../../../../src/lib/toast';
+import { haptic } from '../../../../src/lib/haptics';
 
 export default function StampsCollection({ embedded = false }: { embedded?: boolean }) {
   useAuthGuard();

@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndi
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../../src/lib/theme';
-import { supabase } from '../../../src/lib/supabase';
-import { useAuth } from '../../../src/stores/auth';
-import { BlogPost } from '../../../src/types/database';
-import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-import { toast } from '../../../src/lib/toast';
+import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { supabase } from '../../../../src/lib/supabase';
+import { useAuth } from '../../../../src/stores/auth';
+import { BlogPost } from '../../../../src/types/database';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { toast } from '../../../../src/lib/toast';
 
 type WritingTab = 'journal' | 'blog' | 'book';
 

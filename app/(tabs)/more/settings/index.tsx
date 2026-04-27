@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors, typography, spacing } from '../../../src/lib/theme';
-import { WKButton } from '../../../src/components/ui/WKButton';
-import { WKCard } from '../../../src/components/ui/WKCard';
-import { WKHeader } from '../../../src/components/ui/WKHeader';
-import { useAuth } from '../../../src/stores/auth';
-import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-import { useSettings } from '../../../src/stores/settings';
-import { haptic } from '../../../src/lib/haptics';
+import { colors, typography, spacing } from '../../../../src/lib/theme';
+import { WKButton } from '../../../../src/components/ui/WKButton';
+import { WKCard } from '../../../../src/components/ui/WKCard';
+import { WKHeader } from '../../../../src/components/ui/WKHeader';
+import { useAuth } from '../../../../src/stores/auth';
+import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useSettings } from '../../../../src/stores/settings';
+import { haptic } from '../../../../src/lib/haptics';
 
 const LANG_NAMES: Record<string, string> = {
   en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español',
