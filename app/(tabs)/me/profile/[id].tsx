@@ -8,6 +8,7 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
+import { SEED_PROFILES } from '../../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface PublicProfile {
@@ -37,9 +38,35 @@ export default function PublicProfileScreen() {
     fetchProfile();
   }, [id]);
 
+  const mapSeedProfile = (seed: any): PublicProfile => ({
+    id: seed.id,
+    trail_name: seed.trail_name,
+    wanderkind_id: seed.wanderkind_id,
+    bio: seed.bio,
+    avatar_url: seed.avatar_url,
+    tier: seed.tier,
+    nights_walked: seed.nights_walked,
+    nights_hosted: seed.hosts_stayed ?? seed.nights_hosted ?? 0,
+    stamps_collected: seed.stamps_count ?? seed.stamps_collected ?? 0,
+    home_country: seed.home_country,
+    verification_level: seed.verification_level,
+    is_walking: seed.is_walking,
+  });
+
   const fetchProfile = async () => {
     try {
       setLoading(true);
+
+      // Check seed profiles first for instant loading (IDs start with 'p-')
+      if (typeof id === 'string' && id.startsWith('p-')) {
+        const seedProfile = (SEED_PROFILES as any[]).find(p => p.id === id);
+        if (seedProfile) {
+          setProfile(mapSeedProfile(seedProfile));
+          setLoading(false);
+          return;
+        }
+      }
+
       const { data, error: queryError } = await supabase
         .from('profiles')
         .select('*')
@@ -48,12 +75,21 @@ export default function PublicProfileScreen() {
 
       if (!queryError && data) {
         setProfile(data);
+        setLoading(false);
+        return;
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
-    } finally {
-      setLoading(false);
     }
+
+    // Final fallback — check all seed profiles by ID
+    const seedProfile = (SEED_PROFILES as any[]).find(p => p.id === id);
+    if (seedProfile) {
+      setProfile(mapSeedProfile(seedProfile));
+    } else {
+      setError('Profile not found');
+    }
+    setLoading(false);
   };
 
   if (loading) {

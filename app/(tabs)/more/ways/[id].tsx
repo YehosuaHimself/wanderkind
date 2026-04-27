@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
 import { Route, Host } from '../../../../src/types/database';
+import { SEED_ROUTES } from '../../../../src/data/seed-routes';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useAuth } from '../../../../src/stores/auth';
 import { toast } from '../../../../src/lib/toast';
@@ -113,6 +114,7 @@ export default function WayDetail() {
   }, [id]);
 
   const fetchWayDetail = async () => {
+    let foundWay: Route | null = null;
     try {
       const { data: wayData } = await supabase
         .from('routes')
@@ -121,7 +123,8 @@ export default function WayDetail() {
         .single();
 
       if (wayData) {
-        setWay(wayData as Route);
+        foundWay = wayData as Route;
+        setWay(foundWay);
       }
 
       // Fetch hosts on this route
@@ -134,9 +137,16 @@ export default function WayDetail() {
       if (hostsData) setHosts(hostsData as Host[]);
     } catch (err) {
       console.error('Failed to fetch way:', err);
-    } finally {
-      setLoading(false);
     }
+
+    // Fallback to seed data if Supabase returns empty or fails
+    if (!foundWay) {
+      const seed = (SEED_ROUTES as unknown as Route[]).find(
+        r => r.id === id || r.slug === id,
+      );
+      if (seed) setWay(seed);
+    }
+    setLoading(false);
   };
 
   useEffect(() => { if (way) setColorIdx(0); }, [way]);
