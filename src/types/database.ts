@@ -147,7 +147,12 @@ export interface HostRow {
   phone: string | null;
   email: string | null;
   website: string | null;
-  host_type: 'free' | 'donativo' | 'budget' | 'paid';
+  host_type:
+    | 'free' | 'donativo' | 'budget' | 'paid'
+    | 'albergue_municipal' | 'albergue_privado' | 'albergue_parroquial' | 'albergue_asociacion'
+    | 'monastery' | 'church' | 'gite_etape' | 'refuge'
+    | 'camping' | 'pension' | 'hotel_budget' | 'private_host'
+    | 'tourist_info' | 'community';
   price_range: string | null;
   capacity: number;
   amenities: string[];
@@ -171,6 +176,18 @@ export interface HostRow {
   is_wheelchair_accessible: boolean;
   created_at: string;
   updated_at: string;
+  // Import pipeline fields
+  data_source: string | null;
+  source_id: string | null;
+  source_url: string | null;
+  last_imported_at: string | null;
+  country: string | null;
+  region: string | null;
+  opening_months: string[] | null;
+  languages: string[] | null;
+  is_pilgrim_only: boolean;
+  avg_response_minutes: number | null;
+  last_confirmed: string | null;
 }
 
 export interface StampRow {
@@ -320,7 +337,12 @@ export interface HostListingRow {
   host_id: string;
   title: string;
   description: string;
-  host_type: 'free' | 'donativo' | 'budget' | 'paid';
+  host_type:
+    | 'free' | 'donativo' | 'budget' | 'paid'
+    | 'albergue_municipal' | 'albergue_privado' | 'albergue_parroquial' | 'albergue_asociacion'
+    | 'monastery' | 'church' | 'gite_etape' | 'refuge'
+    | 'camping' | 'pension' | 'hotel_budget' | 'private_host'
+    | 'tourist_info' | 'community';
   max_guests: number;
   capacity: number;
   location: string;

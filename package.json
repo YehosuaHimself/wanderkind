@@ -9,7 +9,10 @@
     "web": "expo start --web",
     "build:web": "npx expo export --platform web && node scripts/post-export.js",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "import:hosts": "python scripts/import/run_import.py",
+    "import:dry": "python scripts/import/run_import.py --dry-run",
+    "import:list": "python scripts/import/run_import.py --list"
   },
   "dependencies": {
     "@expo/metro-runtime": "^55.0.10",
