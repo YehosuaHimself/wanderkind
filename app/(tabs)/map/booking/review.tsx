@@ -19,13 +19,13 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookingReview() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [gaestebuch, setGaestebuch] = useState(false);
   const [loading, setLoading] = useState(false);
+  if (isLoading) return null;
+
 
   const handleSubmit = async () => {
     if (rating === 0) return;

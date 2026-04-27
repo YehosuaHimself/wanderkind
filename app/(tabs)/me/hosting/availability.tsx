@@ -17,10 +17,10 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function AvailabilityScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [isAvailable, setIsAvailable] = useState(true);
   const [notes, setNotes] = useState('Open for walkers May-September');
+  if (isLoading) return null;
+
 
   const handleSave = async () => {
     // Simulate API call

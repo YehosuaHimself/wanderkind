@@ -28,14 +28,14 @@ const AMENITIES = ['WiFi', 'Kitchen', 'Laundry', 'Shower', 'Towels', 'Parking', 
 
 export default function ListingEdit() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [name, setName] = useState('Casa Tranquilo');
   const [description, setDescription] = useState('Warm welcome for wanderkinder.');
   const [beds, setBeds] = useState('2');
   const [selectedType, setSelectedType] = useState('donativo');
   const [amenities, setAmenities] = useState<string[]>(['WiFi', 'Kitchen', 'Shower']);
   const [loading, setLoading] = useState(false);
+  if (isLoading) return null;
+
 
   const toggleAmenity = (amenity: string) => {
     setAmenities((prev) =>

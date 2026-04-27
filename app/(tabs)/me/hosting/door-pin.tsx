@@ -17,11 +17,11 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function DoorPinScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [doorPin, setDoorPin] = useState('4729');
   const [showPin, setShowPin] = useState(false);
   const [copiedPin, setCopiedPin] = useState<string | null>(null);
+  if (isLoading) return null;
+
 
   const generateNewPin = () => {
     const newPin = Math.floor(1000 + Math.random() * 9000).toString();

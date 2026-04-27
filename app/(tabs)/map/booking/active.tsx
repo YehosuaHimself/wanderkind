@@ -17,9 +17,9 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookingActive() {
   const { user, isLoading } = useAuthGuard();
+  const router = useRouter();
   if (isLoading) return null;
 
-  const router = useRouter();
 
   const handleContactHost = () => {
     router.push('/(tabs)/messages');

@@ -30,9 +30,9 @@ const AMENITIES = [
 
 export default function AmenitiesScreen() {
   const { user, isLoading } = useAuthGuard();
+  const [amenities, setAmenities] = useState<Record<string, boolean>>({
   if (isLoading) return null;
 
-  const [amenities, setAmenities] = useState<Record<string, boolean>>({
     wifi: true,
     kitchen: true,
     laundry: false,

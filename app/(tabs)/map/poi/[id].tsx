@@ -49,11 +49,11 @@ const MOCK_POI: Record<string, POI> = {
 
 export default function POIDetail() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const { id } = useLocalSearchParams<{ id: string }>();
   const [poi, setPoi] = useState<POI | null>(null);
   const [loading, setLoading] = useState(true);
+  if (isLoading) return null;
+
 
   useEffect(() => {
     if (id) {

@@ -13,16 +13,16 @@ import { useAuthStore } from '../../src/stores/auth';
 export default function SignInScreen() {
   const router = useRouter();
 
-  if (Platform.OS === 'web') {
-    return <WebAuthScreen mode="signin" />;
-  }
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-
   const { signIn } = useAuthStore();
+  if (Platform.OS === 'web') {
+    return <WebAuthScreen mode="signin" />;
+  }
+
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

@@ -26,10 +26,10 @@ interface LayerState {
 
 export default function Layers() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [layers, setLayers] = useState<LayerState>({
+  if (isLoading) return null;
+
     hosts: true,
     wanderkinder: true,
     routes: true,

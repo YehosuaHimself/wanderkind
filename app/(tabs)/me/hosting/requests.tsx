@@ -47,9 +47,9 @@ const MOCK_REQUESTS: Request[] = [
 
 export default function HostingRequests() {
   const { user, isLoading } = useAuthGuard();
+  const router = useRouter();
   if (isLoading) return null;
 
-  const router = useRouter();
 
   const renderRequest = ({ item }: { item: Request }) => (
     <TouchableOpacity

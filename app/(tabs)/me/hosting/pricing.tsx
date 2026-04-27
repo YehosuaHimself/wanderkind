@@ -48,12 +48,12 @@ const PRICING_TYPES = [
 
 export default function PricingScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [hostType, setHostType] = useState('donativo');
   const [pricePerNight, setPricePerNight] = useState('25');
   const [donativoSuggestion, setDonativoSuggestion] = useState('15-25');
   const [loading, setLoading] = useState(false);
+  if (isLoading) return null;
+
 
   const currentType = PRICING_TYPES.find((t) => t.id === hostType);
   const needsPrice = currentType?.needsPrice || false;

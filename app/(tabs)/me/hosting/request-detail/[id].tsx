@@ -16,10 +16,10 @@ import { useAuthGuard } from '../../../../../src/hooks/useAuthGuard';
 
 export default function RequestDetail() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const params = useLocalSearchParams();
+  if (isLoading) return null;
+
   const requestId = params.id as string;
 
   const handleAccept = () => {

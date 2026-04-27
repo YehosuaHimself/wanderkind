@@ -39,9 +39,11 @@ export default function Search() {
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('hosts');
 
+  const filteredHosts = useMemo(() => {
+  const filteredWanderers = useMemo(() => {
+  const filteredRoutes = useMemo(() => {
   if (isLoading) return null;
 
-  const filteredHosts = useMemo(() => {
     if (!query) return MOCK_HOSTS;
     return MOCK_HOSTS.filter(h =>
       h.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -49,14 +51,12 @@ export default function Search() {
     );
   }, [query]);
 
-  const filteredWanderers = useMemo(() => {
     if (!query) return MOCK_WANDERERS;
     return MOCK_WANDERERS.filter(w =>
       w.name.toLowerCase().includes(query.toLowerCase())
     );
   }, [query]);
 
-  const filteredRoutes = useMemo(() => {
     if (!query) return MOCK_ROUTES;
     return MOCK_ROUTES.filter(r =>
       r.name.toLowerCase().includes(query.toLowerCase()) ||

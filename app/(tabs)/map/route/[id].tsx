@@ -22,14 +22,14 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function RouteDetail() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [route, setRoute] = useState<Route | null>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  if (isLoading) return null;
+
 
   useEffect(() => {
     if (id) {

@@ -26,6 +26,14 @@ interface BeforeInstallPromptEvent extends Event {
 
 function getStorageItem(key: string): string | null {
   try {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
     if (typeof window !== 'undefined' && window.localStorage) {
       return window.localStorage.getItem(key);
     }
@@ -42,14 +50,6 @@ function setStorageItem(key: string, value: string): void {
 }
 
 export function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;

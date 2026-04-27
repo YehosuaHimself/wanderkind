@@ -20,11 +20,11 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 export default function Routes() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
+  if (isLoading) return null;
+
 
   useEffect(() => {
     fetchRoutes();

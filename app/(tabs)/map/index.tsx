@@ -1138,9 +1138,9 @@ export default function MapHome() {
     return 'Nearby';
   };
 
-  // Favorite Button Component
+  // Favorite Button Component — extracted as named inner component (hooks must be at top level)
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
   const FavoriteButton = useCallback(({ hostId }: { hostId: string }) => {
-    const { toggleFavorite, isFavorite } = useFavoritesStore();
     const isFav = isFavorite(hostId);
 
     return (

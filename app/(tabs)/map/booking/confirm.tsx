@@ -18,10 +18,10 @@ type BookingStatus = 'pending' | 'confirmed' | 'declined';
 
 export default function BookingConfirm() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [status, setStatus] = useState<BookingStatus>('pending');
+  if (isLoading) return null;
+
 
   const statusConfig = {
     pending: {

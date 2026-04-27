@@ -27,9 +27,7 @@ import { useAuthStore } from '../../../../src/stores/auth';
 
 export default function HostDetail() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
   const { profile } = useAuthStore();
-
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [host, setHost] = useState<Host | null>(null);
@@ -41,6 +39,8 @@ export default function HostDetail() {
   const [confirmCount, setConfirmCount] = useState(0);
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  if (isLoading) return null;
+
 
   useEffect(() => {
     if (id) {

@@ -21,12 +21,12 @@ export default function Filters() {
   const router = useRouter();
   const [hostType, setHostType] = useState<string[]>(['free', 'donativo']);
 
-  if (isLoading) return null;
   const [minBeds, setMinBeds] = useState(1);
   const [maxBeds, setMaxBeds] = useState(10);
   const [verification, setVerification] = useState<string[]>(['self', 'community', 'association', 'wanderkind']);
   const [distance, setDistance] = useState(50);
   const [amenities, setAmenities] = useState<string[]>([]);
+  if (isLoading) return null;
 
   const bedOptions = [1, 2, 3, 4, 5, 10];
   const distanceOptions = [5, 10, 25, 50, 100];

@@ -57,11 +57,11 @@ const MOCK_CAMPING: Record<string, CampingSpot> = {
 
 export default function CampingDetail() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const { id } = useLocalSearchParams<{ id: string }>();
   const [spot, setSpot] = useState<CampingSpot | null>(null);
   const [loading, setLoading] = useState(true);
+  if (isLoading) return null;
+
 
   useEffect(() => {
     if (id) {

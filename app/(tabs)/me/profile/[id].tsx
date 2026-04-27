@@ -28,13 +28,13 @@ interface PublicProfile {
 
 export default function PublicProfileScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  if (isLoading) return null;
+
 
   useEffect(() => {
     fetchProfile();

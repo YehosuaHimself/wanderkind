@@ -57,9 +57,9 @@ const MOCK_BOOKINGS: Booking[] = [
 
 export default function BookingHistory() {
   const { user, isLoading } = useAuthGuard();
+  const router = useRouter();
   if (isLoading) return null;
 
-  const router = useRouter();
 
   const renderBooking = ({ item }: { item: Booking }) => (
     <TouchableOpacity

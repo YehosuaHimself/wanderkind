@@ -22,11 +22,11 @@ What makes us special is our commitment to the Wanderkind way. We understand the
 
 export default function ProjectScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const [text, setText] = useState(DEFAULT_TEXT);
   const [savedText, setSavedText] = useState(DEFAULT_TEXT);
   const [loading, setLoading] = useState(false);
+  if (isLoading) return null;
+
 
   const handleSave = async () => {
     setLoading(true);

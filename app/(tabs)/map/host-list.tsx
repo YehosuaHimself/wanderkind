@@ -33,8 +33,6 @@ type FilterMode = HostType | 'all' | 'saved';
 
 export default function HostList() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('all');
@@ -43,6 +41,9 @@ export default function HostList() {
   const { profile } = useAuthStore();
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
+  const renderHostCard = useCallback(
+  if (isLoading) return null;
+
 
   // Get user location for route-relative distance
   useEffect(() => {
@@ -86,7 +87,6 @@ export default function HostList() {
     return h.host_type === filter;
   });
 
-  const renderHostCard = useCallback(
     ({ item: host }: { item: Host }) => {
       const config = hostTypeConfig[host.host_type];
       // Route-relative distance when user has active way + location

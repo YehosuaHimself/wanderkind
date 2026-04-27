@@ -41,14 +41,14 @@ const truncateHash = (hash?: string): string => {
 
 export default function StampDetailScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const { id } = useLocalSearchParams();
   const [stamp, setStamp] = useState<StampDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stampCount, setStampCount] = useState(0);
   const [chainPosition, setChainPosition] = useState(0);
+  if (isLoading) return null;
+
 
   useEffect(() => {
     fetchStamp();

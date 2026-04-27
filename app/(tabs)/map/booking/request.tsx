@@ -19,17 +19,17 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function BookingRequest() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
-
   const router = useRouter();
   const params = useLocalSearchParams();
-  const hostId = params.hostId as string;
-
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [guests, setGuests] = useState(1);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  if (isLoading) return null;
+
+  const hostId = params.hostId as string;
+
 
   const handleSendRequest = async () => {
     if (!checkInDate || !checkOutDate || !message.trim()) {

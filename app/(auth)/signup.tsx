@@ -19,10 +19,6 @@ export default function SignUpScreen() {
   // The React Native components produce a DOM hierarchy with transformed
   // and absolute-positioned wrappers that suppress the iOS soft keyboard.
   // The portal renders the form as a direct child of <body>, bypassing them.
-  if (Platform.OS === 'web') {
-    return <WebAuthScreen mode="signup" role={role} />;
-  }
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,10 +27,14 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [parentConsent, setParentConsent] = useState(false);
+  const { signUp } = useAuthStore();
+  if (Platform.OS === 'web') {
+    return <WebAuthScreen mode="signup" role={role} />;
+  }
+
 
   const isMinor = birthYear ? (new Date().getFullYear() - parseInt(birthYear, 10)) < 18 : false;
 
-  const { signUp } = useAuthStore();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

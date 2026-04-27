@@ -17,9 +17,9 @@ import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function HostingDashboard() {
   const { user, isLoading } = useAuthGuard();
+  const router = useRouter();
   if (isLoading) return null;
 
-  const router = useRouter();
 
   const stats = [
     { label: 'Total Hosted', value: '12', icon: 'home' as const },

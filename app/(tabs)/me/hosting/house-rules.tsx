@@ -25,9 +25,10 @@ const RULES = [
 
 export default function HouseRulesScreen() {
   const { user, isLoading } = useAuthGuard();
+  const [rules, setRules] = useState<Record<string, boolean>>({
+  const [maxStayDays, setMaxStayDays] = useState('30');
   if (isLoading) return null;
 
-  const [rules, setRules] = useState<Record<string, boolean>>({
     shoes: true,
     quiet: true,
     smoking: true,
@@ -35,7 +36,6 @@ export default function HouseRulesScreen() {
     alcohol: false,
   });
 
-  const [maxStayDays, setMaxStayDays] = useState('30');
 
   const toggleRule = (id: string) => {
     setRules((prev) => ({
