@@ -45,6 +45,12 @@ def load_all_importers():
     from sources.via_dinarica          import ViaDinaricaImporter
     from sources.shikoku_japan         import ShikokuJapanImporter
     from sources.australia_routes      import AustraliaRoutesImporter
+    from sources.latin_america         import LatinAmericaImporter
+    from sources.east_asia             import EastAsiaImporter
+    from sources.southeast_asia        import SoutheastAsiaImporter
+    from sources.india_himalaya        import IndiaHimalayaImporter
+    from sources.africa_pilgrim        import AfricaPilgrimImporter
+    from sources.middle_east_safe      import MiddleEastSafeImporter
 
     return {
         "osm":               OSMImporter,
