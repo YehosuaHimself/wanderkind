@@ -6,6 +6,10 @@ type Props = TextInputProps & {
   label?: string;
   error?: string;
   helper?: string;
+  /** Web-only: override the autoComplete hint passed to the underlying <input> */
+  autoComplete?: any;
+  /** Web-only: override the form field name (defaults to a slug of the label) */
+  name?: string;
 };
 
 /**
@@ -73,6 +77,8 @@ function WebInput({
   secureTextEntry,
   keyboardType,
   autoCapitalize,
+  autoComplete: autoCompleteProp,
+  name: nameProp,
   maxLength,
   editable,
   multiline,
@@ -101,6 +107,45 @@ function WebInput({
   if (autoCapitalize === 'none') autoCapitalizeAttr = 'off';
   else if (autoCapitalize === 'characters') autoCapitalizeAttr = 'characters';
   else if (autoCapitalize === 'words') autoCapitalizeAttr = 'words';
+
+  // Derive a sensible autoComplete + name based on label/type when not explicitly set.
+  // iOS Safari PWA standalone mode is much more reliable about showing the soft
+  // keyboard when inputs have name + autoComplete + are wrapped in a <form>.
+  const labelLower = (label || '').toLowerCase();
+  const slug = (label || placeholder || 'field')
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  let autoCompleteValue: string | undefined = autoCompleteProp;
+  if (autoCompleteValue === undefined) {
+    if (inputType === 'email') autoCompleteValue = 'email';
+    else if (inputType === 'password') {
+      // 'new-password' for confirm/new fields, 'current-password' otherwise
+      autoCompleteValue = /confirm|new|create|register|sign.?up/.test(labelLower)
+        ? 'new-password'
+        : 'current-password';
+    } else if (inputType === 'tel') autoCompleteValue = 'tel';
+    else if (inputType === 'url') autoCompleteValue = 'url';
+    else if (/year/.test(labelLower)) autoCompleteValue = 'bday-year';
+    else autoCompleteValue = 'off';
+  }
+
+  const fieldName = nameProp || slug;
+
+  // inputMode: default plain text inputs to 'text' (not undefined) so iOS
+  // recognises them as keyboard-bearing and shows the soft keyboard.
+  const inputModeValue: 'text' | 'numeric' | 'email' | 'tel' | 'url' | 'decimal' =
+    keyboardType === 'number-pad' || keyboardType === 'numeric'
+      ? 'numeric'
+      : keyboardType === 'email-address'
+      ? 'email'
+      : keyboardType === 'phone-pad'
+      ? 'tel'
+      : keyboardType === 'url'
+      ? 'url'
+      : 'text';
 
   const borderColor = error
     ? colors.red
@@ -183,6 +228,10 @@ function WebInput({
 
   const sharedProps = {
     ref: inputCallbackRef as any,
+    name: fieldName,
+    autoComplete: autoCompleteValue,
+    enterKeyHint: 'done' as const,
+    spellCheck: inputType === 'password' || inputType === 'email' ? false : undefined,
     value: value ?? '',
     onChange: handleChange,
     placeholder,
@@ -198,27 +247,39 @@ function WebInput({
     'data-testid': `wk-input-${label}`,
   };
 
+  // Wrap in a <form> on web. iOS Safari standalone PWA is significantly more
+  // reliable about showing the soft keyboard when inputs live inside a form
+  // element. The form has no submit endpoint — preventDefault on submit so a
+  // stray Return keypress doesn't reload the page.
+  const stopSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+  };
+
   return (
-    <div style={containerStyle}>
-      {label && <label style={labelStyle}>{label}</label>}
+    <form
+      style={containerStyle}
+      onSubmit={stopSubmit}
+      action="#"
+      noValidate
+      autoComplete="on"
+    >
+      {label && (
+        <label style={labelStyle} htmlFor={fieldName}>
+          {label}
+        </label>
+      )}
       {multiline ? (
         <textarea
           {...sharedProps}
+          id={fieldName}
           rows={numberOfLines || 3}
         />
       ) : (
         <input
           {...sharedProps}
+          id={fieldName}
           type={inputType}
-          inputMode={
-            keyboardType === 'number-pad' || keyboardType === 'numeric'
-              ? 'numeric'
-              : keyboardType === 'email-address'
-              ? 'email'
-              : keyboardType === 'phone-pad'
-              ? 'tel'
-              : undefined
-          }
+          inputMode={inputModeValue}
         />
       )}
       {error && <div style={errorStyle}>{error}</div>}
@@ -227,7 +288,7 @@ function WebInput({
           {helper}
         </div>
       )}
-    </div>
+    </form>
   );
 }
 
