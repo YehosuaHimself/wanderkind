@@ -47,11 +47,26 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    setLang(detectLanguage());
+    // Restore persisted language or auto-detect
+    try {
+      const saved = localStorage.getItem('wk_lang') as LangCode | null;
+      if (saved && ['en', 'de', 'es', 'fr', 'pt', 'it', 'nl'].includes(saved)) {
+        setLang(saved);
+      } else {
+        setLang(detectLanguage());
+      }
+    } catch {
+      setLang(detectLanguage());
+    }
     const ua = navigator.userAgent || '';
     const iPad = /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     setIsIPad(iPad);
   }, []);
+
+  const switchLang = (code: LangCode) => {
+    setLang(code);
+    try { localStorage.setItem('wk_lang', code); } catch {}
+  };
 
   // Animations
   const fadeIn = useRef(new Animated.Value(0)).current;
@@ -135,6 +150,27 @@ export default function WelcomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <Animated.View style={[styles.content, { opacity: fadeIn }]}>
+          {/* Language Toggle — also available in installed state */}
+          {Platform.OS === 'web' && (
+            <View style={[styles.langRow, { marginBottom: 24 }]}>
+              {(['en', 'de', 'es', 'fr', 'pt', 'it', 'nl'] as LangCode[]).map((code) => (
+                <TouchableOpacity
+                  key={code}
+                  style={[styles.langPill, lang === code && styles.langPillActive]}
+                  onPress={() => switchLang(code)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch language to ${code.toUpperCase()}`}
+                  accessibilityState={{ selected: lang === code }}
+                >
+                  <Text style={[styles.langPillText, lang === code && styles.langPillTextActive]}>
+                    {LANG_LABELS[code]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Logo */}
           <View style={styles.logoContainer} accessible accessibilityLabel="Wanderkind logo" accessibilityRole="image">
             <Text style={styles.logoW}>W</Text>
@@ -211,7 +247,7 @@ export default function WelcomeScreen() {
                 <TouchableOpacity
                   key={code}
                   style={[styles.langPill, lang === code && styles.langPillActive]}
-                  onPress={() => setLang(code)}
+                  onPress={() => switchLang(code)}
                   activeOpacity={0.7}
                   accessibilityRole="button"
                   accessibilityLabel={`Switch language to ${code.toUpperCase()}`}
@@ -572,7 +608,8 @@ const styles = StyleSheet.create({
   trustRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    flexWrap: 'wrap',
+    gap: 12,
     marginBottom: 20,
   },
   trustItem: {
@@ -581,7 +618,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   trustText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.ink2,
   },

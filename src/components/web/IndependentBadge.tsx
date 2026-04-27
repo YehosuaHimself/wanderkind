@@ -18,10 +18,13 @@ type Props = {
 export function IndependentBadge({
   line1 = 'INDEPENDENT',
   line2 = 'Direct Install',
-  width = 152,
+  width,
 }: Props) {
   if (Platform.OS !== 'web') return null;
 
+  // Auto-size: estimate width from line2 length (~8px per char at 14.5px font)
+  const autoWidth = Math.max(170, 40 + Math.ceil(line2.length * 8.2));
+  const w = width ?? autoWidth;
   const height = 46;
   const r = 7; // corner radius — same as App Store badge
 
@@ -29,7 +32,7 @@ export function IndependentBadge({
     <div
       style={{
         display: 'inline-block',
-        width,
+        width: w,
         height,
         userSelect: 'none',
         WebkitUserSelect: 'none',
@@ -38,8 +41,8 @@ export function IndependentBadge({
       role="img"
     >
       <svg
-        viewBox={`0 0 ${width} ${height}`}
-        width={width}
+        viewBox={`0 0 ${w} ${height}`}
+        width={w}
         height={height}
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: 'block' }}
@@ -48,7 +51,7 @@ export function IndependentBadge({
         <rect
           x="0.5"
           y="0.5"
-          width={width - 1}
+          width={w - 1}
           height={height - 1}
           rx={r}
           ry={r}
