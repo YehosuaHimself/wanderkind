@@ -120,6 +120,19 @@ export default function MomentDetail() {
             <Text style={styles.locationText}>{moment.location_name}</Text>
           </View>
         )}
+
+        {/* View comments CTA — WK-110 */}
+        {moment ? (
+          <TouchableOpacity
+            style={styles.commentsBtn}
+            onPress={() => router.push({ pathname: '/(tabs)/moments/comments', params: { momentId: String(id) } } as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color={colors.amber} />
+            <Text style={styles.commentsBtnText}>View comments</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.amber} />
+          </TouchableOpacity>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -192,4 +205,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   locationText: { fontSize: 11, color: colors.ink3 },
+  commentsBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginTop: 16, paddingVertical: 12, paddingHorizontal: 16,
+    borderRadius: 10, borderWidth: 1, borderColor: colors.amberLine,
+    backgroundColor: colors.amberBg,
+  },
+  commentsBtnText: { ...typography.bodySm, fontWeight: '600', color: colors.amber, flex: 1, textAlign: 'left', marginLeft: 8 },
 });
