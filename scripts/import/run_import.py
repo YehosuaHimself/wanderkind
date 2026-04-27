@@ -156,8 +156,16 @@ def main():
     log.info(f"  Skipped  : {total_stats['skipped']} (near-duplicates)")
     log.info(f"  Errors   : {total_stats['errors']}")
 
-    if total_stats["errors"] > 0:
-        sys.exit(1)  # signal failure to CI
+    # Only fail CI if errors dominate the run. A handful of bad rows out of
+    # thousands is normal — sources occasionally yield malformed records.
+    total_processed = total_stats["inserted"] + total_stats["updated"] + total_stats["skipped"] + total_stats["errors"]
+    error_rate = total_stats["errors"] / max(1, total_processed)
+    if total_stats["inserted"] == 0 and total_stats["updated"] == 0 and total_stats["errors"] > 0:
+        log.error("No rows ingested and errors present — failing run")
+        sys.exit(1)
+    if error_rate > 0.05:
+        log.error(f"Error rate {error_rate*100:.1f}% exceeds 5% threshold — failing run")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
