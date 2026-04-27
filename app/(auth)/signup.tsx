@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { WebAuthScreen } from '../../src/components/web/WebAuthScreen';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../src/components/ui/WKHeader';
@@ -13,6 +14,14 @@ export default function SignUpScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const role = params.role as string;
+
+  // On web (especially iOS Safari), render via portal-based vanilla form.
+  // The React Native components produce a DOM hierarchy with transformed
+  // and absolute-positioned wrappers that suppress the iOS soft keyboard.
+  // The portal renders the form as a direct child of <body>, bypassing them.
+  if (Platform.OS === 'web') {
+    return <WebAuthScreen mode="signup" role={role} />;
+  }
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

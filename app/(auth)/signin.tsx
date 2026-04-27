@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { WebAuthScreen } from '../../src/components/web/WebAuthScreen';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../src/components/ui/WKHeader';
@@ -11,6 +12,11 @@ import { useAuthStore } from '../../src/stores/auth';
 
 export default function SignInScreen() {
   const router = useRouter();
+
+  if (Platform.OS === 'web') {
+    return <WebAuthScreen mode="signin" />;
+  }
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
