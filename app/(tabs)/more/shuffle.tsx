@@ -475,10 +475,10 @@ export default function ShuffleScreen() {
         {(shuffleStatus === 'idle' || shuffleStatus === 'error') && (
           <View style={styles.stickyWrap}>
             <TouchableOpacity
-              style={[styles.shuffleBtn, shuffleStatus === 'sending' && { opacity: 0.6 }]}
+              style={styles.shuffleBtn}
               onPress={handleShuffle}
               activeOpacity={0.85}
-              disabled={shuffleStatus === 'sending'}
+              disabled={false}
             >
               <Ionicons name="shuffle" size={20} color="#FFFFFF" />
               <Text style={styles.shuffleBtnText}>SHUFFLE</Text>

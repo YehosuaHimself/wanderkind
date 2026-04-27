@@ -43,7 +43,7 @@ export default function TabLayout() {
             // If already on this tab but nested inside a stack, reset to root
             const state = navigation.getState();
             const tabRoute = state.routes.find((r: any) => r.name === route.name);
-            if (tabRoute?.state && tabRoute.state.index > 0) {
+            if (tabRoute?.state && (tabRoute.state.index ?? 0) > 0) {
               e.preventDefault();
               navigation.navigate(route.name as never);
             }

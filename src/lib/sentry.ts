@@ -53,10 +53,11 @@ export async function initSentry() {
 
 /** Report an error manually — safe to call even if Sentry isn't initialized */
 export function reportError(error: Error, context?: Record<string, unknown>) {
-  if (!Sentry) return;
-  Sentry.withScope(scope => {
+  const s = Sentry;
+  if (!s) return;
+  s.withScope(scope => {
     if (context) scope.setExtras(context);
-    Sentry.captureException(error);
+    s.captureException(error);
   });
 }
 
