@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { colors, typography, spacing, radii } from '../../lib/theme';
 
@@ -160,11 +160,30 @@ function WebInput({
     lineHeight: 1.4,
   };
 
-  // Ref callback — no event interception needed since RNW's ResponderSystem
-  // does NOT call preventDefault() on touch events. The real fix is in
-  // _layout.tsx (removes body overflow:hidden from Expo's stylesheet).
+  // Protect inputs from RNW's event system + strip userSelect:none from ancestors
+  const stopRNWInterception = useCallback((e: React.TouchEvent | React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation();
+  }, []);
+
   const inputCallbackRef = useCallback((el: HTMLInputElement | HTMLTextAreaElement | null) => {
     (inputRef as React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | null>).current = el;
+    if (!el) return;
+
+    // Attach native event listeners to stop propagation before RNW sees them
+    const handler = (e: Event) => { e.stopPropagation(); };
+    el.addEventListener('touchstart', handler, { capture: true, passive: true });
+    el.addEventListener('touchend', handler, { capture: true, passive: true });
+    el.addEventListener('pointerdown', handler, { capture: true, passive: true });
+
+    // Strip userSelect:none from parent chain
+    let parent = el.parentElement;
+    while (parent && parent !== document.body) {
+      if (parent.style.userSelect === 'none') {
+        parent.style.userSelect = '';
+        (parent.style as any).webkitUserSelect = '';
+      }
+      parent = parent.parentElement;
+    }
   }, []);
 
   const sharedProps = {
@@ -178,6 +197,10 @@ function WebInput({
     style: inputStyle,
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
+    onTouchStart: stopRNWInterception,
+    onTouchEnd: stopRNWInterception,
+    onPointerDown: stopRNWInterception,
+    onMouseDown: stopRNWInterception,
     'aria-label': label,
     'aria-describedby': helper ? `${label}-helper` : undefined,
     // Prevent iOS zoom
