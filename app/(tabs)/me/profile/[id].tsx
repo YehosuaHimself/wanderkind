@@ -9,6 +9,7 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
 import { SEED_PROFILES } from '../../../../src/data/seed-profiles';
+import { isSeedProfileId } from '../../../../src/lib/seedMessages';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface PublicProfile {
@@ -203,7 +204,7 @@ export default function PublicProfileScreen() {
       <View style={styles.actions}>
         <WKButton
           title="Send Message"
-          onPress={() => router.push(`/(tabs)/messages/${id}` as any)}
+          onPress={() => router.push((isSeedProfileId(id as string) ? `/(tabs)/messages/seed/${id}` : `/(tabs)/messages/${id}`) as any)}
           variant="primary"
           size="lg"
           fullWidth

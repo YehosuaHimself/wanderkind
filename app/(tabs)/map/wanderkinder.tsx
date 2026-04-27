@@ -16,6 +16,7 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Profile } from '../../../src/types/database';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface NearbyWanderer extends Profile {
@@ -61,6 +62,49 @@ export default function Wanderkinder() {
       console.error('Failed to fetch nearby wanderers:', err);
     }
 
+    // Fallback: surface seed walkers so the screen never feels empty.
+    // Sorted by approximate distance to user when we have a location.
+    const seeds = (SEED_PROFILES as unknown as NearbyWanderer[]).filter(p => p.is_walking);
+    let userLat: number | null = null;
+    let userLng: number | null = null;
+    try {
+      const nav: any = (globalThis as any)?.navigator;
+      if (nav?.geolocation?.getCurrentPosition) {
+        await new Promise<void>(resolve => {
+          nav.geolocation.getCurrentPosition(
+            (pos: any) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(); },
+            () => resolve(),
+            { timeout: 1500, maximumAge: 600000 },
+          );
+        });
+      }
+    } catch { /* no geolocation — ok */ }
+
+    const haversine = (a: number, b: number, c: number, d: number) => {
+      const R = 6371;
+      const toRad = (x: number) => (x * Math.PI) / 180;
+      const dLat = toRad(c - a);
+      const dLng = toRad(d - b);
+      const x = Math.sin(dLat/2)**2 + Math.cos(toRad(a)) * Math.cos(toRad(c)) * Math.sin(dLng/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(x));
+    };
+
+    let ranked: NearbyWanderer[];
+    if (userLat !== null && userLng !== null) {
+      const lat0 = userLat as number;
+      const lng0 = userLng as number;
+      ranked = seeds
+        .map(s => ({ ...s, distance_km: Math.round(haversine(lat0, lng0, (s as any).lat, (s as any).lng) * 10) / 10 }))
+        .sort((a, b) => (a.distance_km ?? 999999) - (b.distance_km ?? 999999))
+        .slice(0, 18);
+    } else {
+      // No location — pick a globally-spread sample so the screen still feels alive.
+      ranked = [...seeds]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 12);
+    }
+
+    setWanderers(ranked);
     setLoading(false);
   };
 

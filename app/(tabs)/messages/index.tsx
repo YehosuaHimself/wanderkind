@@ -9,6 +9,8 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { listSeedThreads, isSeedProfileId } from '../../../src/lib/seedMessages';
+import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 type Thread = {
   id: string;
@@ -59,21 +61,48 @@ export default function MessagesScreen() {
       .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
       .order('last_message_at', { ascending: false });
 
-    if (data) {
-      // Transform to thread format
-      const mapped = data.map((t: any) => ({
-        id: t.id,
-        other_user: {
-          id: t.user_a === user.id ? t.user_b : t.user_a,
-          trail_name: t.other_trail_name ?? 'Wanderkind',
-          avatar_url: t.other_avatar_url ?? null,
-        },
-        last_message: t.last_message ?? '',
-        last_message_at: t.last_message_at,
-        unread_count: t.unread_count ?? 0,
-      }));
-      setThreads(mapped);
+    const realThreads: Thread[] = (data || []).map((t: any) => ({
+      id: t.id,
+      other_user: {
+        id: t.user_a === user.id ? t.user_b : t.user_a,
+        trail_name: t.other_trail_name ?? 'Wanderkind',
+        avatar_url: t.other_avatar_url ?? null,
+      },
+      last_message: t.last_message ?? '',
+      last_message_at: t.last_message_at,
+      unread_count: t.unread_count ?? 0,
+    }));
+
+    // Merge in seed (NPC) threads the user has started locally.
+    let seedThreads: Thread[] = [];
+    try {
+      const seeds = await listSeedThreads();
+      const profileIndex = new Map<string, any>();
+      for (const sp of SEED_PROFILES as any[]) profileIndex.set(sp.id, sp);
+      seedThreads = seeds
+        .filter(s => s.lastMessage)
+        .map(s => {
+          const sp = profileIndex.get(s.profileId);
+          return {
+            id: `seed:${s.profileId}`,
+            other_user: {
+              id: s.profileId,
+              trail_name: sp?.trail_name ?? 'Wanderkind',
+              avatar_url: sp?.avatar_url ?? null,
+            },
+            last_message: s.lastMessage!.content,
+            last_message_at: s.lastMessage!.created_at,
+            unread_count: 0,
+          } as Thread;
+        });
+    } catch {
+      // seed threads are best-effort
     }
+
+    const merged = [...realThreads, ...seedThreads].sort((a, b) =>
+      (b.last_message_at || '').localeCompare(a.last_message_at || ''),
+    );
+    setThreads(merged);
   }, [user]);
 
   useEffect(() => { fetchThreads(); }, [fetchThreads]);
@@ -89,7 +118,7 @@ export default function MessagesScreen() {
     ({ item }: { item: Thread }) => (
       <TouchableOpacity
         style={styles.threadRow}
-        onPress={() => router.push(`/(tabs)/messages/${item.id}`)}
+        onPress={() => router.push((item.id.startsWith('seed:') ? `/(tabs)/messages/seed/${item.id.slice(5)}` : `/(tabs)/messages/${item.id}`) as any)}
         activeOpacity={0.7}
       >
         <View style={styles.avatar}>
@@ -187,7 +216,11 @@ export default function MessagesScreen() {
               onPress={() => {
                 setSearchQuery('');
                 setIsSearching(false);
-                router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
+                if (isSeedProfileId(item.id)) {
+                  router.push(`/(tabs)/messages/seed/${item.id}` as any);
+                } else {
+                  router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
+                }
               }}
               activeOpacity={0.7}
             >
