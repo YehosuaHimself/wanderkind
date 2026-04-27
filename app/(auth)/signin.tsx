@@ -128,7 +128,6 @@ export default function SignInScreen() {
         >
           <Ionicons name="logo-apple" size={20} color="rgba(255,255,255,0.5)" />
           <Text style={[styles.appleBtnText, { color: 'rgba(255,255,255,0.5)' }]}>Continue with Apple</Text>
-          <Text style={styles.comingSoonBadge}>Soon</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -236,13 +235,6 @@ const styles = StyleSheet.create({
   },
   appleBtnDisabled: {
     opacity: 0.6,
-  },
-  comingSoonBadge: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: 0.5,
-    marginLeft: 4,
   },
   appleBtnText: {
     ...typography.body,
