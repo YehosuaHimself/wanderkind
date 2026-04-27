@@ -105,7 +105,10 @@ jobs:
 
       - name: Copy static assets to dist
         run: |
-          cp -r public/* dist/
+          # Copy everything from public/ EXCEPT index.html —
+          # Expo already processed it into dist/index.html (JS/CSS injected, placeholders replaced).
+          # Overwriting would restore the raw unprocessed template.
+          find public/ -maxdepth 1 -not -name 'index.html' -not -name 'public' -exec cp -r {} dist/ \;
           echo "wanderkind.love" > dist/CNAME
           cp dist/index.html dist/404.html
 
