@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -162,7 +163,9 @@ export default function VerificationScreen() {
               {idx === currentLevel + 1 && (
                 <WKButton
                   title={`Complete ${level.name}`}
-                  onPress={() => {}}
+                  onPress={() => Linking.openURL(
+                    `mailto:verify@wanderkind.love?subject=${encodeURIComponent('Verification Request — ' + level.name)}`
+                  )}
                   variant="outline"
                   fullWidth
                   style={styles.actionBtn}
