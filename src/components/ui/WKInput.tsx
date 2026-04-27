@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { colors, typography, spacing, radii } from '../../lib/theme';
 
@@ -160,41 +160,11 @@ function WebInput({
     lineHeight: 1.4,
   };
 
-  // CRITICAL: In iOS PWA standalone mode (WKWebView), React Native Web's
-  // ResponderSystem registers document-level touch event listeners that
-  // call preventDefault() and stopPropagation(), preventing the keyboard
-  // from appearing when tapping input fields. We must intercept touch events
-  // at the input element level BEFORE they bubble up to RNW's handlers.
-  const stopRNWInterception = useCallback((e: React.TouchEvent | React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation();
-  }, []);
-
-  // Also use a ref callback to attach native (non-React) event listeners
-  // with { passive: false } to ensure we can fully control the event chain
+  // Ref callback — no event interception needed since RNW's ResponderSystem
+  // does NOT call preventDefault() on touch events. The real fix is in
+  // _layout.tsx (removes body overflow:hidden from Expo's stylesheet).
   const inputCallbackRef = useCallback((el: HTMLInputElement | HTMLTextAreaElement | null) => {
     (inputRef as React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | null>).current = el;
-    if (!el) return;
-
-    // Remove any previous listeners (React StrictMode double-mount)
-    const handler = (e: Event) => { e.stopPropagation(); };
-    el.removeEventListener('touchstart', handler, true);
-    el.removeEventListener('touchend', handler, true);
-    el.removeEventListener('pointerdown', handler, true);
-
-    // Attach fresh listeners in capture phase to intercept before RNW
-    el.addEventListener('touchstart', handler, { capture: true, passive: true });
-    el.addEventListener('touchend', handler, { capture: true, passive: true });
-    el.addEventListener('pointerdown', handler, { capture: true, passive: true });
-
-    // Force-strip any inherited userSelect: none from RNW parent Views
-    let parent = el.parentElement;
-    while (parent && parent !== document.body) {
-      if (parent.style.userSelect === 'none') {
-        parent.style.userSelect = '';
-        (parent.style as any).webkitUserSelect = '';
-      }
-      parent = parent.parentElement;
-    }
   }, []);
 
   const sharedProps = {
@@ -208,11 +178,6 @@ function WebInput({
     style: inputStyle,
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
-    // Stop RNW's ResponderSystem from intercepting touch events
-    onTouchStart: stopRNWInterception,
-    onTouchEnd: stopRNWInterception,
-    onPointerDown: stopRNWInterception,
-    onMouseDown: stopRNWInterception,
     'aria-label': label,
     'aria-describedby': helper ? `${label}-helper` : undefined,
     // Prevent iOS zoom
