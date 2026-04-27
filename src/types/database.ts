@@ -382,6 +382,31 @@ export interface RideRow {
   created_at: string;
 }
 
+
+export interface ShuffleRequestRow {
+  id: string;
+  requester_id: string;
+  // Denormalized snapshot of the requester's profile
+  trail_name: string;
+  nights_walked: number;
+  tier: string;
+  bio: string | null;
+  avatar_url: string | null;
+  // Location at time of request
+  lat: number | null;
+  lng: number | null;
+  radius_km: number;
+  // Status: pending → matched | expired | cancelled
+  status: 'pending' | 'matched' | 'expired' | 'cancelled';
+  // Set by the accepting host
+  matched_host_id: string | null;
+  matched_profile_id: string | null;
+  matched_host_name: string | null;
+  matched_at: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
 export interface FavoriteHostRow {
   id: string;
   user_id: string;
@@ -516,6 +541,12 @@ export type Database = {
       };
       rides: {
         Row: RideRow;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      shuffle_requests: {
+        Row: ShuffleRequestRow;
         Insert: Record<string, any>;
         Update: Record<string, any>;
         Relationships: [];

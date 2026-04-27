@@ -85,11 +85,9 @@ const page1Tiles: AppTile[] = [
   {
     icon: 'shuffle',
     title: 'Shuffle',
-    subtitle: 'Let the path lead you to a WanderHost nearby',
     route: '/(tabs)/more/shuffle',
     accent: '#7B2D3F',
     bgTint: 'rgba(123,45,63,0.06)',
-    wide: true,
   },
 ];
 
