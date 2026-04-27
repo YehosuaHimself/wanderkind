@@ -90,12 +90,41 @@
         __wkCrash(null);
       });
 
-      // If React hasn't mounted after 10 seconds → show recovery UI
-      setTimeout(function () {
-        if (document.getElementById('wk-shell')) {
-          __wkCrash('The app took too long to start. Try reloading.');
+      // Wait for the JS bundle to actually load before starting the crash-UI
+      // countdown. The bundle is ~3.4MB; on slow mobile, network + parse can
+      // take 6-12s, and counting against the user while the script is still
+      // in flight produced false-positive crash UIs (the white-screen bug).
+      (function () {
+        function fireCrashUi() {
+          if (document.getElementById('wk-shell')) {
+            __wkCrash('The app took too long to start. Try reloading.');
+          }
         }
-      }, 5000);
+        function startCountdown() {
+          var scriptEl = document.querySelector('script[src*="_expo/static/js"]');
+          if (!scriptEl) {
+            // No bundle in the DOM at all → structural failure, fail fast
+            setTimeout(fireCrashUi, 8000);
+            return;
+          }
+          // Bundle present: give it 20s of post-load grace to mount React
+          var started = false;
+          function start() {
+            if (started) return;
+            started = true;
+            setTimeout(fireCrashUi, 20000);
+          }
+          scriptEl.addEventListener('load', start);
+          // Belt-and-braces: if 'load' never fires (cached script edge cases),
+          // start the countdown after a generous initial grace period anyway.
+          setTimeout(start, 30000);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startCountdown);
+        } else {
+          startCountdown();
+        }
+      })();
     </script>
   </head>
 
