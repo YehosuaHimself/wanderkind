@@ -22,9 +22,9 @@ export default function ImprintScreen() {
 
         {/* Organization */}
         <WKCard variant="gold" style={styles.card}>
-          <Text style={[typography.h3, styles.heading]}>Organization</Text>
+          <Text style={[typography.h3, styles.heading]}>ORG.</Text>
           <View style={styles.infoBlock}>
-            <Text style={styles.value}>Joschua Himself</Text>
+            <Text style={styles.value}>Joschua Bergmann</Text>
           </View>
         </WKCard>
 
@@ -42,15 +42,15 @@ export default function ImprintScreen() {
           </View>
         </WKCard>
 
-        {/* Management */}
+        {/* Dev. Partner */}
         <WKCard style={styles.card}>
-          <Text style={[typography.h3, styles.heading]}>Management</Text>
+          <Text style={[typography.h3, styles.heading]}>Dev. Partner</Text>
           <View style={styles.infoBlock}>
-            <Text style={styles.value}>KGD Embassy</Text>
+            <Text style={styles.value}>KGD EMBASSY</Text>
           </View>
           <View style={styles.infoBlock}>
             <Text style={styles.label}>Represented by:</Text>
-            <Text style={styles.value}>Joschua Himself</Text>
+            <Text style={styles.value}>Joschua Bergmann</Text>
           </View>
         </WKCard>
 
