@@ -139,6 +139,27 @@ export function InAppBrowserPrompt() {
     lineHeight: 1.4,
   };
 
+  const orRow: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    margin: '24px 0 4px',
+  };
+
+  const orLine: React.CSSProperties = {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.borderLt,
+  };
+
+  const orText: React.CSSProperties = {
+    fontSize: 11,
+    fontFamily: "'Courier New', ui-monospace, monospace",
+    letterSpacing: 3,
+    color: colors.ink3,
+    fontWeight: 600,
+  };
+
   const copyBtn: React.CSSProperties = {
     width: '100%',
     padding: '14px 16px',
@@ -150,7 +171,7 @@ export function InAppBrowserPrompt() {
     borderRadius: radii.md,
     cursor: 'pointer',
     fontFamily: 'inherit',
-    marginTop: 20,
+    marginTop: 12,
     transition: 'background-color 200ms',
   };
 
@@ -181,9 +202,8 @@ export function InAppBrowserPrompt() {
         <h1 style={title}>Open Wanderkind in your browser</h1>
 
         <p style={subtitle}>
-          You opened this from {browser}. Wanderkind needs your real browser
-          (Safari) so it can be installed on your home screen and so sign-in
-          works correctly.
+          You opened this page from {browser}. Wanderkind needs your real
+          browser so it can function correctly.
         </p>
 
         <div style={stepRow}>
@@ -203,6 +223,12 @@ export function InAppBrowserPrompt() {
             </div>
             <div style={stepHint}>Safari will open with this page</div>
           </div>
+        </div>
+
+        <div style={orRow}>
+          <span style={orLine} />
+          <span style={orText}>OR</span>
+          <span style={orLine} />
         </div>
 
         <button type="button" style={copyBtn} onClick={handleCopy}>
