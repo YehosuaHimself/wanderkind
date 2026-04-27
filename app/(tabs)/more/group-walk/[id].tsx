@@ -102,7 +102,7 @@ export default function GroupWalkDetailScreen() {
         <View style={styles.section}>
           <WKButton
             title="Group Chat"
-            onPress={() => {}}
+            onPress={() => router.push(`/(tabs)/messages/group/${id}` as any)}
             variant="secondary"
             fullWidth
             icon={<Ionicons name="chatbubble-outline" size={16} color={colors.amber} />}
