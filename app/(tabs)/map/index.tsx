@@ -878,7 +878,6 @@ export default function MapHome() {
           .eq('is_available', true)
           .eq('hidden_from_map', false)
           .order('quality_score', { ascending: false })
-          .order('total_hosted', { ascending: false })
           .limit(2000);
 
         if (data && data.length > 0) {

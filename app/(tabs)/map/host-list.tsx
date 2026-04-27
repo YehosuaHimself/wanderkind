@@ -69,7 +69,6 @@ export default function HostList() {
         .eq('is_available', true)
         .eq('hidden_from_map', false)
         .order('quality_score', { ascending: false })
-        .order('rating', { ascending: false })
         .limit(2000);
 
       setHosts(data as Host[] || []);
