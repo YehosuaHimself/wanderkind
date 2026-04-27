@@ -83,11 +83,11 @@ const page1Tiles: AppTile[] = [
     bgTint: 'rgba(230,126,34,0.08)',
   },
   {
-    icon: 'shuffle',
-    title: 'Shuffle',
-    route: '/(tabs)/more/shuffle',
-    accent: '#7B2D3F',
-    bgTint: 'rgba(123,45,63,0.06)',
+    icon: 'megaphone',
+    title: 'Host Push',
+    route: '/(tabs)/more/host-push',
+    accent: '#C8762A',
+    bgTint: 'rgba(200,118,42,0.07)',
   },
 ];
 
@@ -356,11 +356,13 @@ const styles = StyleSheet.create({
   },
   dotsRow: {
     flexDirection: 'row',
+    // Shifted right so dots don't crowd the raised MORE button in the tab bar
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
     height: DOTS_H,
     paddingBottom: 4,
+    paddingLeft: GRID_PADDING * 8,
   },
   dot: {
     width: 8,

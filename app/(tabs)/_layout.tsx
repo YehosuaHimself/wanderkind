@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { View, Platform, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../src/lib/theme';
@@ -37,9 +37,18 @@ export default function TabLayout() {
           },
         }}
         initialRouteName="map"
-        screenListeners={{
-          tabPress: () => haptic.light(),
-        }}
+        screenListeners={({ navigation, route }) => ({
+          tabPress: (e) => {
+            haptic.light();
+            // If already on this tab but nested inside a stack, reset to root
+            const state = navigation.getState();
+            const tabRoute = state.routes.find((r: any) => r.name === route.name);
+            if (tabRoute?.state && tabRoute.state.index > 0) {
+              e.preventDefault();
+              navigation.navigate(route.name as never);
+            }
+          },
+        })}
       >
         <Tabs.Screen
           name="myway"

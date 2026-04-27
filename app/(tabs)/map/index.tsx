@@ -27,7 +27,7 @@ const INITIAL_REGION = {
   longitudeDelta: 22,
 };
 
-type FilterMode = 'free' | 'donativo' | 'all';
+type HostFilter = 'free' | 'donativo' | 'budget';
 
 interface LayerState {
   hosts: boolean;
@@ -260,10 +260,10 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, filter, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange
+  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange
 }: {
   hosts: Host[];
-  filter: FilterMode;
+  activeFilters: Set<HostFilter>;
   onHostPress: (id: string) => void;
   walkers: SeedProfile[];
   onWalkerPress: (id: string) => void;
@@ -296,9 +296,9 @@ function WebMapComponent({
     if (!mapReady || !iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage({
       type: 'update-filter',
-      filter,
+      activeFilters: Array.from(activeFilters),
     }, '*');
-  }, [filter, mapReady]);
+  }, [activeFilters, mapReady]);
 
   // Send host data updates via postMessage when hosts change
   useEffect(() => {
@@ -831,7 +831,14 @@ export default function MapHome() {
   const { profile } = useAuthStore();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
-  const [filter, setFilter] = useState<FilterMode>('all');
+  const [activeFilters, setActiveFilters] = useState<Set<HostFilter>>(new Set(['free','donativo','budget']));
+  const toggleFilter = (f: HostFilter) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(f) && next.size > 1) next.delete(f); else next.add(f);
+      return next;
+    });
+  };
   const [nearbyHosts, setNearbyHosts] = useState<Host[]>([]);
   const [activeHostIndex, setActiveHostIndex] = useState(0);
   const [showLayers, setShowLayers] = useState(false);
@@ -976,11 +983,7 @@ export default function MapHome() {
       sorted = [...hosts].sort((a, b) => (b.total_hosted ?? 0) - (a.total_hosted ?? 0));
     }
     // Apply filter
-    const filtered = sorted.filter(h => {
-      if (filter === 'free') return h.host_type === 'free';
-      if (filter === 'donativo') return h.host_type === 'free' || h.host_type === 'donativo';
-      return true;
-    });
+    const filtered = sorted.filter(h => activeFilters.has(h.host_type as HostFilter));
     setNearbyHosts(filtered);
     setActiveHostIndex(0);
   }, [hosts, userLat, userLng, filter]);
@@ -1328,7 +1331,7 @@ export default function MapHome() {
       {Platform.OS === 'web' ? (
         <WebMapComponent
           hosts={hosts}
-          filter={filter}
+          activeFilters={activeFilters}
           onHostPress={handleHostPress}
           walkers={[...walkingSeedProfiles, ...liveWalkers.filter(lw => !walkingSeedProfiles.some(sp => sp.id === lw.id))]}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
@@ -1360,21 +1363,23 @@ export default function MapHome() {
       {/* Top controls — filter tags only */}
       <SafeAreaView style={styles.topOverlay} edges={['top']}>
         <View style={styles.filterRow}>
-          {(['free', 'donativo', 'all'] as FilterMode[]).map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.filterChip, filter === f && styles.filterChipActive]}
-              onPress={() => { haptic.selection(); setFilter(f); }}
-            >
-              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-                {f === 'free' ? 'FREE STAYS' : f === 'donativo' ? 'PAY WHAT YOU CAN' : 'ALL HOSTS'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(['free','donativo','budget'] as HostFilter[]).map(f => {
+            const active = activeFilters.has(f);
+            const label = f === 'free' ? 'FREE' : f === 'donativo' ? 'DONATIVO' : 'BUDGET';
+            return (
+              <TouchableOpacity
+                key={f}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => { haptic.selection(); toggleFilter(f); }}
+              >
+                <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </SafeAreaView>
 
-      {/* Right side — layers & map mode buttons, aligned with heart/house */}
+      {/* Right side — layers, map style, locate/center */}
       <View style={styles.rightActionStrip}>
         <TouchableOpacity
           style={styles.rightActionBtn}
@@ -1387,6 +1392,12 @@ export default function MapHome() {
           onPress={() => { haptic.selection(); setShowMapModes(!showMapModes); }}
         >
           <Ionicons name="map" size={20} color={colors.amber} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.rightActionBtn}
+          onPress={() => { haptic.light(); handleLocationPress(); }}
+        >
+          <Ionicons name="locate" size={20} color={colors.amber} />
         </TouchableOpacity>
       </View>
 
@@ -1408,7 +1419,7 @@ export default function MapHome() {
         />
       )}
 
-      {/* Left side — heart (favorites), past stays */}
+      {/* Left side — heart (favorites), past stays, shuffle */}
       <View style={styles.leftActionStrip}>
         <TouchableOpacity
           style={[styles.leftActionBtn, showFavorites && styles.leftActionBtnActive]}
@@ -1430,15 +1441,15 @@ export default function MapHome() {
             color={showPastStays ? colors.amber : colors.ink2}
           />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.leftActionBtn}
+          onPress={() => { haptic.medium(); router.push('/(tabs)/more/shuffle'); }}
+        >
+          <Ionicons name="shuffle" size={20} color={colors.amber} />
+        </TouchableOpacity>
       </View>
 
-      {/* Right side — locate/relocate button, above cards */}
-      <TouchableOpacity
-        style={styles.locateBtn}
-        onPress={() => { haptic.light(); handleLocationPress(); }}
-      >
-        <Ionicons name="locate" size={20} color={colors.amber} />
-      </TouchableOpacity>
+
 
       {/* Community contribution FAB — orange circle with + */}
       <TouchableOpacity
@@ -1708,7 +1719,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     alignItems: 'center',
     position: 'absolute',
-    top: Platform.OS === 'web' ? 90 : 0,
+    top: Platform.OS === 'web' ? 8 : 0,
     left: 0,
     right: 0,
     zIndex: 10,
@@ -1833,7 +1844,7 @@ const styles = StyleSheet.create({
   rightActionStrip: {
     position: 'absolute',
     right: 12,
-    top: '42%',
+    top: '35%',
     gap: 8,
     zIndex: 20,
   },
@@ -1855,7 +1866,7 @@ const styles = StyleSheet.create({
   leftActionStrip: {
     position: 'absolute',
     left: 12,
-    top: '42%',
+    top: '35%',
     gap: 8,
     zIndex: 20,
   },
@@ -2053,7 +2064,7 @@ const styles = StyleSheet.create({
   },
   hostCard: {
     width: HOST_CARD_WIDTH,
-    minHeight: Math.round(height / 3),
+    maxHeight: Math.round(height * 0.28),
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 14,

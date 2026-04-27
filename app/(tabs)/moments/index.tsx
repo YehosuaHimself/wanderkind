@@ -45,8 +45,6 @@ export default function MomentsFeed() {
   const router = useRouter();
   const { profile } = useAuth();
   const [moments, setMoments] = useState<MomentWithAuthor[]>([]);
-
-  if (isLoading) return null;
   const [refreshing, setRefreshing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filter, setFilter] = useState<FeedFilter>('nearby');
@@ -56,6 +54,8 @@ export default function MomentsFeed() {
   // Stories state
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
+
+  if (isLoading) return null;
 
   // ── Get user location ─────────────────────────────────────────────
   useEffect(() => {
