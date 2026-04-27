@@ -10,6 +10,8 @@ import { useInstallPrompt } from '../../src/hooks/useInstallPrompt';
 import { colors, typography, spacing } from '../../src/lib/theme';
 import { haptic } from '../../src/lib/haptics';
 import { supabase } from '../../src/lib/supabase';
+import { detectLanguage, getTranslations, LANG_LABELS, LangCode } from '../../src/lib/i18n-landing';
+import { IndependentBadge } from '../../src/components/web/IndependentBadge';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,6 +39,19 @@ export default function WelcomeScreen() {
   const [stats, setStats] = useState({ hosts: 505, routes: 26, countries: 10 });
   const [installing, setInstalling] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [lang, setLang] = useState<LangCode>('en');
+  const t = getTranslations(lang);
+
+  // Detect iPad (share button is top-right, not bottom)
+  const [isIPad, setIsIPad] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    setLang(detectLanguage());
+    const ua = navigator.userAgent || '';
+    const iPad = /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIPad(iPad);
+  }, []);
 
   // Animations
   const fadeIn = useRef(new Animated.Value(0)).current;
@@ -127,24 +142,24 @@ export default function WelcomeScreen() {
 
           <Text style={styles.title} accessibilityRole="header">WANDERKIND</Text>
           <Text style={styles.subtitleInstalled}>
-            Welcome home, wanderer.
+            {t.welcomeHome}
           </Text>
 
           {/* Stats */}
           <View style={styles.statsRow} accessibilityLabel={`${stats.hosts} hosts, ${stats.routes} routes, ${stats.countries} countries`}>
             <View style={styles.stat}>
               <Text style={styles.statValue}>{stats.hosts}+</Text>
-              <Text style={styles.statLabel}>OPEN DOORS</Text>
+              <Text style={styles.statLabel}>{t.openDoors}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
               <Text style={styles.statValue}>{stats.routes}</Text>
-              <Text style={styles.statLabel}>WAYS</Text>
+              <Text style={styles.statLabel}>{t.ways}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
               <Text style={styles.statValue}>{stats.countries}</Text>
-              <Text style={styles.statLabel}>COUNTRIES</Text>
+              <Text style={styles.statLabel}>{t.countries}</Text>
             </View>
           </View>
         </Animated.View>
@@ -157,7 +172,7 @@ export default function WelcomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Begin your way"
           >
-            <Text style={styles.primaryBtnText}>BEGIN YOUR WAY</Text>
+            <Text style={styles.primaryBtnText}>{t.beginBtn}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -165,14 +180,14 @@ export default function WelcomeScreen() {
             activeOpacity={0.7}
             style={styles.signinLink}
             accessibilityRole="button"
-            accessibilityLabel="Sign in to existing account"
+            accessibilityLabel={t.signinLink}
           >
-            <Text style={styles.signinText}>I already have a pass</Text>
+            <Text style={styles.signinText}>{t.signinLink}</Text>
           </TouchableOpacity>
 
           <View style={styles.hostBanner}>
             <View style={styles.hostBannerLine} />
-            <Text style={styles.hostBannerText}>EVERY WANDERKIND IS ALSO A HOST</Text>
+            <Text style={styles.hostBannerText}>{t.hostBanner}</Text>
             <View style={styles.hostBannerLine} />
           </View>
         </View>
@@ -189,10 +204,31 @@ export default function WelcomeScreen() {
         bounces={false}
       >
         <Animated.View style={[styles.gateContent, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
+          {/* Language Toggle */}
+          {Platform.OS === 'web' && (
+            <View style={styles.langRow}>
+              {(['en', 'de', 'es', 'fr', 'pt', 'it', 'nl'] as LangCode[]).map((code) => (
+                <TouchableOpacity
+                  key={code}
+                  style={[styles.langPill, lang === code && styles.langPillActive]}
+                  onPress={() => setLang(code)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch language to ${code.toUpperCase()}`}
+                  accessibilityState={{ selected: lang === code }}
+                >
+                  <Text style={[styles.langPillText, lang === code && styles.langPillTextActive]}>
+                    {LANG_LABELS[code]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Eyebrow */}
           <View style={styles.eyebrow}>
             <View style={styles.eyebrowLine} />
-            <Text style={styles.eyebrowText}>EST. MMXXVI</Text>
+            <Text style={styles.eyebrowText}>{t.eyebrow}</Text>
             <View style={styles.eyebrowLine} />
           </View>
 
@@ -204,25 +240,23 @@ export default function WelcomeScreen() {
           {/* Title */}
           <Text style={styles.title} accessibilityRole="header">WANDERKIND</Text>
           <Text style={styles.subtitle}>
-            Walk the ancient ways.{'\n'}Stay with those who walk them too.
+            {t.subtitle}
           </Text>
 
           {/* Value prop — what it is */}
           <View style={styles.valueSection}>
-            <Text style={styles.valueTitle}>A network of open doors</Text>
+            <Text style={styles.valueTitle}>{t.valueTitle}</Text>
             <Text style={styles.valueBody}>
-              {stats.hosts}+ hosts across {stats.countries} countries welcome wanderers
-              along {stats.routes} historic walking routes. Free stays, shared meals,
-              and real human connection — no booking fees, no middlemen.
+              {t.valueBody(stats.hosts, stats.countries, stats.routes)}
             </Text>
           </View>
 
           {/* Trust assurance */}
           <View style={styles.trustRow}>
             {[
-              { icon: 'shield-checkmark-outline' as const, text: 'Perfectly safe' },
-              { icon: 'cloud-offline-outline' as const, text: 'No app store' },
-              { icon: 'lock-closed-outline' as const, text: 'Your data stays yours' },
+              { icon: 'shield-checkmark-outline' as const, text: t.trustSafe },
+              { icon: 'cloud-offline-outline' as const, text: t.trustNoStore },
+              { icon: 'lock-closed-outline' as const, text: t.trustPrivacy },
             ].map((item, i) => (
               <View key={i} style={styles.trustItem}>
                 <Ionicons name={item.icon} size={16} color={colors.amber} />
@@ -234,11 +268,16 @@ export default function WelcomeScreen() {
           {/* The independence message */}
           <View style={styles.independenceCard}>
             <Text style={styles.independenceText}>
-              Wanderkind is independent — not an app store product,
-              not a corporation. For the perfect experience, install
-              it directly to your phone. Lightweight, instant, free.
+              {t.independenceText}
             </Text>
           </View>
+
+          {/* Independent badge — like App Store / Play Store badges */}
+          {Platform.OS === 'web' && (
+            <View style={styles.badgeContainer}>
+              <IndependentBadge line1={t.badgeLine1} line2={t.badgeLine2} />
+            </View>
+          )}
         </Animated.View>
 
         {/* Install CTA */}
@@ -249,7 +288,7 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
             disabled={installing}
             accessibilityRole="button"
-            accessibilityLabel={isIOS ? 'Add Wanderkind to home screen' : 'Install Wanderkind'}
+            accessibilityLabel={isIOS ? t.installBtnIOS : t.installBtnAndroid}
           >
             <Ionicons
               name={isIOS ? 'share-outline' : 'download-outline'}
@@ -257,21 +296,19 @@ export default function WelcomeScreen() {
               color="#FFFFFF"
             />
             <Text style={styles.installBtnText}>
-              {installing ? 'INSTALLING...' : isIOS ? 'ADD TO HOME SCREEN' : 'INSTALL WANDERKIND'}
+              {installing ? t.installing : isIOS ? t.installBtnIOS : t.installBtnAndroid}
             </Text>
           </TouchableOpacity>
 
           <Text style={styles.installNote}>
-            {isIOS
-              ? 'Tap to see how — takes 10 seconds'
-              : 'One tap — no app store needed'}
+            {isIOS ? t.installNoteIOS : t.installNoteAndroid}
           </Text>
 
           {/* Tiny technical note */}
           <View style={styles.techNote}>
             <Ionicons name="information-circle-outline" size={12} color={colors.ink3} />
             <Text style={styles.techNoteText}>
-              Installs as a lightweight web app ({`<`}2 MB). No tracking, no ads, no bloat.
+              {t.techNote}
             </Text>
           </View>
         </Animated.View>
@@ -279,7 +316,7 @@ export default function WelcomeScreen() {
 
       {/* iOS Install Guide Modal */}
       {showIOSGuide && (
-        <IOSGuideOverlay onClose={() => setShowIOSGuide(false)} />
+        <IOSGuideOverlay onClose={() => setShowIOSGuide(false)} lang={lang} isIPad={isIPad} />
       )}
     </SafeAreaView>
   );
@@ -287,9 +324,13 @@ export default function WelcomeScreen() {
 
 /**
  * Inline iOS guide — simpler version that lives in this file
- * to avoid circular dependency issues with InstallBanner
+ * to avoid circular dependency issues with InstallBanner.
+ *
+ * User-paced: tap "Next" to advance (no auto-timer).
+ * iPad-aware: adjusts share button location text.
  */
-function IOSGuideOverlay({ onClose }: { onClose: () => void }) {
+function IOSGuideOverlay({ onClose, lang, isIPad }: { onClose: () => void; lang: LangCode; isIPad: boolean }) {
+  const t = getTranslations(lang);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const [activeStep, setActiveStep] = useState(0);
@@ -301,18 +342,19 @@ function IOSGuideOverlay({ onClose }: { onClose: () => void }) {
     ]).start();
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveStep(prev => (prev < 2 ? prev + 1 : prev));
-    }, 2500);
-    return () => clearInterval(timer);
-  }, []);
-
   const steps = [
-    { icon: 'share-outline' as const, title: 'Tap the Share button', desc: 'The square with an upward arrow — at the bottom of Safari' },
-    { icon: 'add-circle-outline' as const, title: '"Add to Home Screen"', desc: 'Scroll down in the share menu and tap it' },
-    { icon: 'checkmark-circle' as const, title: 'Tap "Add"', desc: 'Wanderkind appears on your home screen — open it like any app' },
+    { icon: 'share-outline' as const, title: t.guideStep1Title, desc: isIPad ? t.guideStep1DescIPad : t.guideStep1Desc },
+    { icon: 'add-circle-outline' as const, title: t.guideStep2Title, desc: t.guideStep2Desc },
+    { icon: 'checkmark-circle' as const, title: t.guideStep3Title, desc: t.guideStep3Desc },
   ];
+
+  const handleNext = () => {
+    if (activeStep < 2) {
+      setActiveStep(prev => prev + 1);
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <Animated.View style={[styles.guideOverlay, { opacity: fadeAnim }]}>
@@ -323,8 +365,8 @@ function IOSGuideOverlay({ onClose }: { onClose: () => void }) {
             <Text style={styles.guideLogoText}>W</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.guideTitle}>Install Wanderkind</Text>
-            <Text style={styles.guideSubtitle}>3 quick steps — takes 10 seconds</Text>
+            <Text style={styles.guideTitle}>{t.guideTitle}</Text>
+            <Text style={styles.guideSubtitle}>{t.guideSubtitle}</Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Ionicons name="close" size={24} color={colors.ink3} />
@@ -367,10 +409,26 @@ function IOSGuideOverlay({ onClose }: { onClose: () => void }) {
           })}
         </View>
 
-        {activeStep === 0 && (
+        {/* User-paced: Next button instead of auto-advance */}
+        <TouchableOpacity
+          style={styles.guideNextBtn}
+          onPress={handleNext}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.guideNextBtnText}>{t.guideNext}</Text>
+          <Ionicons name={activeStep < 2 ? 'arrow-forward' : 'checkmark'} size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        {activeStep === 0 && !isIPad && (
           <View style={styles.pointerContainer}>
             <Ionicons name="arrow-down" size={28} color={colors.amber} />
-            <Text style={styles.pointerText}>Share button is down here in Safari</Text>
+            <Text style={styles.pointerText}>{t.guidePointer}</Text>
+          </View>
+        )}
+        {activeStep === 0 && isIPad && (
+          <View style={styles.pointerContainer}>
+            <Ionicons name="arrow-up" size={28} color={colors.amber} />
+            <Text style={styles.pointerText}>{t.guidePointer}</Text>
           </View>
         )}
       </Animated.View>
@@ -761,5 +819,60 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.ink3,
     fontWeight: '500',
+  },
+
+  // ─── Language Toggle ───
+  langRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  langPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  langPillActive: {
+    backgroundColor: colors.amber,
+    borderColor: colors.amber,
+  },
+  langPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.ink3,
+    letterSpacing: 0.5,
+  },
+  langPillTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // ─── Badge ───
+  badgeContainer: {
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+
+  // ─── Guide Next Button ───
+  guideNextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.amber,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  guideNextBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1,
   },
 });
