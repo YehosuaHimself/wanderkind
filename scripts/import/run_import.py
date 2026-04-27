@@ -42,6 +42,9 @@ def load_all_importers():
     from sources.central_eastern_europe import CentralEasternEuropeImporter
     from sources.wikidata              import WikidataImporter
     from sources.north_america         import NorthAmericaImporter
+    from sources.via_dinarica          import ViaDinaricaImporter
+    from sources.shikoku_japan         import ShikokuJapanImporter
+    from sources.australia_routes      import AustraliaRoutesImporter
 
     return {
         "osm":               OSMImporter,
@@ -59,6 +62,9 @@ def load_all_importers():
         "central_east":      CentralEasternEuropeImporter,
         "wikidata":          WikidataImporter,
         "north_america":     NorthAmericaImporter,
+        "via_dinarica":      ViaDinaricaImporter,
+        "shikoku_japan":     ShikokuJapanImporter,
+        "australia_routes": AustraliaRoutesImporter,
     }
 
 # Run order — OSM and Wikidata first (largest coverage, open data)
@@ -79,6 +85,9 @@ DEFAULT_ORDER = [
     "uk_ireland",     # Britain + Ireland
     "central_east",   # Poland, Czech, etc.
     "north_america",  # USA + Canada pilgrim routes
+    "via_dinarica",   # Balkans — Slovenia → North Macedonia
+    "shikoku_japan",  # Shikoku 88 temple pilgrimage
+    "australia_routes", # Bibbulmun, Heysen, GNW, C2C, Larapinta, AAWT
 ]
 
 

@@ -175,7 +175,9 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
             stats["errors"] += 1
             continue
 
+        # last_confirmed kept null on import — community sets it via the UI.
         payload = {
+            "quality_score": compute_quality_score(rec),
             "name": rec.name.strip(),
             "lat": rec.lat,
             "lng": rec.lng,
@@ -241,6 +243,87 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
     return stats
 
 
+
+
+# ── Quality scoring ────────────────────────────────────────────────────────────
+
+def compute_quality_score(rec: HostRecord, last_confirmed: Optional[str] = None) -> int:
+    """
+    0-100 trust score per Wanderkind handover §2.4 / §5:
+      +20  contact info (phone OR email)
+      +20  website OR source_url
+      +15  description (>= 50 chars)
+      +15  capacity present
+      +15  opening_months present
+      +10  at least one photo (gallery or hero)
+      +5   human confirmed (last_confirmed not null)
+    """
+    score = 0
+    if rec.phone or rec.email:
+        score += 20
+    if rec.website or rec.source_url:
+        score += 20
+    if rec.description and len(rec.description.strip()) >= 50:
+        score += 15
+    if rec.capacity is not None and rec.capacity > 0:
+        score += 15
+    if rec.opening_months:
+        score += 15
+    # Photo bonus is reserved for hosts with curated images (not auto-imported).
+    # Importers don't yet attach photos, but the field stays for future enrichment.
+    # For now we treat presence of source_url as a signal toward photo availability.
+    if last_confirmed:
+        score += 5
+    return min(100, score)
+
+
+# ── Phase-1 enrichment: extract phone/email/website from a source page ─────────
+
+_RE_PHONE = re.compile(r'(?:tel:)?\s*(\+?\d[\d\s().-]{6,}\d)', re.IGNORECASE)
+_RE_EMAIL = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+_RE_WEBSITE = re.compile(r'https?://[A-Za-z0-9./:_\-?=&%]+', re.IGNORECASE)
+_BAD_DOMAINS = ("schema.org", "w3.org", "facebook.com/sharer", "twitter.com/intent",
+                "instagram.com/explore", "google.com/maps", "google-analytics", "googletagmanager")
+
+
+def enrich_from_url(rec: HostRecord, session: "requests.Session", timeout: int = 12) -> HostRecord:
+    """
+    Best-effort: fetch source_url, extract phone/email/website if missing.
+    Never overwrites curated data. Returns the (mutated) record.
+    """
+    if not rec.source_url:
+        return rec
+    if rec.phone and rec.email and rec.website:
+        return rec
+    try:
+        r = session.get(rec.source_url, timeout=timeout)
+        r.raise_for_status()
+        text = r.text
+    except Exception:
+        return rec
+
+    if not rec.phone:
+        m = _RE_PHONE.search(text)
+        if m:
+            cand = re.sub(r"\s+", " ", m.group(1)).strip()
+            if 7 <= len(re.sub(r"\D", "", cand)) <= 16:
+                rec.phone = cand
+    if not rec.email:
+        m = _RE_EMAIL.search(text)
+        if m and not m.group(0).lower().endswith((".png", ".jpg", ".gif")):
+            rec.email = m.group(0)
+    if not rec.website:
+        for m in _RE_WEBSITE.finditer(text):
+            url = m.group(0).rstrip(".,;)\"\'")
+            if any(b in url for b in _BAD_DOMAINS):
+                continue
+            if rec.source_url and url == rec.source_url:
+                continue
+            rec.website = url
+            break
+    return rec
+
+
 # ── Base importer ──────────────────────────────────────────────────────────────
 
 class BaseImporter:
@@ -276,10 +359,21 @@ class BaseImporter:
         """Override in subclass. Return all host records from this source."""
         raise NotImplementedError
 
-    def run(self, dry_run: bool = False) -> dict:
+    def run(self, dry_run: bool = False, enrich: bool = True) -> dict:
         self.log.info(f"=== {self.__class__.__name__} — fetching…")
         records = self.fetch()
         self.log.info(f"  Fetched {len(records)} records")
+        if enrich:
+            self.log.info(f"  Phase-1 enriching from source pages (best-effort)…")
+            enriched_count = 0
+            for rec in records:
+                if not rec.source_url: continue
+                if rec.phone and rec.email and rec.website: continue
+                before = (rec.phone, rec.email, rec.website)
+                enrich_from_url(rec, self.session)
+                if (rec.phone, rec.email, rec.website) != before:
+                    enriched_count += 1
+            self.log.info(f"    enriched {enriched_count} record(s) with new contact info")
         stats = upsert_hosts(records, dry_run=dry_run)
         self.log.info(f"  Done: {stats}")
         return stats

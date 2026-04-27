@@ -20,6 +20,7 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
+import { TrustTierBadge } from '../../../src/components/ui/TrustTierBadge';
 import type { Host, GuestbookEntry } from '../../../src/types/database';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useFavoritesStore } from '../../../../src/stores/favorites';
@@ -260,6 +261,7 @@ export default function HostDetail() {
 
             {/* Trust Badges */}
             <View style={styles.trustRow}>
+              <TrustTierBadge quality_score={(host as any).quality_score} showScore />
               <View style={[styles.trustBadge, { backgroundColor: freshness.bg }]}>
                 <Ionicons name={freshness.icon as any} size={11} color={freshness.color} />
                 <Text style={[styles.trustLabel, { color: freshness.color }]}>{freshness.label}</Text>
