@@ -168,6 +168,9 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
     stats = {"inserted": 0, "updated": 0, "skipped": 0, "errors": 0}
     now = datetime.now(timezone.utc).isoformat()
 
+    insert_payloads: list[dict] = []
+    update_payloads: list[tuple[str, dict]] = []
+
     for rec in records:
         errs = rec.validate()
         if errs:
@@ -215,30 +218,41 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
         key = (rec.data_source, rec.source_id)
 
         if key in source_lookup:
-            # Known record from this source → update
             existing_id = source_lookup[key]
-            if not dry_run:
-                sb.table("hosts").update(payload).eq("id", existing_id).execute()
-            log.debug(f"  UPDATE {rec.name}")
+            update_payloads.append((existing_id, payload))
             stats["updated"] += 1
-
         else:
-            # Check for near-duplicate from a DIFFERENT source
             dup_id = find_duplicate(rec, existing)
             if dup_id:
-                log.info(f"  SKIP near-dup [{rec.source_id}] {rec.name} (matches {dup_id})")
                 stats["skipped"] += 1
                 continue
-
-            # New host — insert
-            if not dry_run:
-                sb.table("hosts").insert(payload).execute()
-            log.info(f"  INSERT {rec.name} ({rec.host_type}) [{rec.country}]")
+            insert_payloads.append(payload)
             stats["inserted"] += 1
-
-            # Add to in-memory existing list to catch further dupes in this batch
             existing.append({"id": f"_new_{rec.source_id}", "lat": rec.lat, "lng": rec.lng,
                               "name": rec.name, "data_source": rec.data_source, "source_id": rec.source_id})
+
+    log.info(f"  Prepared {len(insert_payloads)} insert + {len(update_payloads)} update payloads")
+
+    if not dry_run:
+        BATCH = 200
+        for i in range(0, len(insert_payloads), BATCH):
+            chunk = insert_payloads[i:i+BATCH]
+            try:
+                sb.table("hosts").insert(chunk).execute()
+                log.info(f"    inserted batch {i//BATCH + 1} ({len(chunk)} rows)")
+            except Exception as e:
+                log.warning(f"    bulk insert batch {i//BATCH + 1} failed ({e}); falling back per-row")
+                for row in chunk:
+                    try: sb.table("hosts").insert(row).execute()
+                    except Exception as e2:
+                        log.warning(f"      row failed: {e2}")
+                        stats["errors"] += 1
+                        stats["inserted"] -= 1
+        for existing_id, payload in update_payloads:
+            try: sb.table("hosts").update(payload).eq("id", existing_id).execute()
+            except Exception as e:
+                log.warning(f"    update {existing_id} failed: {e}")
+                stats["errors"] += 1
 
     return stats
 
@@ -359,7 +373,7 @@ class BaseImporter:
         """Override in subclass. Return all host records from this source."""
         raise NotImplementedError
 
-    def run(self, dry_run: bool = False, enrich: bool = True) -> dict:
+    def run(self, dry_run: bool = False, enrich: bool = False) -> dict:
         self.log.info(f"=== {self.__class__.__name__} — fetching…")
         records = self.fetch()
         self.log.info(f"  Fetched {len(records)} records")
