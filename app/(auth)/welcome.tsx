@@ -16,6 +16,25 @@ import { IndependentBadge } from '../../src/components/web/IndependentBadge';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /**
+ * Render a string with **bold** segments as nested <Text> runs.
+ * Used by the install guide so we can bold key phrases like "Scroll down"
+ * inside translatable strings without splitting them into multiple keys.
+ */
+function renderRich(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <Text key={i} style={{ fontWeight: '700' }}>
+          {part.slice(2, -2)}
+        </Text>
+      );
+    }
+    return part;
+  });
+}
+
+/**
  * WelcomeScreen — The Gate
  *
  * Wanderkind is install-first. This screen has ONE purpose:
@@ -438,7 +457,7 @@ function IOSGuideOverlay({ onClose, lang, isIPad }: { onClose: () => void; lang:
                     <Ionicons name={step.icon} size={18} color={isActive ? colors.amber : colors.ink3} />
                     <Text style={[styles.stepTitle, isActive && { color: colors.amber }]}>{step.title}</Text>
                   </View>
-                  {isActive && <Text style={styles.stepDesc}>{step.desc}</Text>}
+                  {isActive && <Text style={styles.stepDesc}>{renderRich(step.desc)}</Text>}
                 </View>
               </TouchableOpacity>
             );
