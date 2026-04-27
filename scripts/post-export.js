@@ -62,22 +62,47 @@ html = html.replace(
   '/* overflow:hidden removed — blocks keyboard in iOS PWA standalone */'
 );
 
-// 4. Add inline script BEFORE the bundle to fix keyboard in standalone mode
-// This runs before React/RNW load, ensuring maximum compatibility
+// 4. Add inline styles + script BEFORE the bundle to fix keyboard on iOS
+// React Native Web sets user-select: none as inline styles which blocks
+// iOS virtual keyboard. We override globally and strip inline styles at runtime.
 const earlyFix = `
+    <style>
+      /* iOS keyboard fix: override RNW user-select:none globally */
+      * { -webkit-user-select: auto !important; user-select: auto !important; }
+      input, textarea, select, [contenteditable="true"] {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-appearance: none !important;
+        touch-action: manipulation !important;
+        font-size: 16px !important;
+      }
+    </style>
     <script>
-      // Early PWA fix: runs before React bundle loads
+      // Runtime fix: strip user-select:none from input ancestors on focus
       (function() {
+        // Standalone PWA: also fix overflow
         var standalone = window.navigator.standalone === true ||
           window.matchMedia('(display-mode: standalone)').matches;
         if (standalone) {
-          // Ensure body never gets overflow:hidden
-          var style = document.createElement('style');
-          style.textContent = 'body { overflow: auto !important; } ' +
-            'input, textarea, select { -webkit-user-select: text !important; ' +
-            'user-select: text !important; font-size: 16px !important; }';
-          document.head.appendChild(style);
+          var s = document.createElement('style');
+          s.textContent = 'body { overflow: auto !important; }';
+          document.head.appendChild(s);
         }
+
+        // Strip user-select:none from all ancestors when input is focused
+        document.addEventListener('focusin', function(e) {
+          var t = e.target;
+          if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) {
+            var el = t;
+            while (el && el !== document.body) {
+              if (el.style) {
+                el.style.userSelect = '';
+                el.style.webkitUserSelect = '';
+              }
+              el = el.parentElement;
+            }
+          }
+        }, true);
       })();
     </script>
 `;
