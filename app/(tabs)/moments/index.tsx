@@ -54,6 +54,8 @@ export default function MomentsFeed() {
   // Stories state
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
 
   // ── Get user location ─────────────────────────────────────────────
   useEffect(() => {
@@ -156,6 +158,61 @@ export default function MomentsFeed() {
     setMoments(SEED_MOMENTS as unknown as MomentWithAuthor[]);
   }, []);
 
+  const fetchLikes = useCallback(async (momentIds: string[]) => {
+    if (!momentIds.length) return;
+    try {
+      // Counts per moment
+      const { data: rows } = await supabase
+        .from('moment_likes')
+        .select('moment_id, user_id')
+        .in('moment_id', momentIds);
+      const counts: Record<string, number> = {};
+      const myLikes = new Set<string>();
+      for (const r of (rows as any[]) || []) {
+        counts[r.moment_id] = (counts[r.moment_id] || 0) + 1;
+        if (user && r.user_id === user.id) myLikes.add(r.moment_id);
+      }
+      setLikeCounts(counts);
+      setLikedIds(myLikes);
+    } catch (err) {
+      // best-effort — ignore
+    }
+  }, [user]);
+
+  const toggleLike = useCallback(async (momentId: string) => {
+    if (!user) return;
+    const isLiked = likedIds.has(momentId);
+    // Optimistic flip
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      if (isLiked) next.delete(momentId); else next.add(momentId);
+      return next;
+    });
+    setLikeCounts(prev => ({
+      ...prev,
+      [momentId]: Math.max(0, (prev[momentId] || 0) + (isLiked ? -1 : 1)),
+    }));
+    try {
+      if (isLiked) {
+        await supabase.from('moment_likes').delete().eq('moment_id', momentId).eq('user_id', user.id);
+      } else {
+        await supabase.from('moment_likes').insert({ moment_id: momentId, user_id: user.id });
+      }
+    } catch (err) {
+      // Rollback
+      setLikedIds(prev => {
+        const next = new Set(prev);
+        if (isLiked) next.add(momentId); else next.delete(momentId);
+        return next;
+      });
+      setLikeCounts(prev => ({
+        ...prev,
+        [momentId]: Math.max(0, (prev[momentId] || 0) + (isLiked ? 1 : -1)),
+      }));
+    }
+  }, [user, likedIds]);
+
+
   const fetchStories = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -215,6 +272,13 @@ export default function MomentsFeed() {
     fetchMoments();
     fetchStories();
   }, [fetchMoments, fetchStories]);
+
+  // After moments load, hydrate like counts + my likes
+  useEffect(() => {
+    if (moments.length > 0) {
+      fetchLikes(moments.map(m => m.id));
+    }
+  }, [moments, fetchLikes]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -380,10 +444,42 @@ export default function MomentsFeed() {
               <Text style={styles.locationText}>{item.location_name}</Text>
             </View>
           )}
+
+          {/* Like + comments toolbar — WK-110 / WK-111 */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => toggleLike(item.id)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={likedIds.has(item.id) ? 'heart' : 'heart-outline'}
+                size={20}
+                color={likedIds.has(item.id) ? colors.red : colors.ink3}
+              />
+            </TouchableOpacity>
+            {(likeCounts[item.id] || 0) > 0 ? (
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/(tabs)/moments/likes', params: { momentId: item.id } } as any)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.actionCount}>{likeCounts[item.id]}</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.actionBtn, { marginLeft: 'auto' }]}
+              onPress={() => router.push({ pathname: '/(tabs)/moments/comments', params: { momentId: item.id } } as any)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chatbubble-outline" size={18} color={colors.ink3} />
+            </TouchableOpacity>
+          </View>
         </View>
       );
     },
-    [user, handleMessageAuthor, filter, formatDistance]
+    [user, handleMessageAuthor, filter, formatDistance, likedIds, likeCounts, toggleLike, router]
   );
 
   const renderEmpty = () => (
@@ -502,6 +598,12 @@ function formatTime(iso: string): string {
 }
 
 const styles = StyleSheet.create({
+  actionsRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
+    paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F0E8D5',
+  },
+  actionBtn: { padding: 4 },
+  actionCount: { fontSize: 12, fontWeight: '600', color: '#5C5147', paddingHorizontal: 4 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: spacing.xl,
