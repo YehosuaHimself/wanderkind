@@ -29,8 +29,6 @@ export function WKInput({ label, error, helper, style, ...rest }: Props) {
         label={label}
         error={error}
         helper={helper}
-        focused={focused}
-        setFocused={setFocused}
         style={style}
         {...rest}
       />
@@ -68,8 +66,6 @@ function WebInput({
   label,
   error,
   helper,
-  focused,
-  setFocused,
   style,
   value,
   onChangeText,
@@ -84,7 +80,7 @@ function WebInput({
   multiline,
   numberOfLines,
   ...rest
-}: Props & { focused: boolean; setFocused: (f: boolean) => void }) {
+}: Props) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   const handleChange = useCallback(
@@ -147,15 +143,14 @@ function WebInput({
       ? 'url'
       : 'text';
 
-  const borderColor = error
-    ? colors.red
-    : focused
-    ? colors.amber
-    : colors.border;
-
+  // Stable border colour — focus + error states are applied via CSS class
+  // (.wk-input:focus and [aria-invalid=true] in the global stylesheet) so the
+  // input element does NOT re-render its style attribute when focus changes.
+  // iOS Safari can interpret a style change mid-touch as a layout shift and
+  // abort soft-keyboard activation.
   const inputStyle: React.CSSProperties = {
     backgroundColor: colors.surface,
-    border: `1px solid ${borderColor}`,
+    border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     paddingLeft: 16,
     paddingRight: 16,
@@ -226,8 +221,20 @@ function WebInput({
     }
   }, []);
 
+  const handleFocus = useCallback(
+    (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      // Scroll the focused input into view — iOS Safari is more reliable
+      // about presenting the keyboard when the input is already visible.
+      try {
+        e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } catch {}
+    },
+    [],
+  );
+
   const sharedProps = {
     ref: inputCallbackRef as any,
+    className: 'wk-input',
     name: fieldName,
     autoComplete: autoCompleteValue,
     enterKeyHint: 'done' as const,
@@ -238,9 +245,9 @@ function WebInput({
     maxLength,
     disabled: editable === false,
     autoCapitalize: autoCapitalizeAttr as any,
+    'aria-invalid': error ? true : undefined,
     style: inputStyle,
-    onFocus: () => setFocused(true),
-    onBlur: () => setFocused(false),
+    onFocus: handleFocus,
     'aria-label': label,
     'aria-describedby': helper ? `${label}-helper` : undefined,
     // Prevent iOS zoom

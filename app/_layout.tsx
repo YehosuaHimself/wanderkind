@@ -100,17 +100,19 @@ function usePWAStandaloneFix() {
       window.matchMedia('(display-mode: standalone)').matches;
 
     // === Fix 1: Remove overflow:hidden from Expo's reset stylesheet ===
-    if (isStandalone) {
-      const expoReset = document.getElementById('expo-reset');
-      if (expoReset && expoReset.textContent) {
-        expoReset.textContent = expoReset.textContent.replace(
-          /overflow:\s*hidden\s*;?/g,
-          ''
-        );
-      }
-      document.body.style.setProperty('overflow', 'auto', 'important');
-      document.body.style.setProperty('overscroll-behavior', 'none');
+    // Apply this to ALL iOS web contexts (browser tab AND standalone PWA),
+    // because body overflow:hidden also suppresses the iOS soft keyboard
+    // when an input gets focus inside a constrained scroll container.
+    const expoReset = document.getElementById('expo-reset');
+    if (expoReset && expoReset.textContent) {
+      expoReset.textContent = expoReset.textContent.replace(
+        /overflow:\s*hidden\s*;?/g,
+        ''
+      );
     }
+    document.body.style.setProperty('overflow', 'auto', 'important');
+    document.body.style.setProperty('overscroll-behavior', 'none');
+    document.documentElement.style.setProperty('overflow', 'auto', 'important');
 
     // === Fix 2: MutationObserver to strip userSelect:none from input ancestors ===
     // RNW sets userSelect:none on wrapper divs which blocks text selection.
@@ -173,13 +175,37 @@ function usePWAStandaloneFix() {
       '  appearance: none !important;',
       '  pointer-events: auto !important;',
       '  font-size: 16px !important;',
+      '  scroll-margin-top: 100px !important;',
+      '  scroll-margin-bottom: 100px !important;',
+      '}',
+      // Focus styling done via CSS so React state doesn't re-render the input',
+      // mid-touch (which can abort iOS keyboard activation).',
+      'html body input.wk-input:focus, html body textarea.wk-input:focus {',
+      '  border-color: #C8762A !important;',
+      '  outline: none !important;',
+      '}',
+      'html body input.wk-input[aria-invalid="true"], html body textarea.wk-input[aria-invalid="true"] {',
+      '  border-color: #D14343 !important;',
+      '}',
+      // === iOS Safari soft-keyboard fix ===',
+      // Inputs inside parents with `transform` (even identity transforms for HW',
+      // acceleration) or `position: fixed/absolute` don\'t reliably trigger the',
+      // iOS soft keyboard. We force any wrapper that contains an input to drop',
+      // its transform. This targets RNW\'s ScrollView wrapper specifically.',
+      'html body div:has(> form > input.wk-input), html body div:has(> input.wk-input) {',
+      '  transform: none !important;',
       '}',
     ].join('\n');
     document.head.appendChild(fix);
 
     // === Fix 5: Register service worker for PWA ===
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        // Force-update the service worker on every load so users always get
+        // the latest JS — without this, cached SW assets can serve stale code
+        // for hours after a deploy.
+        reg.update().catch(() => {});
+      }).catch(() => {});
     }
 
     return () => {
