@@ -31,17 +31,18 @@ const ROUTE_LOOKUP: Record<string, [number, number][]> = {
 
 type FilterMode = HostType | 'all' | 'saved';
 
+
 export default function HostList() {
   const { user, isLoading } = useAuthGuard();
   const router = useRouter();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [filter, setFilter] = useState<FilterMode>('all');
   const [loading, setLoading] = useState(true);
-  const { favoriteHostIds, loadFavorites } = useFavoritesStore();
+  const { favoriteHostIds, loadFavorites, toggleFavorite, isFavorite } = useFavoritesStore();
   const { profile } = useAuthStore();
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
-  const renderHostCard = useCallback(
+
   // Get user location for route-relative distance
   useEffect(() => {
     if (Platform.OS === 'web' && 'geolocation' in navigator) {
@@ -84,6 +85,7 @@ export default function HostList() {
     return h.host_type === filter;
   });
 
+  const renderHostCard = useCallback(
     ({ item: host }: { item: Host }) => {
       const config = hostTypeConfig[host.host_type];
       // Route-relative distance when user has active way + location
@@ -99,7 +101,6 @@ export default function HostList() {
           }
         }
       }
-      const { toggleFavorite, isFavorite } = useFavoritesStore();
       const isFav = isFavorite(host.id);
 
       return (
@@ -188,7 +189,7 @@ export default function HostList() {
         </TouchableOpacity>
       );
     },
-    [router]
+    [router, userLat, userLng, profile, isFavorite, toggleFavorite]
   );
 
   if (isLoading) return null;

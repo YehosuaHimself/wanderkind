@@ -26,14 +26,6 @@ interface BeforeInstallPromptEvent extends Event {
 
 function getStorageItem(key: string): string | null {
   try {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
     if (typeof window !== 'undefined' && window.localStorage) {
       return window.localStorage.getItem(key);
     }
@@ -50,6 +42,14 @@ function setStorageItem(key: string, value: string): void {
 }
 
 export function useInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -96,7 +96,6 @@ export function useInstallPrompt() {
       const prompt = e as BeforeInstallPromptEvent;
       promptRef.current = prompt;
       setDeferredPrompt(prompt);
-      // Show banner if not in cooldown
       if (dismissCount < MAX_BANNER_SHOWS && cooldownElapsed) {
         setShowBanner(true);
       }
@@ -114,7 +113,6 @@ export function useInstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Also listen for standalone changes (e.g., iOS returning to app)
     const handleStandaloneChange = (e: MediaQueryListEvent) => {
       if (e.matches) {
         setIsStandalone(true);
@@ -161,25 +159,15 @@ export function useInstallPrompt() {
   const canNativeInstall = !!deferredPrompt;
 
   return {
-    /** Whether the native install prompt is available (Chrome/Edge/Samsung) */
     canNativeInstall,
-    /** Whether this is iOS Safari (needs manual guide) */
     isIOS,
-    /** Whether this is Android */
     isAndroid,
-    /** Whether the app is already installed / running standalone */
     isInstalled: isInstalled || isStandalone,
-    /** Whether the user has dismissed the banner (in cooldown or maxed out) */
     dismissed,
-    /** Whether to show the full banner (respects cooldown + max shows) */
     showBanner,
-    /** Whether the banner has been shown too many times (footer-only mode) */
     footerOnly: parseInt(getStorageItem(DISMISS_COUNT_KEY) || '0', 10) >= MAX_BANNER_SHOWS,
-    /** Trigger the native Chrome install prompt */
     install,
-    /** Dismiss the banner (starts 24h cooldown) */
     dismiss,
-    /** Can install via any method (native or guided) */
     canInstall: (canNativeInstall || isIOS) && !isInstalled && !isStandalone,
   };
 }
