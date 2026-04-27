@@ -8,7 +8,6 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { colors, typography, spacing, radii, tierColors } from '../../../src/lib/theme';
 import { supabase } from '../../../src/lib/supabase';
-import { SEED_PROFILES } from '../../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 interface PublicProfile {
@@ -41,29 +40,6 @@ export default function PublicProfileScreen() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-
-      // Check seed profiles first for instant loading (IDs start with 'p-')
-      if (typeof id === 'string' && id.startsWith('p-')) {
-        const seedProfile = SEED_PROFILES.find(p => p.id === id);
-        if (seedProfile) {
-          setProfile({
-            id: seedProfile.id,
-            trail_name: seedProfile.trail_name,
-            wanderkind_id: (seedProfile as any).wanderkind_id,
-            bio: seedProfile.bio,
-            avatar_url: seedProfile.avatar_url,
-            tier: seedProfile.tier,
-            nights_walked: seedProfile.nights_walked,
-            nights_hosted: seedProfile.hosts_stayed,
-            stamps_collected: seedProfile.stamps_count,
-            verification_level: seedProfile.verification_level,
-            is_walking: seedProfile.is_walking,
-          } as PublicProfile);
-          setLoading(false);
-          return;
-        }
-      }
-
       const { data, error: queryError } = await supabase
         .from('profiles')
         .select('*')
@@ -72,33 +48,12 @@ export default function PublicProfileScreen() {
 
       if (!queryError && data) {
         setProfile(data);
-        setLoading(false);
-        return;
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
+    } finally {
+      setLoading(false);
     }
-
-    // Final fallback — check all seed profiles by ID
-    const seedProfile = SEED_PROFILES.find(p => p.id === id);
-    if (seedProfile) {
-      setProfile({
-        id: seedProfile.id,
-        trail_name: seedProfile.trail_name,
-        wanderkind_id: (seedProfile as any).wanderkind_id,
-        bio: seedProfile.bio,
-        avatar_url: seedProfile.avatar_url,
-        tier: seedProfile.tier,
-        nights_walked: seedProfile.nights_walked,
-        nights_hosted: seedProfile.hosts_stayed,
-        stamps_collected: seedProfile.stamps_count,
-        verification_level: seedProfile.verification_level,
-        is_walking: seedProfile.is_walking,
-      } as PublicProfile);
-    } else {
-      setError('Profile not found');
-    }
-    setLoading(false);
   };
 
   if (loading) {

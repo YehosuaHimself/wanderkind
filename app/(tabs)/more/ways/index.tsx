@@ -16,7 +16,6 @@ import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { haptic } from '../../../../src/lib/haptics';
 import { supabase } from '../../../../src/lib/supabase';
 import { Route } from '../../../../src/types/database';
-import { SEED_ROUTES } from '../../../../src/data/seed-routes';
 import { useAuthStore } from '../../../../src/stores/auth';
 
 /** Derive region from a route's countries list */
@@ -102,7 +101,7 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
     }
 
     // Fallback to seed data if Supabase returns empty or fails
-    setWays(SEED_ROUTES as unknown as Route[]);
+    setWays([]);
     setLoading(false);
   };
 

@@ -14,7 +14,6 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 import { showAlert } from '../../../src/lib/alert';
-import { SEED_MOMENTS } from '../../../src/data/seed-moments';
 import { QRCode } from '../../../src/components/ui/QRCode';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

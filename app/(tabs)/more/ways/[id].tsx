@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../../src/lib/theme';
 import { supabase } from '../../../../src/lib/supabase';
 import { Route, Host } from '../../../../src/types/database';
-import { SEED_ROUTES } from '../../../../src/data/seed-routes';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useAuth } from '../../../../src/stores/auth';
 import { toast } from '../../../../src/lib/toast';
@@ -123,10 +122,6 @@ export default function WayDetail() {
 
       if (wayData) {
         setWay(wayData as Route);
-      } else {
-        // Fallback to seed data
-        const seed = SEED_ROUTES.find(r => r.id === id);
-        if (seed) setWay(seed as unknown as Route);
       }
 
       // Fetch hosts on this route
@@ -139,21 +134,12 @@ export default function WayDetail() {
       if (hostsData) setHosts(hostsData as Host[]);
     } catch (err) {
       console.error('Failed to fetch way:', err);
-      // Fallback to seed
-      const seed = SEED_ROUTES.find(r => r.id === id);
-      if (seed) setWay(seed as unknown as Route);
     } finally {
       setLoading(false);
     }
   };
 
-  // Determine card color from route index in seed data
-  useEffect(() => {
-    if (way) {
-      const idx = SEED_ROUTES.findIndex(r => r.id === way.id);
-      setColorIdx(idx >= 0 ? idx : 0);
-    }
-  }, [way]);
+  useEffect(() => { if (way) setColorIdx(0); }, [way]);
 
   const handleStartWay = async () => {
     if (!user?.id || !way) return;
