@@ -451,14 +451,29 @@ out center tags;
     def fetch(self) -> list[HostRecord]:
         self.log.info(f"Querying Overpass for {self.SOURCE_ID} ({self.COUNTRY or 'region'})…")
         q = self._query()
-        try:
-            r = self.session.post("https://overpass-api.de/api/interpreter",
-                                   data={"data": q}, timeout=180)
-            r.raise_for_status()
-            data = r.json()
-        except Exception as e:
-            self.log.warning(f"Overpass fetch failed for {self.SOURCE_ID}: {e}")
-            self.log.warning(f"  query was: {q[:400]}")
+        # Try multiple Overpass mirrors — the main one frequently 504s on large bboxes.
+        endpoints = [
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://overpass.private.coffee/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+        ]
+        data = None
+        last_err = None
+        for ep in endpoints:
+            try:
+                r = self.session.post(ep, data={"data": q}, timeout=180)
+                r.raise_for_status()
+                data = r.json()
+                self.log.info(f"  Overpass via {ep.split('/')[2]} → {len(data.get('elements', []))} elements")
+                break
+            except Exception as e:
+                last_err = e
+                self.log.warning(f"  endpoint {ep.split('/')[2]} failed: {e}")
+                continue
+        if data is None:
+            self.log.warning(f"Overpass fetch failed for {self.SOURCE_ID} — all mirrors exhausted: {last_err}")
+            self.log.warning(f"  query (first 200): {q.replace(chr(10), ' ')[:200]}")
             return []
 
         out: list[HostRecord] = []
