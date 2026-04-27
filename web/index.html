@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+
+    <!-- Expo reset -->
+    <style id="expo-reset">
+      html, body { height: 100%; }
+      body { overflow: hidden; }
+      #root { display: flex; height: 100%; flex: 1; }
+    </style>
+
+    <!--
+      WK WHITE-SCREEN SHIELD
+      Shows a recovery UI instead of a blank page if the React bundle
+      fails to load, throws a module-level error, or hangs on startup.
+      React calls window.__wkMounted() once it has rendered successfully.
+    -->
+    <style id="wk-fallback-style">
+      #wk-shell {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #FAFAF5;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        padding: 32px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      #wk-shell .card {
+        background: #fff; border: 1px solid #EDE8DC; border-radius: 20px;
+        padding: 32px 28px; max-width: 340px; width: 100%;
+        text-align: center;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      }
+      #wk-shell .spinner {
+        width: 28px; height: 28px; margin: 0 auto 20px;
+        border: 3px solid rgba(200,118,42,0.2);
+        border-top-color: #C8762A; border-radius: 50%;
+        animation: wk-spin 0.8s linear infinite;
+      }
+      @keyframes wk-spin { to { transform: rotate(360deg); } }
+      #wk-shell .icon {
+        display: none; font-size: 28px; margin-bottom: 16px;
+      }
+      #wk-shell h1 {
+        font-size: 18px; font-weight: 600; color: #1A1A18;
+        margin: 0 0 8px; letter-spacing: -0.3px;
+      }
+      #wk-shell p {
+        font-size: 14px; color: #888; line-height: 1.5; margin: 0 0 24px;
+      }
+      #wk-shell button {
+        display: none; background: #C8762A; color: #fff; border: none;
+        padding: 13px 28px; border-radius: 24px;
+        font-size: 14px; font-weight: 700; cursor: pointer;
+      }
+      #wk-shell button:hover { background: #b56a25; }
+    </style>
+
+    <script>
+      // Called by React once the app tree has successfully rendered
+      window.__wkMounted = function () {
+        var el = document.getElementById('wk-shell');
+        if (el) {
+          el.style.transition = 'opacity 0.3s';
+          el.style.opacity = '0';
+          setTimeout(function () { el.remove(); }, 350);
+        }
+      };
+
+      function __wkCrash(detail) {
+        var shell = document.getElementById('wk-shell');
+        if (!shell) return;
+        shell.querySelector('.spinner').style.display = 'none';
+        shell.querySelector('.icon').style.display = 'block';
+        shell.querySelector('h1').textContent = 'Wanderkind needs a moment';
+        shell.querySelector('p').textContent = detail || 'Something went wrong. Your data is safe.';
+        shell.querySelector('button').style.display = 'inline-block';
+      }
+
+      // Catch script load / syntax errors
+      window.addEventListener('error', function (e) {
+        __wkCrash(null);
+      });
+
+      // Catch unhandled promise rejections
+      window.addEventListener('unhandledrejection', function (e) {
+        __wkCrash(null);
+      });
+
+      // If React hasn't mounted after 10 seconds → show recovery UI
+      setTimeout(function () {
+        if (document.getElementById('wk-shell')) {
+          __wkCrash('The app took too long to start. Try reloading.');
+        }
+      }, 10000);
+    </script>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run Wanderkind.</noscript>
+
+    <!-- Loading / error fallback — visible before React, removed on mount -->
+    <div id="wk-shell">
+      <div class="card">
+        <div class="spinner"></div>
+        <div class="icon">🌿</div>
+        <h1>Wanderkind</h1>
+        <p>Loading your journey…</p>
+        <button onclick="window.location.href='/'">Reload App</button>
+      </div>
+    </div>
+
+    <!-- Expo app root -->
+    <div id="root"></div>
+  </body>
+</html>

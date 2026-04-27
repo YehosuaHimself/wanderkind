@@ -94,6 +94,32 @@ function RootLayoutInner() {
 
   useEffect(() => {
     initialize();
+
+    // Signal to the DOM fallback that React mounted successfully
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      (window as any).__wkAppMounted?.();
+    }
+  }, []);
+
+  // Global web error guard — catches unhandled errors & promise rejections
+  // that fall outside React's error boundary (module load failures, async throws)
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const onError = (e: ErrorEvent) => {
+      reportError(new Error(e.message || 'Global error'), { source: 'window.onerror', filename: e.filename, lineno: e.lineno });
+    };
+    const onRejection = (e: PromiseRejectionEvent) => {
+      const err = e.reason instanceof Error ? e.reason : new Error(String(e.reason));
+      reportError(err, { source: 'unhandledrejection' });
+    };
+
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
   }, []);
 
   return (

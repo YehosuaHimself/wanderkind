@@ -32,6 +32,9 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
+      - name: Hooks order guard
+        run: node scripts/check-hooks-order.mjs
+
       - name: ESLint
         run: npx eslint . --ext .ts,.tsx --max-warnings 800
         # 50 warnings allowed during migration period — reduce to 0 over time
