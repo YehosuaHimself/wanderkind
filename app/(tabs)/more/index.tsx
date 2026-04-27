@@ -133,16 +133,32 @@ const PAGES = [
   { key: 'settings', label: 'SETTINGS & ADMIN', tiles: page2Tiles },
 ];
 
+// Persist the MORE page index across navigations so coming back from a
+// page-2 tile returns to page 2 instead of jumping back to page 1.
+let lastActivePage = 0;
+
 export default function MoreScreen() {
-  const [activePage, setActivePage] = useState(0);
+  const [activePage, setActivePage] = useState(lastActivePage);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
+
+  // On mount, scroll to the saved page (after the FlatList has measured).
+  React.useEffect(() => {
+    if (lastActivePage > 0 && flatListRef.current) {
+      // Defer so FlatList has rendered before we scroll.
+      const t = setTimeout(() => {
+        try { flatListRef.current?.scrollToIndex({ index: lastActivePage, animated: false }); } catch { /* ignore */ }
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, []);
   const ROWS_PER_PAGE = 4;
   const TILE_HEIGHT = Math.floor((AVAILABLE_H - GRID_GAP * (ROWS_PER_PAGE - 1)) / ROWS_PER_PAGE);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setActivePage(page);
+    lastActivePage = page;
   }, []);
 
   const renderPage = useCallback(({ item }: { item: typeof PAGES[0] }) => (
@@ -235,6 +251,7 @@ export default function MoreScreen() {
             onPress={() => {
               flatListRef.current?.scrollToIndex({ index: i, animated: true });
               setActivePage(i);
+              lastActivePage = i;
             }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >

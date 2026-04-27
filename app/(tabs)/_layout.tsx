@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { StackActions } from '@react-navigation/native';
 import { View, Platform, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../src/lib/theme';
@@ -40,12 +41,29 @@ export default function TabLayout() {
         screenListeners={({ navigation, route }) => ({
           tabPress: (e) => {
             haptic.light();
-            // If already on this tab but nested inside a stack, reset to root
+            // If already on this tab but nested inside a stack, pop the stack
+            // back to its root so re-tapping a tab always lands on its index.
             const state = navigation.getState();
-            const tabRoute = state.routes.find((r: any) => r.name === route.name);
-            if (tabRoute?.state && (tabRoute.state.index ?? 0) > 0) {
+            const tabRoute = state.routes.find((r: any) => r.name === route.name) as any;
+            const nested = tabRoute?.state;
+            const isFocused = state.index === state.routes.indexOf(tabRoute);
+            if (nested && (nested.index ?? 0) > 0) {
               e.preventDefault();
-              navigation.navigate(route.name as never);
+              if (isFocused) {
+                // We're already on this tab — pop the nested stack to its root.
+                navigation.dispatch({
+                  ...StackActions.popToTop(),
+                  target: nested.key,
+                });
+              } else {
+                // Switching to this tab from elsewhere — also reset, so we land
+                // on the tab's index instead of whatever screen was last open.
+                navigation.dispatch({
+                  ...StackActions.popToTop(),
+                  target: nested.key,
+                });
+                navigation.navigate(route.name as never);
+              }
             }
           },
         })}

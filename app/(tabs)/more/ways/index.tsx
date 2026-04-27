@@ -199,9 +199,15 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
       <Wrapper {...(wrapperProps as any)}>
         {!embedded && (
           <View style={styles.header}>
-            <View style={styles.headerLabel}>
-              <View style={styles.headerDot} />
-              <Text style={styles.headerLabelText}>DISCOVER</Text>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="chevron-back" size={26} color={colors.ink} />
+              </TouchableOpacity>
+              <View style={styles.headerLabel}>
+                <View style={styles.headerDot} />
+                <Text style={styles.headerLabelText}>DISCOVER</Text>
+              </View>
+              <View style={{ width: 26 }} />
             </View>
             <Text style={styles.headerTitle}>THE <Text style={{ color: colors.amber }}>WAYS</Text></Text>
           </View>
@@ -217,9 +223,15 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
     <Wrapper {...(wrapperProps as any)}>
       {!embedded && (
         <View style={styles.header}>
-          <View style={styles.headerLabel}>
-            <View style={styles.headerDot} />
-            <Text style={styles.headerLabelText}>DISCOVER</Text>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="chevron-back" size={26} color={colors.ink} />
+            </TouchableOpacity>
+            <View style={styles.headerLabel}>
+              <View style={styles.headerDot} />
+              <Text style={styles.headerLabelText}>DISCOVER</Text>
+            </View>
+            <View style={{ width: 26 }} />
           </View>
           <Text style={styles.headerTitle}>THE <Text style={{ color: colors.amber }}>WAYS</Text></Text>
           <Text style={styles.headerSub}>Every path has a story. Find yours.</Text>
@@ -306,6 +318,7 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: spacing.xl,

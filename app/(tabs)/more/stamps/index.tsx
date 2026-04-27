@@ -171,9 +171,15 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
       <Wrapper {...(wrapperProps as any)}>
         {!embedded && (
           <View style={styles.header}>
-            <View style={styles.headerLabel}>
-              <View style={styles.headerDot} />
-              <Text style={styles.headerLabelText}>STAMPS & VISAS</Text>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="chevron-back" size={26} color={colors.ink} />
+              </TouchableOpacity>
+              <View style={styles.headerLabel}>
+                <View style={styles.headerDot} />
+                <Text style={styles.headerLabelText}>STAMPS & VISAS</Text>
+              </View>
+              <View style={{ width: 26 }} />
             </View>
             <Text style={styles.headerTitle}>Your Collection</Text>
           </View>
@@ -189,9 +195,15 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
     <Wrapper {...(wrapperProps as any)}>
       {!embedded && (
         <View style={styles.header}>
-          <View style={styles.headerLabel}>
-            <View style={styles.headerDot} />
-            <Text style={styles.headerLabelText}>STAMPS & VISAS</Text>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="chevron-back" size={26} color={colors.ink} />
+            </TouchableOpacity>
+            <View style={styles.headerLabel}>
+              <View style={styles.headerDot} />
+              <Text style={styles.headerLabelText}>STAMPS & VISAS</Text>
+            </View>
+            <View style={{ width: 26 }} />
           </View>
           <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>Your Collection</Text>
@@ -230,6 +242,7 @@ export default function StampsCollection({ embedded = false }: { embedded?: bool
 }
 
 const styles = StyleSheet.create({
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: spacing.xl,
