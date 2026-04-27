@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+/**
+ * Booking · Request — WK-140
+ * Walker selects host (from hostId param), picks dates with +/- steppers,
+ * writes a message, submits → INSERT into bookings(status='pending').
+ */
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  TextInput, ActivityIndicator, Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,250 +15,361 @@ import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
-import { WKInput } from '../../../src/components/ui/WKInput';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
+import { useAuth } from '../../../src/stores/auth';
+import { toast } from '../../../src/lib/toast';
+import { sanitizeText, isEmpty, enforceMaxLength, canPerformAction } from '../../../src/lib/validate';
+
+const MSG_MAX = 600;
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const addDaysISO = (iso: string, n: number) => {
+  const d = new Date(iso); d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const formatPretty = (iso: string) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+};
+
+type Host = {
+  id: string;
+  name: string;
+  category: string | null;
+  capacity: number | null;
+  profile_id: string | null;
+  is_available: boolean;
+  hidden_from_map: boolean;
+};
 
 export default function BookingRequest() {
-  const { user, isLoading } = useAuthGuard();
+  const { user, isLoading: authLoading } = useAuthGuard();
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const [checkInDate, setCheckInDate] = useState('');
-  const [checkOutDate, setCheckOutDate] = useState('');
+  const params = useLocalSearchParams<{ hostId?: string }>();
+  const { profile } = useAuth();
+
+  const hostId = params.hostId as string | undefined;
+  const [host, setHost] = useState<Host | null>(null);
+  const [hostLoading, setHostLoading] = useState(true);
+
+  const [checkIn, setCheckIn] = useState(addDaysISO(todayISO(), 1));
+  const [checkOut, setCheckOut] = useState(addDaysISO(todayISO(), 2));
   const [guests, setGuests] = useState(1);
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  if (isLoading) return null;
+  const [submitting, setSubmitting] = useState(false);
 
-  const hostId = params.hostId as string;
+  useEffect(() => {
+    if (!hostId) { setHostLoading(false); return; }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('hosts')
+          .select('id, name, category, capacity, profile_id, is_available, hidden_from_map')
+          .eq('id', hostId)
+          .maybeSingle();
+        setHost(data as Host | null);
+      } finally {
+        setHostLoading(false);
+      }
+    })();
+  }, [hostId]);
 
+  const stepCheckIn = (delta: number) => {
+    const next = addDaysISO(checkIn, delta);
+    if (next < todayISO()) return;                // can't book the past
+    setCheckIn(next);
+    if (next >= checkOut) setCheckOut(addDaysISO(next, 1));
+  };
+  const stepCheckOut = (delta: number) => {
+    const next = addDaysISO(checkOut, delta);
+    if (next <= checkIn) return;                  // must be after check-in
+    setCheckOut(next);
+  };
 
-  const handleSendRequest = async () => {
-    if (!checkInDate || !checkOutDate || !message.trim()) {
-      return;
+  const numNights = useMemo(() => {
+    const a = new Date(checkIn).getTime();
+    const b = new Date(checkOut).getTime();
+    return Math.max(1, Math.round((b - a) / 86400000));
+  }, [checkIn, checkOut]);
+
+  const charsLeft = MSG_MAX - message.length;
+  const overLimit = charsLeft < 0;
+
+  const canSubmit = !!user
+    && !!host
+    && host.is_available && !host.hidden_from_map
+    && !!message.trim()
+    && !overLimit
+    && !submitting;
+
+  const handleSubmit = async () => {
+    if (!canSubmit || !user || !host) return;
+    if (isEmpty(message)) { toast.error('Add a short message to the host'); return; }
+    if (!enforceMaxLength(message, MSG_MAX)) { toast.error(`Max ${MSG_MAX} chars`); return; }
+    if (!canPerformAction('book-request', 2000)) return;
+
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert({
+          host_id: host.id,
+          walker_id: user.id,
+          status: 'pending',
+          start_date: checkIn,
+          end_date: checkOut,
+          message: sanitizeText(message),
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      toast.success('Request sent — your host will respond.');
+      router.replace({
+        pathname: '/(tabs)/map/booking/confirm',
+        params: { bookingId: (data as any).id },
+      } as any);
+    } catch (err: any) {
+      console.error('booking request failed', err);
+      toast.error(err?.message ?? 'Could not send request');
+    } finally {
+      setSubmitting(false);
     }
-    setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLoading(false);
-    router.push({
-      pathname: '/booking/confirm',
-      params: { bookingId: 'mock-' + Date.now() },
-    });
   };
 
-  const handleGuestChange = (delta: number) => {
-    const newCount = Math.max(1, Math.min(10, guests + delta));
-    setGuests(newCount);
-  };
+  if (authLoading || hostLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Request stay" showBack />
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.amber} /></View>
+      </SafeAreaView>
+    );
+  }
 
-  const isValid = checkInDate && checkOutDate && message.trim().length > 0;
+  if (!host) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Request stay" showBack />
+        <View style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={36} color={colors.ink3} />
+          <Text style={styles.errTitle}>Host not found</Text>
+          <Text style={styles.errBody}>This listing may have been removed.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!host.is_available || host.hidden_from_map) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Request stay" showBack />
+        <View style={styles.center}>
+          <Ionicons name="moon-outline" size={36} color={colors.ink3} />
+          <Text style={styles.errTitle}>Host is sleeping</Text>
+          <Text style={styles.errBody}>This Wanderhost is not accepting new requests right now.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Request Stay" />
+      <WKHeader title="Request stay" showBack />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Host Info Card */}
-          <WKCard variant="parchment">
-            <View style={styles.hostInfo}>
-              <Ionicons name="home" size={40} color={colors.amber} />
-              <View style={styles.hostText}>
-                <Text style={styles.hostLabel}>Requesting stay at</Text>
-                <Text style={styles.hostName}>Host's Place</Text>
-              </View>
+        {/* Host card */}
+        <WKCard variant="parchment">
+          <View style={styles.hostInfo}>
+            <Ionicons
+              name={host.category === 'free' ? 'gift' : host.category === 'donativo' ? 'heart' : 'home'}
+              size={36}
+              color={host.category === 'free' ? '#3F6112' : host.category === 'donativo' ? '#8C6010' : colors.amber}
+            />
+            <View style={styles.hostText}>
+              <Text style={styles.hostLabel}>Requesting a stay at</Text>
+              <Text style={styles.hostName}>{host.name}</Text>
+              {host.category ? (
+                <Text style={[styles.hostCat, {
+                  color: host.category === 'free' ? '#3F6112'
+                       : host.category === 'donativo' ? '#8C6010' : colors.ink2,
+                }]}>★ {host.category.toUpperCase()}</Text>
+              ) : null}
             </View>
-          </WKCard>
-
-          {/* Check-In Date */}
-          <WKCard>
-            <Text style={styles.sectionLabel}>Check-In Date</Text>
-            <TouchableOpacity style={styles.dateInput}>
-              <Ionicons name="calendar" size={20} color={colors.amber} />
-              <Text style={[styles.dateText, !checkInDate && { color: colors.ink3 }]}>
-                {checkInDate || 'Select date'}
-              </Text>
-            </TouchableOpacity>
-          </WKCard>
-
-          {/* Check-Out Date */}
-          <WKCard>
-            <Text style={styles.sectionLabel}>Check-Out Date</Text>
-            <TouchableOpacity style={styles.dateInput}>
-              <Ionicons name="calendar" size={20} color={colors.amber} />
-              <Text style={[styles.dateText, !checkOutDate && { color: colors.ink3 }]}>
-                {checkOutDate || 'Select date'}
-              </Text>
-            </TouchableOpacity>
-          </WKCard>
-
-          {/* Number of Guests */}
-          <WKCard>
-            <Text style={styles.sectionLabel}>Number of Guests</Text>
-            <View style={styles.guestCounter}>
-              <TouchableOpacity
-                style={styles.counterBtn}
-                onPress={() => handleGuestChange(-1)}
-              >
-                <Ionicons name="remove" size={20} color={colors.ink} />
-              </TouchableOpacity>
-              <Text style={styles.guestCount}>{guests}</Text>
-              <TouchableOpacity
-                style={styles.counterBtn}
-                onPress={() => handleGuestChange(1)}
-              >
-                <Ionicons name="add" size={20} color={colors.ink} />
-              </TouchableOpacity>
-            </View>
-          </WKCard>
-
-          {/* Message */}
-          <WKCard>
-            <Text style={styles.sectionLabel}>Message to Host</Text>
-            <View style={styles.messageBox}>
-              <Text style={styles.messageHint}>
-                Tell the host about yourself, your journey, and why you'd like to stay
-              </Text>
-              <WKInput
-                placeholder="Write your message..."
-                multiline
-                numberOfLines={6}
-                value={message}
-                onChangeText={setMessage}
-                style={styles.messageInput}
-              />
-            </View>
-          </WKCard>
-
-          {/* Info */}
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={18} color={colors.ink2} />
-            <Text style={styles.infoText}>
-              Your profile and photos will be shared with the host when they review your request.
-            </Text>
           </View>
-        </View>
+        </WKCard>
+
+        {/* Check-in stepper */}
+        <WKCard>
+          <Text style={styles.sectionLabel}>Check-in</Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity onPress={() => stepCheckIn(-1)} style={styles.stepBtn} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="chevron-back" size={18} color={colors.amber} />
+            </TouchableOpacity>
+            <View style={styles.dateLabel}>
+              <Ionicons name="calendar" size={18} color={colors.amber} />
+              <Text style={styles.dateText}>{formatPretty(checkIn)}</Text>
+            </View>
+            <TouchableOpacity onPress={() => stepCheckIn(1)} style={styles.stepBtn} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="chevron-forward" size={18} color={colors.amber} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.quickRow}>
+            {[1, 3, 7].map(n => (
+              <TouchableOpacity
+                key={n}
+                style={styles.quickChip}
+                onPress={() => {
+                  const d = addDaysISO(todayISO(), n);
+                  setCheckIn(d);
+                  if (d >= checkOut) setCheckOut(addDaysISO(d, 1));
+                }}
+              >
+                <Text style={styles.quickChipText}>in {n} day{n>1?'s':''}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </WKCard>
+
+        {/* Check-out stepper */}
+        <WKCard>
+          <Text style={styles.sectionLabel}>Check-out</Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity onPress={() => stepCheckOut(-1)} style={styles.stepBtn} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="chevron-back" size={18} color={colors.amber} />
+            </TouchableOpacity>
+            <View style={styles.dateLabel}>
+              <Ionicons name="log-out" size={18} color={colors.amber} />
+              <Text style={styles.dateText}>{formatPretty(checkOut)}</Text>
+            </View>
+            <TouchableOpacity onPress={() => stepCheckOut(1)} style={styles.stepBtn} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="chevron-forward" size={18} color={colors.amber} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.nightsHint}>{numNights} night{numNights>1?'s':''}</Text>
+        </WKCard>
+
+        {/* Guests stepper */}
+        {(host.capacity ?? 1) > 1 ? (
+          <WKCard>
+            <Text style={styles.sectionLabel}>Walkers</Text>
+            <View style={styles.stepperRow}>
+              <TouchableOpacity onPress={() => setGuests(g => Math.max(1, g - 1))} style={styles.stepBtn}>
+                <Ionicons name="remove" size={18} color={colors.amber} />
+              </TouchableOpacity>
+              <View style={styles.dateLabel}>
+                <Ionicons name="people" size={18} color={colors.amber} />
+                <Text style={styles.dateText}>{guests} {guests===1?'walker':'walkers'}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setGuests(g => Math.min(host.capacity ?? 10, g + 1))}
+                style={styles.stepBtn}
+                disabled={guests >= (host.capacity ?? 10)}
+              >
+                <Ionicons name="add" size={18} color={guests >= (host.capacity ?? 10) ? colors.ink3 : colors.amber} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.nightsHint}>This host can welcome up to {host.capacity}</Text>
+          </WKCard>
+        ) : null}
+
+        {/* Message */}
+        <WKCard>
+          <Text style={styles.sectionLabel}>Message to your host</Text>
+          <TextInput
+            style={[styles.message, overLimit && { borderColor: colors.red }]}
+            placeholder="Hi — I'm walking the way and would love to stay one night. Tell them who you are and when you'll arrive."
+            placeholderTextColor={colors.ink3}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            maxLength={MSG_MAX + 50}
+          />
+          <Text style={[styles.counter, overLimit && { color: colors.red }]}>{charsLeft}</Text>
+        </WKCard>
       </ScrollView>
 
-      {/* Action Button */}
+      {/* Submit footer */}
       <View style={styles.footer}>
         <WKButton
-          title={loading ? 'Sending...' : 'Send Request'}
-          onPress={handleSendRequest}
-          disabled={!isValid || loading}
-          loading={loading}
+          title={submitting ? 'Sending…' : 'Send request'}
+          onPress={handleSubmit}
+          variant="primary"
           fullWidth
+          loading={submitting}
+          disabled={!canSubmit}
         />
+        <Text style={styles.footnote}>
+          {host.category === 'free'
+            ? 'Wanderhost — no money expected.'
+            : host.category === 'donativo'
+              ? 'Donativo — pay what you can.'
+              : 'Under €50 a night.'}
+          {' '}You will hear back within a day.
+        </Text>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, padding: spacing.xl },
+  content: { padding: spacing.lg, gap: spacing.md },
+
+  errTitle: { ...typography.h3, color: colors.ink, marginTop: 8 },
+  errBody: { ...typography.bodySm, color: colors.ink2, textAlign: 'center' },
+
+  hostInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  hostText: { flex: 1 },
+  hostLabel: { fontSize: 11, color: colors.ink3, letterSpacing: 1, textTransform: 'uppercase' },
+  hostName: { ...typography.h2, color: colors.ink, marginTop: 4 },
+  hostCat: {
+    fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginTop: 4,
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
   },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: spacing.screenPx,
-    paddingVertical: spacing.lg,
-    gap: spacing.lg,
-  },
-  footer: {
-    paddingHorizontal: spacing.screenPx,
-    paddingBottom: spacing.lg,
-    paddingTop: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLt,
-  },
-  hostInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  hostText: {
-    flex: 1,
-  },
-  hostLabel: {
-    ...typography.bodySm,
-    color: colors.ink2,
-    marginBottom: 2,
-  },
-  hostName: {
-    ...typography.h3,
-    color: colors.ink,
-  },
+
   sectionLabel: {
-    ...typography.label,
-    color: colors.ink2,
-    marginBottom: spacing.md,
+    fontSize: 10, fontWeight: '700', letterSpacing: 1.5, color: colors.ink3,
+    textTransform: 'uppercase', marginBottom: spacing.md,
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
   },
-  dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceAlt,
+  stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  stepBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: colors.amberBg,
+    alignItems: 'center', justifyContent: 'center',
   },
-  dateText: {
-    ...typography.body,
-    color: colors.ink,
-    flex: 1,
+  dateLabel: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 8, backgroundColor: colors.surfaceAlt, borderRadius: 10,
   },
-  guestCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
+  dateText: { ...typography.bodySm, color: colors.ink, fontWeight: '600' },
+  nightsHint: { ...typography.caption, color: colors.ink3, textAlign: 'center', marginTop: 8 },
+
+  quickRow: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: 10 },
+  quickChip: {
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLt,
   },
-  counterBtn: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceAlt,
+  quickChipText: { fontSize: 11, color: colors.ink2, fontWeight: '600' },
+
+  message: {
+    backgroundColor: colors.surfaceAlt, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.ink,
+    minHeight: 110, textAlignVertical: 'top',
+    borderWidth: 1, borderColor: 'transparent',
   },
-  guestCount: {
-    ...typography.h2,
-    color: colors.ink,
-    minWidth: 60,
-    textAlign: 'center',
+  counter: {
+    fontSize: 11, color: colors.ink3, alignSelf: 'flex-end', marginTop: 4,
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
   },
-  messageBox: {
-    gap: spacing.md,
+
+  footer: {
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    borderTopWidth: 1, borderTopColor: colors.borderLt, backgroundColor: colors.surface,
   },
-  messageHint: {
-    ...typography.bodySm,
-    color: colors.ink3,
-  },
-  messageInput: {
-    minHeight: 120,
-    paddingVertical: spacing.md,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.parchment,
-    borderRadius: radii.md,
-    gap: spacing.md,
-  },
-  infoText: {
-    ...typography.bodySm,
-    color: colors.ink,
-    flex: 1,
-    lineHeight: 19,
+  footnote: {
+    ...typography.caption, color: colors.ink3, textAlign: 'center',
+    marginTop: 8, lineHeight: 16,
   },
 });
