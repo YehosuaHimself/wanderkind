@@ -414,6 +414,8 @@ class RegionalOverpassImporter(BaseImporter):
 
     def _query(self) -> str:
         bbox = self.BBOX
+        # EXTRA_QUERY may contain the literal {bbox} placeholder — substitute it now.
+        extra = self.EXTRA_QUERY.replace("{bbox}", bbox) if self.EXTRA_QUERY else ""
         return f"""
 [out:json][timeout:90];
 (
@@ -426,7 +428,7 @@ class RegionalOverpassImporter(BaseImporter):
   node["amenity"="shelter"]["shelter_type"~"basic_hut|lean_to|weather_shelter"]({bbox});
   node["pilgrim_accommodation"="yes"]({bbox});
   way ["pilgrim_accommodation"="yes"]({bbox});
-{self.EXTRA_QUERY}
+{extra}
 );
 out center tags;
 """
@@ -448,13 +450,15 @@ out center tags;
 
     def fetch(self) -> list[HostRecord]:
         self.log.info(f"Querying Overpass for {self.SOURCE_ID} ({self.COUNTRY or 'region'})…")
+        q = self._query()
         try:
             r = self.session.post("https://overpass-api.de/api/interpreter",
-                                   data={"data": self._query()}, timeout=180)
+                                   data={"data": q}, timeout=180)
             r.raise_for_status()
             data = r.json()
         except Exception as e:
             self.log.warning(f"Overpass fetch failed for {self.SOURCE_ID}: {e}")
+            self.log.warning(f"  query was: {q[:400]}")
             return []
 
         out: list[HostRecord] = []
