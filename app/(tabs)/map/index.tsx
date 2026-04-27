@@ -876,8 +876,8 @@ export default function MapHome() {
           .from('hosts')
           .select('*')
           .eq('is_available', true)
-          .or('hidden_from_map.is.null,hidden_from_map.eq.false')
-          .order('quality_score', { ascending: false, nullsFirst: false })
+          .eq('hidden_from_map', false)
+          .order('quality_score', { ascending: false })
           .order('total_hosted', { ascending: false })
           .limit(2000);
 
