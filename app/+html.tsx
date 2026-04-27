@@ -48,6 +48,80 @@ export default function Root({ children }: PropsWithChildren) {
           html, body { height: 100%; }
           body { overflow: hidden; }
           #root { display: flex; height: 100%; flex: 1; }
+
+          /* === iOS PWA text input fix === */
+          /* React Native Web sets user-select: none as inline styles on
+             wrapper divs. In iOS standalone/PWA mode this prevents the
+             keyboard from appearing. We override EVERYTHING and let the
+             more specific input rules below re-enable selection. */
+          * {
+            -webkit-user-select: auto !important;
+            user-select: auto !important;
+          }
+          input, textarea, select, [contenteditable="true"] {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+            -webkit-appearance: none !important;
+            touch-action: manipulation !important;
+          }
+        `}} />
+
+        {/* Runtime fix: strip user-select:none from all input ancestors in PWA mode */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            // Only needed in iOS standalone (PWA) mode
+            var isStandalone = window.navigator.standalone === true ||
+              window.matchMedia('(display-mode: standalone)').matches;
+            if (!isStandalone) return;
+
+            // Force user-select on all ancestors of inputs
+            function fixInputAncestors() {
+              var inputs = document.querySelectorAll('input, textarea, select');
+              for (var i = 0; i < inputs.length; i++) {
+                var el = inputs[i];
+                while (el && el !== document.body) {
+                  if (el.style && el.style.userSelect === 'none') {
+                    el.style.userSelect = '';
+                    el.style.webkitUserSelect = '';
+                  }
+                  el = el.parentElement;
+                }
+              }
+            }
+
+            // Run on any DOM change (catches React renders)
+            var observer = new MutationObserver(function() {
+              fixInputAncestors();
+            });
+
+            // Start observing once DOM is ready
+            if (document.body) {
+              observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+              fixInputAncestors();
+            } else {
+              document.addEventListener('DOMContentLoaded', function() {
+                observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+                fixInputAncestors();
+              });
+            }
+
+            // Also intercept focus on inputs to force-fix right before keyboard
+            document.addEventListener('focusin', function(e) {
+              var t = e.target;
+              if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) {
+                var el = t;
+                while (el && el !== document.body) {
+                  if (el.style) {
+                    el.style.userSelect = '';
+                    el.style.webkitUserSelect = '';
+                  }
+                  el = el.parentElement;
+                }
+                // Re-trigger focus after style cleanup
+                setTimeout(function() { t.focus(); }, 0);
+              }
+            }, true);
+          })();
         `}} />
       </head>
       <body>
