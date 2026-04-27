@@ -4,6 +4,7 @@ import { Platform, AppState } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types/database';
 import { useSettings } from './settings';
+import { setSentryUser, clearSentryUser } from '../lib/sentry';
 
 type AuthState = {
   session: Session | null;

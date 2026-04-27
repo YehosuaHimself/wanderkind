@@ -6,6 +6,10 @@ import { useAuthStore } from '../src/stores/auth';
 import { DesktopGate } from '../src/components/web/DesktopGate';
 import { ToastProvider } from '../src/components/ToastProvider';
 import '../global.css';
+import { initSentry, reportError } from '../src/lib/sentry';
+
+// Initialize Sentry error monitoring as early as possible
+initSentry();
 
 // Root-level error boundary — last line of defence before a white screen.
 // Uses the Wanderkind design system for a calm, Apple-style recovery UI.
@@ -26,7 +30,7 @@ class AppErrorBoundary extends React.Component<
     if (__DEV__) {
       console.warn('[AppErrorBoundary]', error.message, info.componentStack);
     }
-    // TODO: report to Sentry / analytics
+    reportError(error, { componentStack: info.componentStack, source: 'AppErrorBoundary' });
   }
   handleRetry = () => {
     this.setState(s => ({ hasError: false, error: null, retryCount: s.retryCount + 1 }));

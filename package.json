@@ -7,7 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "npx expo export --platform web && node scripts/post-export.js"
+    "build:web": "npx expo export --platform web && node scripts/post-export.js",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/metro-runtime": "^55.0.10",
@@ -41,13 +43,18 @@
     "react-native-web": "^0.21.2",
     "react-native-worklets": "^0.8.1",
     "tailwindcss": "^3.4.19",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "@sentry/react-native": "^6.3.0"
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.6",
     "@types/react": "~19.1.0",
     "@types/react-dom": "^19.2.3",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "^7.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0"
   },
   "private": true
 }
