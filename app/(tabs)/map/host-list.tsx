@@ -42,9 +42,6 @@ export default function HostList() {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const renderHostCard = useCallback(
-  if (isLoading) return null;
-
-
   // Get user location for route-relative distance
   useEffect(() => {
     if (Platform.OS === 'web' && 'geolocation' in navigator) {
@@ -193,6 +190,8 @@ export default function HostList() {
     },
     [router]
   );
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

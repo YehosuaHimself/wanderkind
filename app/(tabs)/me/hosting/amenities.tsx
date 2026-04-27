@@ -31,8 +31,6 @@ const AMENITIES = [
 export default function AmenitiesScreen() {
   const { user, isLoading } = useAuthGuard();
   const [amenities, setAmenities] = useState<Record<string, boolean>>({
-  if (isLoading) return null;
-
     wifi: true,
     kitchen: true,
     laundry: false,
@@ -59,6 +57,8 @@ export default function AmenitiesScreen() {
   };
 
   const enabledCount = Object.values(amenities).filter(Boolean).length;
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

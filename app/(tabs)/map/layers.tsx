@@ -28,8 +28,6 @@ export default function Layers() {
   const { user, isLoading } = useAuthGuard();
   const router = useRouter();
   const [layers, setLayers] = useState<LayerState>({
-  if (isLoading) return null;
-
     hosts: true,
     wanderkinder: true,
     routes: true,
@@ -73,6 +71,8 @@ export default function Layers() {
     const order = ['hosts', 'wanderkinder', 'routes', 'pois', 'camping'];
     return order.indexOf(a) - order.indexOf(b);
   });
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

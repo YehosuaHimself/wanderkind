@@ -25,10 +25,8 @@ const RULES = [
 
 export default function HouseRulesScreen() {
   const { user, isLoading } = useAuthGuard();
-  const [rules, setRules] = useState<Record<string, boolean>>({
   const [maxStayDays, setMaxStayDays] = useState('30');
-  if (isLoading) return null;
-
+  const [rules, setRules] = useState<Record<string, boolean>>({
     shoes: true,
     quiet: true,
     smoking: true,
@@ -48,6 +46,8 @@ export default function HouseRulesScreen() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
+
+  if (isLoading) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
