@@ -44,7 +44,7 @@ SELECT DISTINCT ?item ?name ?lat ?lng ?type ?country ?website WHERE {
   OPTIONAL { ?item wdt:P31 ?typeItem . ?typeItem rdfs:label ?type .
              FILTER(LANG(?type) = "en") }
 }
-LIMIT 5000
+LIMIT 1500
 """
 
 TYPE_MAP = {
