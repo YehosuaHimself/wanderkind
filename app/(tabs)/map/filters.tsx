@@ -118,7 +118,7 @@ export default function Filters() {
           <WKCard>
             <Text style={styles.sectionTitle}>Type of place</Text>
             <Text style={styles.sectionSub}>Optional. Filter inside the categories above.</Text>
-            <View style={styles.amenityGroup}>
+            <View style={styles.amenityGrid}>
               {[
                 'albergue','monastery','parish','church','refuge','camping',
                 'gite','pension','wanderhost','community','public','association',
@@ -132,8 +132,8 @@ export default function Filters() {
                   onPress={() => toggleLabel(lbl)}
                 >
                   <Text style={[
-                    styles.amenityText,
-                    labels.includes(lbl) && styles.amenityTextActive
+                    styles.amenityChipText,
+                    labels.includes(lbl) && styles.amenityChipTextActive
                   ]}>
                     {lbl}
                   </Text>
