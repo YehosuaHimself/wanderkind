@@ -67,7 +67,10 @@ export default function HostList() {
         .from('hosts')
         .select('*')
         .eq('is_available', true)
-        .order('rating', { ascending: false });
+        .eq('hidden_from_map', false)
+        .order('quality_score', { ascending: false })
+        .order('rating', { ascending: false })
+        .limit(2000);
 
       setHosts(data as Host[] || []);
     } finally {
@@ -82,7 +85,8 @@ export default function HostList() {
     if (filter === 'all') {
       return true;
     }
-    return h.host_type === filter;
+    const cat = (h as any).category ?? h.host_type;
+    return cat === filter;
   });
 
   const renderHostCard = useCallback(
@@ -218,14 +222,14 @@ export default function HostList() {
           </Text>
         </TouchableOpacity>
 
-        {(['free', 'donativo', 'budget', 'paid'] as const).map(f => (
+        {(['free', 'donativo', 'budget'] as const).map(f => (
           <TouchableOpacity
             key={f}
             style={[styles.chip, filter === f && styles.chipActive]}
             onPress={() => setFilter(f)}
           >
             <Text style={[styles.chipText, filter === f && styles.chipTextActive]}>
-              {hostTypeConfig[f].label}
+              {f === 'free' ? 'Free' : f === 'donativo' ? 'Donativo' : 'Budget'}
             </Text>
           </TouchableOpacity>
         ))}

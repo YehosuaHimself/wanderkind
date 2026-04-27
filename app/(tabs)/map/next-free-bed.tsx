@@ -37,10 +37,11 @@ export default function NextFreeBed() {
         .from('hosts')
         .select('*')
         .eq('is_available', true)
-        .or('host_type.eq.free,host_type.eq.donativo')
-        .order('route_km', { ascending: true })
+        .eq('hidden_from_map', false)
+        .in('category', ['free', 'donativo'])
+        .order('route_km', { ascending: true, nullsFirst: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       setHost(data as Host || null);
     } finally {

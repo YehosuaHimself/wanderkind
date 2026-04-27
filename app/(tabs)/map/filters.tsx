@@ -19,7 +19,8 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 export default function Filters() {
   const { user, isLoading } = useAuthGuard();
   const router = useRouter();
-  const [hostType, setHostType] = useState<string[]>(['free', 'donativo']);
+  const [category, setCategory] = useState<string[]>(['free', 'donativo', 'budget']);
+  const [labels, setLabels] = useState<string[]>([]);
 
   const [minBeds, setMinBeds] = useState(1);
   const [maxBeds, setMaxBeds] = useState(10);
@@ -33,9 +34,15 @@ export default function Filters() {
   const verificationLevels = ['self', 'community', 'association', 'wanderkind'];
   const amenityOptions = ['WiFi', 'Kitchen', 'Laundry', 'Hot Shower', 'Garden', 'Parking'];
 
-  const toggleHostType = (type: string) => {
-    setHostType(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+  const toggleCategory = (c: string) => {
+    setCategory(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
+  };
+
+  const toggleLabel = (lbl: string) => {
+    setLabels(prev =>
+      prev.includes(lbl) ? prev.filter(x => x !== lbl) : [...prev, lbl]
     );
   };
 
@@ -57,7 +64,8 @@ export default function Filters() {
   };
 
   const handleReset = () => {
-    setHostType(['free', 'donativo']);
+    setCategory(['free', 'donativo', 'budget']);
+    setLabels([]);
     setMinBeds(1);
     setMaxBeds(10);
     setVerification(['self', 'community', 'association', 'wanderkind']);
@@ -71,36 +79,66 @@ export default function Filters() {
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Host Type */}
+          {/* ★ CATEGORY — Wanderkind = Free Travel */}
           <WKCard>
-            <Text style={styles.sectionTitle}>Host Type</Text>
+            <Text style={styles.sectionTitle}>★ Category</Text>
+            <Text style={styles.sectionSub}>Wanderkind = Free Travel. Pick what you can pay.</Text>
             <View style={styles.optionGroup}>
-              {(['free', 'donativo', 'budget', 'paid'] as const).map(type => {
-                const config = hostTypeConfig[type];
-                return (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.option,
-                      hostType.includes(type) && styles.optionActive,
-                      { borderColor: hostType.includes(type) ? config.color : colors.border }
-                    ]}
-                    onPress={() => toggleHostType(type)}
-                  >
-                    <View style={styles.checkboxContainer}>
-                      <View style={[
-                        styles.checkbox,
-                        hostType.includes(type) && { backgroundColor: config.color }
-                      ]}>
-                        {hostType.includes(type) && (
-                          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                        )}
-                      </View>
+              {([
+                { key: 'free',     label: 'Free',                 color: '#5A7A2B' },
+                { key: 'donativo', label: 'Donativo · pay what you can', color: '#C8762A' },
+                { key: 'budget',   label: 'Budget · under €50',   color: '#B8862C' },
+              ]).map(c => (
+                <TouchableOpacity
+                  key={c.key}
+                  style={[
+                    styles.option,
+                    category.includes(c.key) && styles.optionActive,
+                    { borderColor: category.includes(c.key) ? c.color : colors.border }
+                  ]}
+                  onPress={() => toggleCategory(c.key)}
+                >
+                  <View style={styles.checkboxContainer}>
+                    <View style={[
+                      styles.checkbox,
+                      category.includes(c.key) && { backgroundColor: c.color }
+                    ]}>
+                      {category.includes(c.key) && (
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      )}
                     </View>
-                    <Text style={styles.optionLabel}>{config.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+                  </View>
+                  <Text style={styles.optionLabel}>{c.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </WKCard>
+
+          {/* Secondary labels — type of place */}
+          <WKCard>
+            <Text style={styles.sectionTitle}>Type of place</Text>
+            <Text style={styles.sectionSub}>Optional. Filter inside the categories above.</Text>
+            <View style={styles.amenityGroup}>
+              {[
+                'albergue','monastery','parish','church','refuge','camping',
+                'gite','pension','wanderhost','community','public','association',
+              ].map(lbl => (
+                <TouchableOpacity
+                  key={lbl}
+                  style={[
+                    styles.amenityChip,
+                    labels.includes(lbl) && styles.amenityChipActive
+                  ]}
+                  onPress={() => toggleLabel(lbl)}
+                >
+                  <Text style={[
+                    styles.amenityText,
+                    labels.includes(lbl) && styles.amenityTextActive
+                  ]}>
+                    {lbl}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </WKCard>
 
@@ -231,6 +269,7 @@ export default function Filters() {
 }
 
 const styles = StyleSheet.create({
+  sectionSub: { ...typography.caption, color: colors.ink3, marginTop: -4, marginBottom: 8 },
   container: {
     flex: 1,
     backgroundColor: colors.bg,
