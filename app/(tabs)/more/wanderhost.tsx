@@ -25,6 +25,8 @@ export default function WanderHostScreen() {
   const [isSnoozed, setIsSnoozed] = useState(false);
   const [showSnoozeConfirm, setShowSnoozeConfirm] = useState(false);
   const [guestCount, setGuestCount] = useState(0);
+  const [hostListing, setHostListing] = useState<{ id: string; name: string; category: string } | null>(null);
+  const [checkingListing, setCheckingListing] = useState(true);
 
   useEffect(() => {
     if (profile) {
@@ -32,7 +34,22 @@ export default function WanderHostScreen() {
       setIsSnoozed(profile?.hosting_snoozed ?? false);
     }
     fetchGuestCount();
+    fetchListing();
   }, [profile]);
+
+  const fetchListing = async () => {
+    if (!user) { setCheckingListing(false); return; }
+    try {
+      const { data } = await supabase
+        .from('hosts')
+        .select('id, name, category')
+        .eq('profile_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      setHostListing(data ?? null);
+    } catch { /* best-effort */ }
+    finally { setCheckingListing(false); }
+  };
 
   const fetchGuestCount = async () => {
     if (!user) return;
@@ -121,6 +138,39 @@ export default function WanderHostScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* ===== CLAIM YOUR LISTING CTA — WK-120 ===== */}
+        {!checkingListing && !hostListing ? (
+          <TouchableOpacity
+            style={styles.claimBanner}
+            onPress={() => router.push('/(tabs)/more/wanderhost-claim' as any)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.claimIcon}>
+              <Ionicons name="home" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.claimTitle}>Become a Wanderhost</Text>
+              <Text style={styles.claimSub}>Open your door — free or donativo. Three taps.</Text>
+            </View>
+            <Ionicons name="arrow-forward" size={20} color={colors.amber} />
+          </TouchableOpacity>
+        ) : null}
+
+        {hostListing ? (
+          <View style={styles.listingPill}>
+            <Ionicons
+              name={hostListing.category === 'free' ? 'gift' : 'heart'}
+              size={14}
+              color={hostListing.category === 'free' ? '#3F6112' : '#8C6010'}
+            />
+            <Text style={[styles.listingPillText, {
+              color: hostListing.category === 'free' ? '#3F6112' : '#8C6010',
+            }]}>
+              {hostListing.category === 'free' ? 'FREE' : 'DONATIVO'} · {hostListing.name}
+            </Text>
+          </View>
+        ) : null}
+
         {/* ===== HOSTING STATUS CARD ===== */}
         <View style={styles.statusCard}>
           <View style={styles.statusRow}>
@@ -395,6 +445,26 @@ export default function WanderHostScreen() {
 }
 
 const styles = StyleSheet.create({
+  claimBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: '#FBEFD9', borderRadius: 14, padding: 18,
+    borderWidth: 2, borderColor: '#C8762A', marginBottom: 14,
+  },
+  claimIcon: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: '#C8762A',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  claimTitle: { fontSize: 16, fontWeight: '800', color: '#1F1B16', letterSpacing: -0.2 },
+  claimSub: { fontSize: 12, color: '#5C5147', marginTop: 2, lineHeight: 16 },
+  listingPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 6, backgroundColor: '#F4E5C8', marginBottom: 10,
+  },
+  listingPillText: {
+    fontSize: 10, fontWeight: '800', letterSpacing: 1.2,
+    fontFamily: 'Courier New',
+  },
   container: { flex: 1, backgroundColor: colors.bg },
 
   // Header
