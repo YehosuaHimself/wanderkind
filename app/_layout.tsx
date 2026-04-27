@@ -7,63 +7,64 @@ import { DesktopGate } from '../src/components/web/DesktopGate';
 import { ToastProvider } from '../src/components/ToastProvider';
 import '../global.css';
 
-// Web error boundary to show errors instead of white screen
-class ErrorBoundary extends React.Component<
+// Root-level error boundary — last line of defence before a white screen.
+// Uses the Wanderkind design system for a calm, Apple-style recovery UI.
+import { Ionicons } from '@expo/vector-icons';
+
+class AppErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
+  { hasError: boolean; error: Error | null; retryCount: number }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, retryCount: 0 };
   }
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
-  handleReload = () => {
-    if (Platform.OS === 'web') {
-      window.location.reload();
-    } else {
-      this.setState({ hasError: false, error: null });
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    if (__DEV__) {
+      console.warn('[AppErrorBoundary]', error.message, info.componentStack);
     }
+    // TODO: report to Sentry / analytics
+  }
+  handleRetry = () => {
+    this.setState(s => ({ hasError: false, error: null, retryCount: s.retryCount + 1 }));
   };
-  handleGoHome = () => {
-    this.setState({ hasError: false, error: null });
-    if (Platform.OS === 'web') {
+  handleReload = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.location.href = '/';
+    } else {
+      this.setState({ hasError: false, error: null, retryCount: 0 });
     }
   };
   render() {
     if (this.state.hasError) {
+      const repeated = this.state.retryCount >= 2;
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#FAFAF5' }}>
-          <Text style={{ fontSize: 40, marginBottom: 16 }}>
-            {Platform.OS === 'web' ? '⚠' : '!'}
-          </Text>
-          <Text style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, color: '#1A1A18', textAlign: 'center' }}>
-            Something went wrong
-          </Text>
-          <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity
-              onPress={this.handleGoHome}
-              style={{ backgroundColor: '#C8762A', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>Go Home</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={this.handleReload}
-              style={{ backgroundColor: '#E8E4DA', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
-            >
-              <Text style={{ color: '#1A1A18', fontWeight: '600', fontSize: 14 }}>Reload</Text>
-            </TouchableOpacity>
-          </View>
-          {__DEV__ && (
-            <Text style={{ fontSize: 11, color: '#999', marginTop: 20, textAlign: 'center', maxWidth: 300 }}>
-              {this.state.error?.stack?.slice(0, 300)}
+        <View style={appErrStyles.bg}>
+          <View style={appErrStyles.card}>
+            <View style={appErrStyles.iconCircle}>
+              <Ionicons name="leaf-outline" size={32} color="#C8762A" />
+            </View>
+            <Text style={appErrStyles.title}>Wanderkind needs a moment</Text>
+            <Text style={appErrStyles.body}>
+              {repeated
+                ? "The app is having trouble starting. Try a full reload."
+                : "Something unexpected happened. Your data is safe."}
             </Text>
-          )}
+            <View style={appErrStyles.row}>
+              {repeated ? (
+                <TouchableOpacity onPress={this.handleReload} style={appErrStyles.primaryBtn} activeOpacity={0.85}>
+                  <Text style={appErrStyles.primaryBtnText}>Reload App</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={this.handleRetry} style={appErrStyles.primaryBtn} activeOpacity={0.85}>
+                  <Text style={appErrStyles.primaryBtnText}>Try Again</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         </View>
       );
     }
@@ -71,181 +72,26 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-/**
- * PWA Standalone Mode Fix for iOS WKWebView
- *
- * The keyboard fix requires TWO things working together:
- *
- * 1. Correct PWA meta tags in the HTML (handled by scripts/post-export.js)
- *    - apple-mobile-web-app-capable, manifest link, viewport-fit
- *    - overflow:hidden removed from Expo's stylesheet at the HTML level
- *
- * 2. CSS overrides to ensure inputs are interactive (handled here)
- *    - Strip userSelect:none that RNW sets on ancestor divs
- *    - Inject CSS with !important for input text selection
- *    - Remove overflow:hidden from Expo's runtime stylesheet
- *
- * CRITICAL: Do NOT use stopPropagation() on touch/pointer/mouse events.
- * iOS uses the complete touchstart → touchend event flow to decide whether
- * to show the keyboard. Intercepting these events with stopPropagation
- * causes iOS to focus the input (orange border) but never show the keyboard.
- * RNW's ResponderSystem does NOT call preventDefault(), so it's harmless.
- */
-function usePWAStandaloneFix() {
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+const appErrStyles = {
+  bg: { flex: 1, backgroundColor: '#FAFAF5', justifyContent: 'center' as const, alignItems: 'center' as const, padding: 32 },
+  card: { width: '100%' as const, maxWidth: 340, backgroundColor: '#FFFFFF', borderRadius: 20, padding: 28, alignItems: 'center' as const, borderWidth: 1, borderColor: '#EDE8DC', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 3 },
+  iconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(200,118,42,0.1)', justifyContent: 'center' as const, alignItems: 'center' as const, marginBottom: 20 },
+  title: { fontSize: 18, fontWeight: '600' as const, color: '#1A1A18', textAlign: 'center' as const, marginBottom: 8, letterSpacing: -0.3 },
+  body: { fontSize: 14, color: '#888', textAlign: 'center' as const, lineHeight: 21, marginBottom: 24 },
+  row: { flexDirection: 'row' as const, gap: 10 },
+  primaryBtn: { backgroundColor: '#C8762A', paddingVertical: 13, paddingHorizontal: 28, borderRadius: 24 },
+  primaryBtnText: { color: '#FFF', fontWeight: '700' as const, fontSize: 14, letterSpacing: 0.2 },
+};
 
-    const isStandalone =
-      (window.navigator as any).standalone === true ||
-      window.matchMedia('(display-mode: standalone)').matches;
-
-    // === Fix 1: Remove overflow:hidden from Expo's reset stylesheet ===
-    // Apply this to ALL iOS web contexts (browser tab AND standalone PWA),
-    // because body overflow:hidden also suppresses the iOS soft keyboard
-    // when an input gets focus inside a constrained scroll container.
-    const expoReset = document.getElementById('expo-reset');
-    if (expoReset && expoReset.textContent) {
-      expoReset.textContent = expoReset.textContent.replace(
-        /overflow:\s*hidden\s*;?/g,
-        ''
-      );
-    }
-    document.body.style.setProperty('overflow', 'auto', 'important');
-    document.body.style.setProperty('overscroll-behavior', 'none');
-    document.documentElement.style.setProperty('overflow', 'auto', 'important');
-
-    // === Fix 2: MutationObserver to strip userSelect:none from input ancestors ===
-    // RNW sets userSelect:none on wrapper divs which blocks text selection.
-    // We strip it whenever new inputs appear or styles change.
-    const inputTags = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
-
-    const fixAncestorStyles = () => {
-      const inputs = document.querySelectorAll('input, textarea, select');
-      inputs.forEach(input => {
-        let el = input.parentElement;
-        while (el && el !== document.body) {
-          if (el.style.userSelect === 'none') {
-            el.style.userSelect = '';
-            (el.style as any).webkitUserSelect = '';
-          }
-          if (el.style.touchAction === 'none') {
-            el.style.touchAction = 'manipulation';
-          }
-          el = el.parentElement;
-        }
-      });
-    };
-
-    const observer = new MutationObserver(() => fixAncestorStyles());
-    observer.observe(document.body, {
-      childList: true, subtree: true,
-      attributes: true, attributeFilter: ['style'],
-    });
-    fixAncestorStyles();
-
-    // === Fix 3: focusin interceptor for last-chance style cleanup ===
-    const onFocusIn = (e: FocusEvent) => {
-      const t = e.target as HTMLElement;
-      if (!t?.tagName) return;
-      if (inputTags.has(t.tagName) || t.getAttribute?.('contenteditable') === 'true') {
-        let el = t.parentElement;
-        while (el && el !== document.body) {
-          if (el.style) {
-            el.style.userSelect = '';
-            (el.style as any).webkitUserSelect = '';
-            if (el.style.touchAction === 'none') {
-              el.style.touchAction = 'manipulation';
-            }
-          }
-          el = el.parentElement;
-        }
-      }
-    };
-    document.addEventListener('focusin', onFocusIn, true);
-
-    // === Fix 4: Inject CSS to override RNW inline styles ===
-    const fix = document.createElement('style');
-    fix.id = 'wk-pwa-input-fix';
-    fix.textContent = [
-      'html body input, html body textarea, html body select, html body [contenteditable="true"] {',
-      '  -webkit-user-select: text !important;',
-      '  user-select: text !important;',
-      '  touch-action: manipulation !important;',
-      '  -webkit-appearance: none !important;',
-      '  appearance: none !important;',
-      '  pointer-events: auto !important;',
-      '  font-size: 16px !important;',
-      '  scroll-margin-top: 100px !important;',
-      '  scroll-margin-bottom: 100px !important;',
-      '}',
-      // Focus styling done via CSS so React state doesn't re-render the input',
-      // mid-touch (which can abort iOS keyboard activation).',
-      'html body input.wk-input:focus, html body textarea.wk-input:focus {',
-      '  border-color: #C8762A !important;',
-      '  outline: none !important;',
-      '}',
-      'html body input.wk-input[aria-invalid="true"], html body textarea.wk-input[aria-invalid="true"] {',
-      '  border-color: #D14343 !important;',
-      '}',
-      // === iOS Safari soft-keyboard fix ===',
-      // Inputs inside parents with `transform` (even identity transforms for HW',
-      // acceleration) or `position: fixed/absolute` don\'t reliably trigger the',
-      // iOS soft keyboard. We force any wrapper that contains an input to drop',
-      // its transform. This targets RNW\'s ScrollView wrapper specifically.',
-      'html body div:has(> form > input.wk-input), html body div:has(> input.wk-input) {',
-      '  transform: none !important;',
-      '}',
-    ].join('\n');
-    document.head.appendChild(fix);
-
-    // === Fix 5: Register service worker for PWA ===
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
-        // Force-update the service worker on every load so users always get
-        // the latest JS — without this, cached SW assets can serve stale code
-        // for hours after a deploy.
-        reg.update().catch(() => {});
-      }).catch(() => {});
-    }
-
-    return () => {
-      document.removeEventListener('focusin', onFocusIn, true);
-      observer.disconnect();
-      const el = document.getElementById('wk-pwa-input-fix');
-      if (el) el.remove();
-    };
-  }, []);
-}
-
-function RootLayoutInner() {
-  const initialize = useAuthStore(s => s.initialize);
-
-  // Apply PWA standalone mode fixes for iOS
-  usePWAStandaloneFix();
-
-  useEffect(() => {
-    initialize();
-  }, []);
-
-  return (
-    <>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 250, gestureEnabled: true }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
-    </>
-  );
-}
 
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
+    <AppErrorBoundary>
       <ToastProvider>
         <DesktopGate>
           <RootLayoutInner />
         </DesktopGate>
       </ToastProvider>
-    </ErrorBoundary>
+    </AppErrorBoundary>
   );
 }

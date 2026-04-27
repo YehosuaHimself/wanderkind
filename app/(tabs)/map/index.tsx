@@ -422,7 +422,7 @@ function WebMapComponent({
     var campingGroup = L.layerGroup();
     var communityGroup = L.layerGroup();
 
-    var currentFilter = '${filter}';
+    var currentFilter = '${Array.from(activeFilters).join(",")}';
     var currentLayers = ${JSON.stringify(layers)};
     var walkIntervals = [];
 
@@ -433,8 +433,8 @@ function WebMapComponent({
       hostGroup.clearLayers();
       if (!currentLayers.hosts) return;
       allHosts.forEach(function(host) {
-        if (currentFilter === 'free' && host.host_type !== 'free') return;
-        if (currentFilter === 'donativo' && host.host_type !== 'free' && host.host_type !== 'donativo') return;
+        var activeTypes = currentFilter.split(',');
+        if (activeTypes.length > 0 && !activeTypes.includes(host.host_type)) return;
         var mc = host.color || '#999';
         L.circleMarker([host.lat, host.lng], {
           radius: 7, fillColor: mc, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
@@ -661,7 +661,7 @@ function WebMapComponent({
           applyLayers(event.data.layers);
           break;
         case 'update-filter':
-          currentFilter = event.data.filter;
+          currentFilter = Array.isArray(event.data.activeFilters) ? event.data.activeFilters.join(',') : currentFilter;
           renderHosts();
           break;
         case 'update-hosts':
@@ -986,7 +986,7 @@ export default function MapHome() {
     const filtered = sorted.filter(h => activeFilters.has(h.host_type as HostFilter));
     setNearbyHosts(filtered);
     setActiveHostIndex(0);
-  }, [hosts, userLat, userLng, filter]);
+  }, [hosts, userLat, userLng, activeFilters]);
 
   const fetchHosts = async () => {
     try {
