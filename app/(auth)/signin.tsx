@@ -125,7 +125,7 @@ export default function SignInScreen() {
           activeOpacity={0.7}
           onPress={() => router.push('/(auth)/signup')}
         >
-          <Text style={styles.signupLink}>Don't have a pass? Create one</Text>
+          <Text style={styles.signupLink}>Not yet a Wanderkind? Join now</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

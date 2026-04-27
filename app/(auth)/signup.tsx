@@ -75,7 +75,7 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <WKHeader title="Create Your Pass" showBack />
+      <WKHeader title="Become a Wanderkind" showBack />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {errors.form && (
@@ -85,7 +85,7 @@ export default function SignUpScreen() {
           </View>
         )}
 
-        <Text style={styles.subtitle}>Your email and password secure your pass.</Text>
+        <Text style={styles.subtitle}>Your email and password secure your account.</Text>
 
         <WKInput
           label="Email"
@@ -170,7 +170,7 @@ export default function SignUpScreen() {
 
       <View style={styles.actions}>
         <WKButton
-          title="Create Pass"
+          title="Become a Wanderkind"
           onPress={handleSignUp}
           variant="primary"
           size="lg"
@@ -201,7 +201,7 @@ export default function SignUpScreen() {
           activeOpacity={0.7}
           onPress={() => router.push('/(auth)/signin')}
         >
-          <Text style={styles.loginLink}>Already have a pass? Sign in</Text>
+          <Text style={styles.loginLink}>Already a Wanderkind? Sign in</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
