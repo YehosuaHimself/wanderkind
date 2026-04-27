@@ -70,19 +70,13 @@ export function InAppBrowserPrompt() {
     textAlign: 'center',
   };
 
-  const logoCircle: React.CSSProperties = {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: colors.amber,
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: 600,
-    fontFamily: 'Georgia, serif',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+  const logoImg: React.CSSProperties = {
+    width: 80,
+    height: 80,
+    borderRadius: 18,
+    objectFit: 'cover',
+    display: 'block',
+    margin: '0 auto 24px',
   };
 
   const title: React.CSSProperties = {
@@ -197,7 +191,7 @@ export function InAppBrowserPrompt() {
   return createPortal(
     <div style={overlay}>
       <div style={card}>
-        <span style={logoCircle}>W</span>
+        <img src="/wanderkind-logo.png" style={logoImg} alt="Wanderkind" />
 
         <h1 style={title}>Open Wanderkind in your browser</h1>
 
