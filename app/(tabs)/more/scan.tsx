@@ -153,6 +153,7 @@ function NativeScanScreen() {
   const router = useRouter();
   const [permission, setPermission] = useState<any>(null);
   const [scanned, setScanned] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   useEffect(() => {
     if (useCameraPermissions) {
@@ -259,6 +260,7 @@ function NativeScanScreen() {
       {CameraView && (
         <CameraView
           style={styles.camera}
+          enableTorch={torchOn}
           onBarcodeScanned={handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr'],
@@ -276,10 +278,15 @@ function NativeScanScreen() {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.flashButton}
-          onPress={() => {}}
+          onPress={() => setTorchOn((prev) => !prev)}
           activeOpacity={0.7}
+          accessibilityLabel={torchOn ? 'Turn flash off' : 'Turn flash on'}
         >
-          <Ionicons name="flashlight-outline" size={24} color={colors.surface} />
+          <Ionicons
+            name={torchOn ? 'flashlight' : 'flashlight-outline'}
+            size={24}
+            color={colors.surface}
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
