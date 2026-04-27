@@ -117,8 +117,8 @@ export default function Root({ children }: PropsWithChildren) {
                   }
                   el = el.parentElement;
                 }
-                // Re-trigger focus after style cleanup
-                setTimeout(function() { t.focus(); }, 0);
+                // DO NOT re-focus — the field is already focused.
+                // Calling focus() again interrupts iOS keyboard presentation.
               }
             }, true);
           })();
