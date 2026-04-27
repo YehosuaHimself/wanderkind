@@ -90,17 +90,48 @@
         __wkCrash(null);
       });
 
-      // Wait for the JS bundle to actually load before starting the crash-UI
-      // countdown. The bundle is ~3.4MB; on slow mobile, network + parse can
-      // take 6-12s, and counting against the user while the script is still
-      // in flight produced false-positive crash UIs (the white-screen bug).
+      // ──────────────────────────────────────────────────────────────────
+      // SHELL DISMISSAL — DOM-driven, not React-driven
+      //
+      // The previous version waited for React to call window.__wkMounted()
+      // from a useEffect in app/_layout.tsx. If anything in the React render
+      // path stalled (slow Supabase init, Suspense, etc.) the useEffect
+      // never ran, the shell never dismissed, and the user saw a false crash.
+      //
+      // Now: a MutationObserver watches #root. The instant React paints any
+      // child into it, we dismiss the shell — regardless of useEffect timing,
+      // regardless of whether app/_layout.tsx ever calls __wkMounted.
+      // ──────────────────────────────────────────────────────────────────
       (function () {
         function fireCrashUi() {
           if (document.getElementById('wk-shell')) {
             __wkCrash('The app took too long to start. Try reloading.');
           }
         }
+
+        function watchRootForMount() {
+          var root = document.getElementById('root');
+          if (!root) return false;
+          // If React already painted before we got here, dismiss now
+          if (root.childElementCount > 0) {
+            window.__wkMounted();
+            return true;
+          }
+          // Otherwise observe and dismiss on first child added
+          try {
+            var obs = new MutationObserver(function () {
+              if (root.childElementCount > 0) {
+                window.__wkMounted();
+                obs.disconnect();
+              }
+            });
+            obs.observe(root, { childList: true });
+          } catch (e) { /* MutationObserver missing — fall back to timeout only */ }
+          return true;
+        }
+
         function startCountdown() {
+          watchRootForMount();
           var scriptEl = document.querySelector('script[src*="_expo/static/js"]');
           if (!scriptEl) {
             // No bundle in the DOM at all → structural failure, fail fast
@@ -115,10 +146,10 @@
             setTimeout(fireCrashUi, 20000);
           }
           scriptEl.addEventListener('load', start);
-          // Belt-and-braces: if 'load' never fires (cached script edge cases),
-          // start the countdown after a generous initial grace period anyway.
+          // Belt-and-braces: if 'load' never fires, start anyway after 30s
           setTimeout(start, 30000);
         }
+
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', startCountdown);
         } else {

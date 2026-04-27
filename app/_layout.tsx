@@ -93,12 +93,13 @@ function RootLayoutInner() {
   const initialize = useAuthStore(s => s.initialize);
 
   useEffect(() => {
-    initialize();
-
-    // Signal to the DOM fallback that React mounted successfully
+    // Signal first — guarantees the shell dismisses even if initialize() hangs
+    // on a slow Supabase round-trip. The MutationObserver in public/index.html
+    // is the primary path; this is a redundant secondary signal.
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       (window as any).__wkMounted?.();
     }
+    initialize();
   }, []);
 
   // Global web error guard — catches unhandled errors & promise rejections
