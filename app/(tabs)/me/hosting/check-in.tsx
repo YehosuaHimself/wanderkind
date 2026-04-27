@@ -14,19 +14,21 @@ import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../../src/components/ui/WKCard';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKInput } from '../../../../src/components/ui/WKInput';
+import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
-const MOCK_GUESTS = [
-  { id: '1', name: 'Jean Dupont', checked: true, date: 'Today, 2:30 PM' },
-  { id: '2', name: 'Maria García', checked: false, date: 'Tomorrow, 3:00 PM' },
-  { id: '3', name: 'Klaus Mueller', checked: false, date: 'Jun 1, 4:00 PM' },
-];
+interface CheckInGuest {
+  id: string;
+  name: string;
+  checked: boolean;
+  date: string;
+}
 
 function GuestCheckInItem({
   guest,
   onCheck,
 }: {
-  guest: (typeof MOCK_GUESTS)[0];
+  guest: CheckInGuest;
   onCheck: (id: string) => void;
 }) {
   return (
@@ -68,9 +70,34 @@ function GuestCheckInItem({
 
 export default function CheckInScreen() {
   const { user, isLoading } = useAuthGuard();
-  const [guests, setGuests] = useState(MOCK_GUESTS);
+  const [guests, setGuests] = useState<CheckInGuest[]>([]);
   const [searchName, setSearchName] = useState('');
   const [showQRScanner, setShowQRScanner] = useState(false);
+
+
+  // Fetch upcoming bookings for check-in management
+  React.useEffect(() => {
+    if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
+    supabase
+      .from('bookings')
+      .select('id, check_in, walker_id')
+      .eq('host_id', user.id)
+      .in('status', ['accepted'])
+      .gte('check_in', today)
+      .order('check_in')
+      .limit(20)
+      .then(({ data }) => {
+        if (!data) return;
+        const items: CheckInGuest[] = data.map((b: any) => ({
+          id: b.id,
+          name: b.walker_name ?? 'Wanderkind',
+          checked: false,
+          date: new Date(b.check_in).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        }));
+        setGuests(items);
+      });
+  }, [user]);
 
   const handleCheckIn = (id: string) => {
     setGuests((prevGuests) =>

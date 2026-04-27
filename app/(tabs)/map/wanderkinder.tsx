@@ -16,7 +16,6 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import type { Profile } from '../../../src/types/database';
-import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 
 interface NearbyWanderer extends Profile {
@@ -62,11 +61,6 @@ export default function Wanderkinder() {
       console.error('Failed to fetch nearby wanderers:', err);
     }
 
-    // Fallback to seed profiles who are currently walking
-    const walkingSeed = SEED_PROFILES
-      .filter(p => p.is_walking)
-      .map(p => ({ ...p, distance_km: Math.floor(Math.random() * 20) + 1 }));
-    setWanderers(walkingSeed as unknown as NearbyWanderer[]);
     setLoading(false);
   };
 

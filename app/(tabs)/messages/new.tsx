@@ -18,7 +18,6 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Profile } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
-import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
 // Helper function to escape SQL wildcards in ILIKE queries
 function escapeIlike(input: string): string {
@@ -42,13 +41,7 @@ export default function NewMessage() {
   // Auto-select user when passed via URL params (e.g. from feed DM button)
   useEffect(() => {
     if (params.userId && !selectedUser) {
-      // Try to find in seed profiles first
-      const seedProfile = SEED_PROFILES.find(p => p.id === params.userId);
-      if (seedProfile) {
-        setSelectedUser(seedProfile as unknown as Profile);
-        return;
-      }
-      // Otherwise fetch from Supabase
+      // Fetch from Supabase
       (async () => {
         try {
           const { data } = await supabase
@@ -101,20 +94,6 @@ export default function NewMessage() {
           results = data as Profile[];
         }
 
-        // Also search seed profiles
-        const lowerQuery = query.toLowerCase();
-        const seedMatches = SEED_PROFILES.filter(p =>
-          p.trail_name.toLowerCase().includes(lowerQuery) ||
-          (isWkSearch && (p as any).wanderkind_id?.toUpperCase().includes(query.toUpperCase()))
-        ).slice(0, 10 - results.length);
-
-        // Merge, avoiding duplicates
-        const existingIds = new Set(results.map(r => r.id));
-        for (const sp of seedMatches) {
-          if (!existingIds.has(sp.id)) {
-            results.push(sp as unknown as Profile);
-          }
-        }
 
         setSearchResults(results);
       } catch (err) {

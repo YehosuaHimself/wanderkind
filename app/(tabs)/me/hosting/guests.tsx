@@ -1,11 +1,5 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
@@ -13,177 +7,120 @@ import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
+import type { BookingRow } from '../../../src/types/database';
 
-interface Guest {
-  id: string;
-  name: string;
-  checkInDate: string;
-  checkOutDate: string;
-  status: 'checked-in' | 'checked-out';
+interface GuestBooking extends BookingRow {
+  walker_trail_name: string;
+  walker_avatar: string | null;
 }
 
-const MOCK_GUESTS: Guest[] = [
-  {
-    id: '1',
-    name: 'Jean Dupont',
-    checkInDate: '2024-05-12',
-    checkOutDate: '2024-05-16',
-    status: 'checked-in',
-  },
-  {
-    id: '2',
-    name: 'Anna Mueller',
-    checkInDate: '2024-04-28',
-    checkOutDate: '2024-04-30',
-    status: 'checked-out',
-  },
-];
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
-export default function HostingGuests() {
+export default function GuestsScreen() {
   const { user, isLoading } = useAuthGuard();
-  if (isLoading) return null;
+  const [guests, setGuests] = useState<GuestBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const renderGuest = ({ item }: { item: Guest }) => (
-    <TouchableOpacity activeOpacity={0.6}>
-      <WKCard>
-        <View style={styles.guestHeader}>
-          <View style={styles.guestAvatar}>
-            <Ionicons name="person-circle" size={44} color={colors.amber} />
+  const fetchGuests = useCallback(async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('host_id', user.id)
+        .in('status', ['accepted'])
+        .gte('check_in', today)
+        .order('check_in', { ascending: true });
+
+      if (!bookings?.length) { setGuests([]); return; }
+
+      const walkerIds = [...new Set(bookings.map((b: BookingRow) => b.walker_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, trail_name, avatar_url')
+        .in('id', walkerIds);
+
+      const pm = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+      setGuests(bookings.map((b: BookingRow) => ({
+        ...b,
+        walker_trail_name: pm.get(b.walker_id)?.trail_name ?? 'Wanderkind',
+        walker_avatar: pm.get(b.walker_id)?.avatar_url ?? null,
+      })));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  useEffect(() => { fetchGuests(); }, [fetchGuests]);
+
+  const onRefresh = () => { setRefreshing(true); fetchGuests(); };
+
+  const renderGuest = useCallback(({ item }: { item: GuestBooking }) => (
+    <WKCard style={styles.card}>
+      <View style={styles.row}>
+        <View style={styles.avatar}>
+          <Ionicons name="person-circle" size={40} color={colors.amber} />
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.name}>{item.walker_trail_name}</Text>
+          <View style={styles.dateRow}>
+            <Ionicons name="calendar-outline" size={13} color={colors.ink3} />
+            <Text style={styles.dates}>{formatDate(item.check_in)}{item.check_out ? ` → ${formatDate(item.check_out)}` : ''}</Text>
           </View>
-          <View style={styles.guestInfo}>
-            <Text style={styles.guestName}>{item.name}</Text>
-            <View style={styles.statusRow}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  item.status === 'checked-in'
-                    ? styles.statusCheckIn
-                    : styles.statusCheckOut,
-                ]}
-              >
-                <Ionicons
-                  name={
-                    item.status === 'checked-in'
-                      ? 'checkmark-circle'
-                      : 'exit-outline'
-                  }
-                  size={14}
-                  color={
-                    item.status === 'checked-in' ? colors.green : colors.ink2
-                  }
-                />
-                <Text style={styles.statusText}>
-                  {item.status === 'checked-in' ? 'Checked In' : 'Checked Out'}
-                </Text>
-              </View>
-            </View>
+          <View style={styles.dateRow}>
+            <Ionicons name="people-outline" size={13} color={colors.ink3} />
+            <Text style={styles.dates}>{item.guests} guest{item.guests !== 1 ? 's' : ''}</Text>
           </View>
         </View>
+        <View style={[styles.statusDot, { backgroundColor: '#22c55e' }]} />
+      </View>
+      {item.message ? <Text style={styles.message} numberOfLines={2}>{item.message}</Text> : null}
+    </WKCard>
+  ), []);
 
-        <View style={styles.dates}>
-          <Ionicons name="calendar" size={16} color={colors.ink2} />
-          <Text style={styles.dateText}>
-            {new Date(item.checkInDate).toLocaleDateString()} -
-            {new Date(item.checkOutDate).toLocaleDateString()}
-          </Text>
-        </View>
-      </WKCard>
-    </TouchableOpacity>
-  );
-
-  if (MOCK_GUESTS.length === 0) {
+  if (isLoading || loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <WKHeader title="Current Guests" />
-        <WKEmpty
-          icon="people-outline"
-          title="No Guests"
-          message="Your current guests will appear here"
-          iconColor={colors.amberLine}
-        />
+        <WKHeader title="Current Guests" showBack />
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.amber} /></View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Current Guests" />
-
+      <WKHeader title="Current Guests" showBack />
       <FlatList
-        data={MOCK_GUESTS}
+        data={guests}
+        keyExtractor={g => g.id}
         renderItem={renderGuest}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
+        ListEmptyComponent={
+          <WKEmpty icon="people-outline" title="No guests yet" message="Accepted bookings will appear here" iconColor={colors.amberLine} />
+        }
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  listContent: {
-    paddingHorizontal: spacing.screenPx,
-    paddingVertical: spacing.lg,
-  },
-  guestHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  guestAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.full,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  guestInfo: {
-    flex: 1,
-  },
-  guestName: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.xs,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.sm,
-  },
-  statusCheckIn: {
-    backgroundColor: 'rgba(39,134,74,0.08)',
-  },
-  statusCheckOut: {
-    backgroundColor: colors.surfaceAlt,
-  },
-  statusText: {
-    ...typography.bodySm,
-    color: colors.ink2,
-    fontWeight: '600',
-  },
-  dates: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLt,
-  },
-  dateText: {
-    ...typography.bodySm,
-    color: colors.ink2,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  list: { padding: spacing.lg, gap: spacing.md },
+  card: { marginBottom: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  avatar: { width: 44, height: 44, borderRadius: radii.full, backgroundColor: colors.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  info: { flex: 1 },
+  name: { ...typography.h3, color: colors.ink, marginBottom: 4 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  dates: { ...typography.bodySm, color: colors.ink3 },
+  statusDot: { width: 10, height: 10, borderRadius: 5 },
+  message: { ...typography.bodySm, color: colors.ink2, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLt },
 });

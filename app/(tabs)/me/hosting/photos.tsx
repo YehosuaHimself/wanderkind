@@ -15,18 +15,21 @@ import { colors, typography, spacing, radii, shadows } from '../../../../src/lib
 import { WKHeader } from '../../../../src/components/ui/WKHeader';
 import { WKButton } from '../../../../src/components/ui/WKButton';
 import { WKCard } from '../../../../src/components/ui/WKCard';
+import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 import { useWKImagePicker } from '../../../../src/hooks/useWKImagePicker';
 
-const MOCK_PHOTOS = [
-  { id: '1', uri: 'https://via.placeholder.com/300x300?text=Living+Room' },
-  { id: '2', uri: 'https://via.placeholder.com/300x300?text=Bedroom' },
-  { id: '3', uri: 'https://via.placeholder.com/300x300?text=Kitchen' },
-];
-
 export default function PhotosScreen() {
   const { user, isLoading } = useAuthGuard();
-  const [photos, setPhotos] = useState(MOCK_PHOTOS);
+  React.useEffect(() => {
+    if (!user) return;
+    supabase.from('hosts').select('photos').eq('host_id', user.id).single().then(({ data }) => {
+      if (data?.photos && Array.isArray(data.photos)) {
+        setPhotos(data.photos.map((uri: string, i: number) => ({ id: String(i), uri })));
+      }
+    });
+  }, [user]);
+  const [photos, setPhotos] = useState<Array<{id:string;uri:string}>>([]);
   const [loading, setLoading] = useState(false);
   const { pickFromLibrary } = useWKImagePicker({ aspect: [1, 1] });
   if (isLoading) return null;
