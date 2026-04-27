@@ -7,5 +7,6 @@ class SoutheastAsiaImporter(RegionalOverpassImporter):
     COUNTRY = None
     REGION = "Southeast Asia"
     BBOX = "-11.0,92.0,28.5,141.0"
+    BBOXES = ["5.0,92.0,28.5,110.0", "-11.0,92.0,5.0,110.0", "5.0,110.0,28.5,141.0", "-11.0,110.0,5.0,141.0"]
     LANGUAGES = ["th","vi","my","id","en"]
     EXTRA_QUERY = """  node["amenity"="place_of_worship"]["religion"="buddhist"]({bbox});"""

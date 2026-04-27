@@ -7,6 +7,7 @@ class MiddleEastSafeImporter(RegionalOverpassImporter):
     COUNTRY = None
     REGION = "Middle East / Caucasus"
     BBOX = "29.0,25.0,43.5,50.0"
+    BBOXES = ["36.0,25.0,43.0,45.0", "35.0,40.0,43.5,50.0", "29.0,33.0,33.5,40.0"]
     LANGUAGES = ["tr","hy","ka","ar","en"]
     EXTRA_QUERY = """  node["amenity"="monastery"]({bbox});
   node["historic"="monastery"]({bbox});"""

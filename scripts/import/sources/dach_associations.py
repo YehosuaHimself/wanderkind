@@ -7,6 +7,7 @@ class DACHAssociationsImporter(RegionalOverpassImporter):
     COUNTRY = None
     REGION = "DACH"
     BBOX = "45.5,5.5,55.0,17.2"
+    BBOXES = ["47.0,5.5,55.0,15.0", "45.5,5.5,49.5,17.2"]
     LANGUAGES = ["de","en"]
     EXTRA_QUERY = """  node["tourism"="wilderness_hut"]({bbox});
   node["amenity"="place_of_worship"]["name"~"[Kk]loster|[Ss]tift"]({bbox});"""

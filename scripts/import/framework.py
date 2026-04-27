@@ -449,7 +449,17 @@ out center tags;
         return "budget"
 
     def fetch(self) -> list[HostRecord]:
-        self.log.info(f"Querying Overpass for {self.SOURCE_ID} ({self.COUNTRY or 'region'})…")
+        bboxes = getattr(self, "BBOXES", None) or [self.BBOX]
+        all_recs: list[HostRecord] = []
+        for idx, bbox in enumerate(bboxes):
+            self.BBOX = bbox  # _query reads this
+            self.log.info(f"Overpass [{self.SOURCE_ID}] chunk {idx+1}/{len(bboxes)} bbox={bbox}…")
+            recs = self._fetch_chunk()
+            all_recs.extend(recs)
+        self.log.info(f"  {len(all_recs)} records total across {len(bboxes)} chunk(s)")
+        return all_recs
+
+    def _fetch_chunk(self) -> list[HostRecord]:
         q = self._query()
         # Try multiple Overpass mirrors — the main one frequently 504s on large bboxes.
         endpoints = [
@@ -513,7 +523,6 @@ out center tags;
                 languages=list(self.LANGUAGES),
                 is_pilgrim_only=tags.get("pilgrim_accommodation") == "yes",
             ))
-        self.log.info(f"  {len(out)} candidate records")
         return out
 
 

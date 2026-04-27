@@ -7,5 +7,6 @@ class FranceAssociationsImporter(RegionalOverpassImporter):
     COUNTRY = "France"
     REGION = None
     BBOX = "41.3,-5.5,51.5,9.5"
+    BBOXES = ["46.0,-5.5,51.5,9.5", "41.3,-5.5,46.0,9.5"]
     LANGUAGES = ["fr","en"]
     EXTRA_QUERY = """  node["amenity"="place_of_worship"]["name"~"[Pp]rieuré|[Aa]bbaye"]({bbox});"""

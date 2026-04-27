@@ -7,5 +7,6 @@ class AEVFFrancigeanaImporter(RegionalOverpassImporter):
     COUNTRY = None
     REGION = "Via Francigena"
     BBOX = "41.0,-2.0,52.0,13.0"
+    BBOXES = ["49.0,-2.0,52.0,3.0", "44.0,-2.0,49.0,8.5", "41.0,5.0,46.0,13.0"]
     LANGUAGES = ["it","en","fr"]
     EXTRA_QUERY = """"""
