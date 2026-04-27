@@ -29,6 +29,10 @@ input, textarea, select, [contenteditable] {
   touch-action: manipulation !important;
   pointer-events: auto !important;
   font-size: 16px !important; /* Prevents iOS zoom on focus */
+  /* Ensure inputs are always interactive in WKWebView */
+  -webkit-touch-callout: default !important;
+  position: relative;
+  z-index: 1;
 }
 
 /* Wrapper divs must not block their children */
@@ -37,4 +41,28 @@ div[role="textbox"] {
   -webkit-user-select: text !important;
   user-select: text !important;
   pointer-events: auto !important;
+}
+
+/* === iOS PWA standalone mode body fix === */
+/* In WKWebView standalone, overflow:hidden on body blocks the
+   virtual keyboard. We use position:fixed instead (set by JS)
+   but also ensure the CSS doesn't re-apply overflow:hidden. */
+@media all and (display-mode: standalone) {
+  body {
+    overflow: visible !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Override RNW ScrollView's touchAction:none which blocks keyboard */
+  [data-testid] input,
+  [data-testid] textarea,
+  [data-testid] select {
+    touch-action: manipulation !important;
+  }
 }
