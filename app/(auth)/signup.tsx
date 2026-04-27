@@ -103,6 +103,7 @@ export default function SignUpScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoComplete="new-password"
           error={errors.password}
         />
 

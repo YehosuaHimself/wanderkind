@@ -104,7 +104,7 @@ export default function MyStampEditor() {
   };
 
   const handleShare = async () => {
-    const shareText = `${trailName}'s Wanderkind Stamp\n${motto ? `"${motto}"\n` : ''}wanderkind.app`;
+    const shareText = `${trailName}'s Wanderkind Stamp\n${motto ? `"${motto}"\n` : ''}wanderkind.love`;
 
     if (Platform.OS === 'web') {
       try {
