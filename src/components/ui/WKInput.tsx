@@ -160,22 +160,17 @@ function WebInput({
     lineHeight: 1.4,
   };
 
-  // Protect inputs from RNW's event system + strip userSelect:none from ancestors
-  const stopRNWInterception = useCallback((e: React.TouchEvent | React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation();
-  }, []);
-
+  // Strip userSelect:none from parent chain when input mounts.
+  // RNW sets this on wrapper divs which blocks text selection on iOS.
+  //
+  // IMPORTANT: Do NOT use stopPropagation on touch/pointer/mouse events.
+  // iOS uses the full touchstart → touchend event flow to decide whether
+  // to show the keyboard. Intercepting these events causes the input to
+  // focus (orange border) but the keyboard never appears.
   const inputCallbackRef = useCallback((el: HTMLInputElement | HTMLTextAreaElement | null) => {
     (inputRef as React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | null>).current = el;
     if (!el) return;
 
-    // Attach native event listeners to stop propagation before RNW sees them
-    const handler = (e: Event) => { e.stopPropagation(); };
-    el.addEventListener('touchstart', handler, { capture: true, passive: true });
-    el.addEventListener('touchend', handler, { capture: true, passive: true });
-    el.addEventListener('pointerdown', handler, { capture: true, passive: true });
-
-    // Strip userSelect:none from parent chain
     let parent = el.parentElement;
     while (parent && parent !== document.body) {
       if (parent.style.userSelect === 'none') {
@@ -197,10 +192,6 @@ function WebInput({
     style: inputStyle,
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
-    onTouchStart: stopRNWInterception,
-    onTouchEnd: stopRNWInterception,
-    onPointerDown: stopRNWInterception,
-    onMouseDown: stopRNWInterception,
     'aria-label': label,
     'aria-describedby': helper ? `${label}-helper` : undefined,
     // Prevent iOS zoom

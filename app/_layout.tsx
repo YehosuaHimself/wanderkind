@@ -74,14 +74,22 @@ class ErrorBoundary extends React.Component<
 /**
  * PWA Standalone Mode Fix for iOS WKWebView
  *
- * Multiple layers of defense to ensure text inputs work in PWA standalone:
+ * The keyboard fix requires TWO things working together:
  *
- * 1. Remove overflow:hidden from Expo's <style> element (not just inline)
- * 2. Capture-phase event listeners to isolate inputs from RNW's event system
- * 3. MutationObserver to strip userSelect:none from input ancestors
- * 4. focusin interceptor for last-chance style cleanup
- * 5. Injected CSS with !important to override RNW inline styles
- * 6. Service worker registration
+ * 1. Correct PWA meta tags in the HTML (handled by scripts/post-export.js)
+ *    - apple-mobile-web-app-capable, manifest link, viewport-fit
+ *    - overflow:hidden removed from Expo's stylesheet at the HTML level
+ *
+ * 2. CSS overrides to ensure inputs are interactive (handled here)
+ *    - Strip userSelect:none that RNW sets on ancestor divs
+ *    - Inject CSS with !important for input text selection
+ *    - Remove overflow:hidden from Expo's runtime stylesheet
+ *
+ * CRITICAL: Do NOT use stopPropagation() on touch/pointer/mouse events.
+ * iOS uses the complete touchstart → touchend event flow to decide whether
+ * to show the keyboard. Intercepting these events with stopPropagation
+ * causes iOS to focus the input (orange border) but never show the keyboard.
+ * RNW's ResponderSystem does NOT call preventDefault(), so it's harmless.
  */
 function usePWAStandaloneFix() {
   useEffect(() => {
@@ -92,9 +100,6 @@ function usePWAStandaloneFix() {
       window.matchMedia('(display-mode: standalone)').matches;
 
     // === Fix 1: Remove overflow:hidden from Expo's reset stylesheet ===
-    // CRITICAL: document.body.style.overflow = '' only clears INLINE styles.
-    // The overflow:hidden comes from a STYLESHEET rule in <style id="expo-reset">,
-    // so we must modify the stylesheet text directly.
     if (isStandalone) {
       const expoReset = document.getElementById('expo-reset');
       if (expoReset && expoReset.textContent) {
@@ -103,33 +108,15 @@ function usePWAStandaloneFix() {
           ''
         );
       }
-      // Belt-and-suspenders: explicit inline override
       document.body.style.setProperty('overflow', 'auto', 'important');
       document.body.style.setProperty('overscroll-behavior', 'none');
     }
 
-    // === Fix 2: Capture-phase listener to protect inputs ===
+    // === Fix 2: MutationObserver to strip userSelect:none from input ancestors ===
+    // RNW sets userSelect:none on wrapper divs which blocks text selection.
+    // We strip it whenever new inputs appear or styles change.
     const inputTags = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
-    const protectInputs = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (!target?.tagName) return;
-      if (inputTags.has(target.tagName) || target.getAttribute?.('contenteditable') === 'true') {
-        e.stopPropagation();
-      }
-    };
-
-    const events = [
-      'touchstart', 'touchmove', 'touchend', 'touchcancel',
-      'pointerdown', 'pointermove', 'pointerup', 'pointercancel',
-      'mousedown', 'mousemove', 'mouseup',
-    ];
-
-    events.forEach(evt => {
-      document.addEventListener(evt, protectInputs, { capture: true, passive: true });
-    });
-
-    // === Fix 3: MutationObserver to strip problematic inline styles ===
     const fixAncestorStyles = () => {
       const inputs = document.querySelectorAll('input, textarea, select');
       inputs.forEach(input => {
@@ -154,7 +141,7 @@ function usePWAStandaloneFix() {
     });
     fixAncestorStyles();
 
-    // === Fix 4: focusin interceptor ===
+    // === Fix 3: focusin interceptor for last-chance style cleanup ===
     const onFocusIn = (e: FocusEvent) => {
       const t = e.target as HTMLElement;
       if (!t?.tagName) return;
@@ -174,7 +161,7 @@ function usePWAStandaloneFix() {
     };
     document.addEventListener('focusin', onFocusIn, true);
 
-    // === Fix 5: Inject CSS to override RNW inline styles ===
+    // === Fix 4: Inject CSS to override RNW inline styles ===
     const fix = document.createElement('style');
     fix.id = 'wk-pwa-input-fix';
     fix.textContent = [
@@ -190,15 +177,12 @@ function usePWAStandaloneFix() {
     ].join('\n');
     document.head.appendChild(fix);
 
-    // === Fix 6: Register service worker for PWA ===
+    // === Fix 5: Register service worker for PWA ===
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
     return () => {
-      events.forEach(evt => {
-        document.removeEventListener(evt, protectInputs, { capture: true } as any);
-      });
       document.removeEventListener('focusin', onFocusIn, true);
       observer.disconnect();
       const el = document.getElementById('wk-pwa-input-fix');
