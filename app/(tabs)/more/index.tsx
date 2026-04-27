@@ -26,6 +26,10 @@ type AppTile = {
   route: string;
   accent?: string;
   bgTint?: string;
+  /** When true, the tile spans both columns — used for the SHUFFLE finale tile. */
+  wide?: boolean;
+  /** Optional subtitle shown beneath the title (only on wide tiles). */
+  subtitle?: string;
 };
 
 // PAGE 1: Core features — identity, credentials, journey
@@ -77,6 +81,15 @@ const page1Tiles: AppTile[] = [
     route: '/(tabs)/more/tramp-mode',
     accent: '#E67E22',
     bgTint: 'rgba(230,126,34,0.08)',
+  },
+  {
+    icon: 'shuffle',
+    title: 'Shuffle',
+    subtitle: 'Let the path lead you to a WanderHost nearby',
+    route: '/(tabs)/more/shuffle',
+    accent: '#7B2D3F',
+    bgTint: 'rgba(123,45,63,0.06)',
+    wide: true,
   },
 ];
 
@@ -137,21 +150,53 @@ export default function MoreScreen() {
   const renderPage = useCallback(({ item }: { item: typeof PAGES[0] }) => (
     <View style={[styles.pageContainer, { width: SCREEN_WIDTH }]}>
       <View style={styles.grid}>
-        {item.tiles.map((tile) => (
-          <TouchableOpacity
-            key={tile.route + tile.title}
-            style={[styles.tile, { height: TILE_HEIGHT }, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
-            onPress={() => { haptic.light(); router.push(tile.route as any); }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>
-              <Ionicons name={tile.icon as any} size={22} color={tile.accent ?? colors.ink2} />
-            </View>
-            <Text style={[styles.tileTitle, tile.accent ? { color: tile.accent } : null]} numberOfLines={2}>
-              {tile.title}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {item.tiles.map((tile) => {
+          if (tile.wide) {
+            return (
+              <TouchableOpacity
+                key={tile.route + tile.title}
+                style={[
+                  styles.wideTile,
+                  { height: TILE_HEIGHT },
+                  tile.bgTint ? { backgroundColor: tile.bgTint } : null,
+                  tile.accent ? { borderColor: `${tile.accent}40` } : null,
+                ]}
+                onPress={() => { haptic.medium(); router.push(tile.route as any); }}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.wideTileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}18` }]}>
+                  <Ionicons name={tile.icon as any} size={26} color={tile.accent ?? colors.ink2} />
+                </View>
+                <View style={styles.wideTileBody}>
+                  <Text style={[styles.wideTileTitle, tile.accent ? { color: tile.accent } : null]}>
+                    {tile.title}
+                  </Text>
+                  {tile.subtitle && (
+                    <Text style={styles.wideTileSubtitle} numberOfLines={2}>
+                      {tile.subtitle}
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={tile.accent ?? colors.ink3} />
+              </TouchableOpacity>
+            );
+          }
+          return (
+            <TouchableOpacity
+              key={tile.route + tile.title}
+              style={[styles.tile, { height: TILE_HEIGHT }, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
+              onPress={() => { haptic.light(); router.push(tile.route as any); }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>
+                <Ionicons name={tile.icon as any} size={22} color={tile.accent ?? colors.ink2} />
+              </View>
+              <Text style={[styles.tileTitle, tile.accent ? { color: tile.accent } : null]} numberOfLines={2}>
+                {tile.title}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
 
       </View>
     </View>
@@ -248,6 +293,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: GRID_GAP,
+  },
+  wideTile: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: colors.borderLt,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  wideTileIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wideTileBody: {
+    flex: 1,
+  },
+  wideTileTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.ink,
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  wideTileSubtitle: {
+    fontSize: 12,
+    color: colors.ink3,
+    lineHeight: 16,
   },
   tile: {
     width: TILE_WIDTH,

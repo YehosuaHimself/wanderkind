@@ -46,7 +46,7 @@ interface Props {
  */
 export function WebAuthScreen({ mode, role }: Props) {
   const router = useRouter();
-  const { signIn, signUp, signInWithGoogle } = useAuthStore();
+  const { signIn, signUp } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -120,11 +120,6 @@ export function WebAuthScreen({ mode, role }: Props) {
     },
     [validate, isSignup, signUp, signIn, email, password, role, router]
   );
-
-  const handleGoogle = useCallback(async () => {
-    const { error } = await signInWithGoogle();
-    if (error) setErrors({ form: error.message });
-  }, [signInWithGoogle]);
 
   // === Inline styles (no Tailwind / NativeWind / RNW — pure CSS for clean DOM) ===
   const overlay: React.CSSProperties = {
@@ -447,22 +442,6 @@ export function WebAuthScreen({ mode, role }: Props) {
             {loading ? '…' : submitLabel}
           </button>
         </form>
-
-        <div style={dividerRow}>
-          <div style={dividerLine} />
-          <span style={dividerText}>or</span>
-          <div style={dividerLine} />
-        </div>
-
-        <button type="button" style={oauthBtn} onClick={handleGoogle}>
-          <span style={{ fontSize: 18 }}>G</span>
-          Continue with Google
-        </button>
-
-        <button type="button" style={appleBtn} disabled>
-          <span style={{ fontSize: 18 }}>⌘</span>
-          Continue with Apple
-        </button>
 
         <button
           type="button"

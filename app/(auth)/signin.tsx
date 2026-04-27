@@ -22,7 +22,7 @@ export default function SignInScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signInWithGoogle, signInWithApple } = useAuthStore();
+  const { signIn } = useAuthStore();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -108,33 +108,6 @@ export default function SignInScreen() {
           loading={loading}
           disabled={loading}
         />
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <TouchableOpacity
-          style={styles.googleBtn}
-          onPress={async () => {
-            const { error } = await signInWithGoogle();
-            if (error) setErrors({ form: error.message });
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="logo-google" size={18} color={colors.ink} />
-          <Text style={styles.googleBtnText}>Continue with Google</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.appleBtn, styles.appleBtnDisabled]}
-          activeOpacity={1}
-          disabled
-        >
-          <Ionicons name="logo-apple" size={20} color="rgba(255,255,255,0.5)" />
-          <Text style={[styles.appleBtnText, { color: 'rgba(255,255,255,0.5)' }]}>Continue with Apple</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.7}
