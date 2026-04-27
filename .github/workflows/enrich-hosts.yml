@@ -1,0 +1,33 @@
+name: Enrich Host Data
+
+on:
+  schedule:
+    - cron: '0 3 * * *'    # 03:00 UTC nightly — runs after import (02:00)
+  workflow_dispatch:
+    inputs:
+      max_rows:
+        description: 'Max rows to enrich this run'
+        required: false
+        default: '2500'
+
+jobs:
+  enrich:
+    name: Enrich missing contact info
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run enrichment
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          WK_ENRICH_MAX_ROWS: ${{ github.event.inputs.max_rows || '2500' }}
+        run: python3 scripts/enrich/enrich_existing.py
