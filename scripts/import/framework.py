@@ -195,7 +195,7 @@ def upsert_hosts(records: list[HostRecord], dry_run: bool = False) -> dict:
             "phone": rec.phone,
             "email": rec.email,
             "website": rec.website,
-            "capacity": rec.capacity,
+            "capacity": rec.capacity if rec.capacity is not None else 0,
             "price_range": rec.price_range,
             "amenities": rec.amenities or [],
             "opening_months": rec.opening_months or [],
