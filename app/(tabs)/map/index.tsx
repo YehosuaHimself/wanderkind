@@ -489,13 +489,18 @@ function WebMapComponent({
           if (k && counts.hasOwnProperty(k)) counts[k]++; else counts.b50++;
         });
         var size = n < 10 ? 36 : n < 50 ? 44 : n < 200 ? 52 : 60;
-        // Build the conic-gradient ring stops from non-zero segments
+        // WK-214 — guarantee every present category gets at least 6° of arc so
+        // tiny minorities (e.g. 1 free in a cluster of 1000) remain visible.
+        // We compute a true-share angle, then redistribute proportionally to
+        // hit the floor without exceeding 360.
+        var present = WK_ORDER.filter(function(k){ return counts[k] > 0; });
+        var FLOOR = 6;
+        var available = 360 - present.length * FLOOR;
         var stops = [];
         var cursor = 0;
-        WK_ORDER.forEach(function(k){
-          var pct = counts[k] / n;
-          if (pct <= 0) return;
-          var endDeg = (cursor + pct * 360);
+        present.forEach(function(k){
+          var deg = FLOOR + available * (counts[k] / n);
+          var endDeg = cursor + deg;
           stops.push(WK_PALETTE[k] + ' ' + cursor.toFixed(2) + 'deg ' + endDeg.toFixed(2) + 'deg');
           cursor = endDeg;
         });
@@ -1552,9 +1557,16 @@ export default function MapHome() {
         </MapView>
       )}
 
-      {/* WK-205 — five-bucket filter row (free / donativo / <25 / 25–50 / 50–75) */}
+      {/* WK-205 + WK-215 — five-bucket filter row, horizontally scrollable so
+          narrow viewports don't wrap five chips into two rows. */}
       <SafeAreaView style={styles.topOverlay} edges={['top']}>
-        <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+          style={styles.filterScroll}
+          keyboardShouldPersistTaps="handled"
+        >
           {(['free','donativo','b25','b50','b75'] as HostFilter[]).map(f => {
             const active = activeFilters.has(f);
             const label = CATEGORY_LABEL[f];
@@ -1574,7 +1586,7 @@ export default function MapHome() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </SafeAreaView>
 
       {/* WK-210 — active navigation banner */}
@@ -1956,17 +1968,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: spacing.lg,
-    paddingTop: 8,
-    alignItems: 'center',
+  filterScroll: {
     position: 'absolute',
     top: Platform.OS === 'web' ? 8 : 0,
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 8,
+    paddingRight: 60, // room for the locate button
+    alignItems: 'center',
   },
   filterChip: {
     flexDirection: 'row',
