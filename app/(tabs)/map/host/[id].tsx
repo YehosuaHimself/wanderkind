@@ -259,27 +259,31 @@ export default function HostDetail() {
               )}
             </View>
 
-            {/* PRIMARY CATEGORY — Free / Donativo / Budget — the brand axis */}
-            {(host as any).category ? (
-              <View style={[styles.categoryRow, {
-                backgroundColor: (host as any).category === 'free' ? '#E2EFD9'
-                  : (host as any).category === 'donativo' ? '#FBEFD9'
-                  : '#F4E5C8',
-                borderColor: (host as any).category === 'free' ? '#5A7A2B'
-                  : (host as any).category === 'donativo' ? '#C8762A'
-                  : '#B8862C',
-              }]}>
-                <Text style={[styles.categoryLabel, {
-                  color: (host as any).category === 'free' ? '#3F6112'
-                    : (host as any).category === 'donativo' ? '#8C6010'
-                    : '#7A4F1E',
-                }]}>
-                  {(host as any).category === 'free' ? '✦ FREE'
-                    : (host as any).category === 'donativo' ? '✦ DONATIVO — pay what you can'
-                    : '✦ BUDGET — under €50'}
-                </Text>
-              </View>
-            ) : null}
+            {/* WK-219 — primary category with budget tier label (free / donativo / b25 / b50 / b75) */}
+            {(() => {
+              const cat = (host as any).category as string | undefined;
+              if (!cat) return null;
+              const tier = (host as any).budget_tier as string | undefined;
+              const tierLabel =
+                tier === 'b25' ? '✦ BUDGET — under €25'
+                : tier === 'b75' ? '✦ BUDGET — €50–75'
+                : '✦ BUDGET — €25–50';
+              const text =
+                cat === 'free' ? '✦ FREE'
+                : cat === 'donativo' ? '✦ DONATIVO — pay what you can'
+                : tierLabel;
+              const palette =
+                cat === 'free' ? { bg: '#E2EFD9', border: '#5A7A2B', fg: '#3F6112' }
+                : cat === 'donativo' ? { bg: '#FBEFD9', border: '#C8762A', fg: '#8C6010' }
+                : tier === 'b25' ? { bg: '#E1F0F7', border: '#4FA0C2', fg: '#1F6A8A' }
+                : tier === 'b75' ? { bg: '#D5DEEA', border: '#1B4068', fg: '#0F2A48' }
+                : { bg: '#DCE5F0', border: '#2E6DA4', fg: '#1A4470' };
+              return (
+                <View style={[styles.categoryRow, { backgroundColor: palette.bg, borderColor: palette.border }]}>
+                  <Text style={[styles.categoryLabel, { color: palette.fg }]}>{text}</Text>
+                </View>
+              );
+            })()}
 
             {/* Secondary labels (parish, monastery, hostel, refuge, camping, …) */}
             {Array.isArray((host as any).labels) && (host as any).labels.length > 0 ? (
