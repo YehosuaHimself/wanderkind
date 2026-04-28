@@ -293,7 +293,7 @@ function WebMapComponent({
 }: {
   hosts: Host[];
   onViewportChange?: (b: { south: number; west: number; north: number; east: number; zoom?: number }) => void;
-  onHostCount?: (n: number) => void;
+  onHostCount?: (n: number, breakdown?: Record<HostFilter, number>) => void;
   onNavInfo?: (i: { km: number | null; minutes: number | null; mode: string }) => void;
   activeFilters: Set<HostFilter>;
   onHostPress: (id: string) => void;
@@ -575,15 +575,19 @@ function WebMapComponent({
     function renderHosts() {
       hostGroup.clearLayers();
       if (!currentLayers.hosts) {
-        window.parent.postMessage({ type: 'host-count', count: 0 }, '*');
+        window.parent.postMessage({ type: 'host-count', count: 0, breakdown: { free:0, donativo:0, b25:0, b50:0, b75:0 } }, '*');
         return;
       }
       var activeTypes = currentFilter.split(',').filter(Boolean);
       var visible = 0;
+      // WK-218 — per-category visible counts so the legend can show
+      // "Free · 312 / Donativo · 4.5k / …" instead of just a total.
+      var bd = { free:0, donativo:0, b25:0, b50:0, b75:0 };
       allHosts.forEach(function(host) {
         var key = host.filter_key || (host.budget_tier ? host.budget_tier : (host.category || 'b50'));
         if (activeTypes.length > 0 && activeTypes.indexOf(key) === -1) return;
         visible++;
+        if (bd.hasOwnProperty(key)) bd[key]++;
         var mc = host.color || WK_PALETTE[key] || '#999';
         var label = key === 'b25' ? 'BUDGET <25' : key === 'b50' ? 'BUDGET 25–50' : key === 'b75' ? 'BUDGET 50–75' : (host.category || host.host_type || '').toUpperCase();
         var icon = L.divIcon({ html: shapeFor(key, mc), className: '', iconSize: [18,18], iconAnchor: [9,9] });
@@ -594,8 +598,7 @@ function WebMapComponent({
           })
           .addTo(hostGroup);
       });
-      // WK-203 — emit visible count so the legend overlay stays honest.
-      window.parent.postMessage({ type: 'host-count', count: visible }, '*');
+      window.parent.postMessage({ type: 'host-count', count: visible, breakdown: bd }, '*');
     }
 
     // === WANDERKINDER RENDERING ===
@@ -916,9 +919,9 @@ function WebMapComponent({
       if (event.data?.type === 'host-click') onHostPress(event.data.hostId);
       if (event.data?.type === 'walker-click') onWalkerPress(event.data.profileId);
       if (event.data?.type === 'map-ready') setMapReady(true);
-      // WK-203 — visible host count for the legend overlay.
+      // WK-203/218 — visible host count + per-category breakdown.
       if (event.data?.type === 'host-count' && typeof event.data.count === 'number') {
-        onHostCount?.(event.data.count);
+        onHostCount?.(event.data.count, event.data.breakdown);
       }
       // WK-210 — walking-route info from the OSRM fetch in the iframe.
       if (event.data?.type === 'nav-info') {
@@ -967,8 +970,13 @@ export default function MapHome() {
   // WK-205 — five-bucket filter; all on by default so first paint
   // shows the full inventory, then the user pares it down.
   const [activeFilters, setActiveFilters] = useState<Set<HostFilter>>(new Set(['free','donativo','b25','b50','b75']));
-  // WK-203 — count emitted by the iframe after each render so the legend stays honest.
+  // WK-203/218 — count + per-category breakdown emitted by the iframe.
   const [visibleHostCount, setVisibleHostCount] = useState<number>(0);
+  const [visibleBreakdown, setVisibleBreakdown] = useState<Record<HostFilter, number>>({ free:0, donativo:0, b25:0, b50:0, b75:0 });
+  const handleHostCount = useCallback((n: number, bd?: Record<HostFilter, number>) => {
+    setVisibleHostCount(n);
+    if (bd) setVisibleBreakdown(bd);
+  }, []);
   // WK-210 — active in-map navigation (selected host + walking route info)
   const [navHost, setNavHost] = useState<Host | null>(null);
   const [navInfo, setNavInfo] = useState<{ km: number | null; minutes: number | null; mode: string } | null>(null);
@@ -1553,7 +1561,7 @@ export default function MapHome() {
           hosts={hosts}
           activeFilters={activeFilters}
           onViewportChange={handleViewportChange}
-          onHostCount={setVisibleHostCount}
+          onHostCount={handleHostCount}
           onNavInfo={setNavInfo}
           onHostPress={handleHostPress}
           walkers={liveWalkers}
@@ -1671,12 +1679,17 @@ export default function MapHome() {
           </View>
           <View style={styles.legendDivider} />
           <View style={styles.legendSwatches}>
-            {(['free','donativo','b25','b50','b75'] as HostFilter[]).map(f => (
-              <View key={f} style={styles.legendRow}>
-                <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLOR[f], opacity: activeFilters.has(f) ? 1 : 0.25 }]} />
-                <Text style={[styles.legendLbl, !activeFilters.has(f) && { opacity: 0.4 }]}>{CATEGORY_LABEL[f]}</Text>
-              </View>
-            ))}
+            {(['free','donativo','b25','b50','b75'] as HostFilter[]).map(f => {
+              const n = visibleBreakdown[f] ?? 0;
+              const numStr = n >= 1000 ? `${(n/1000).toFixed(1).replace('.0','')}k` : String(n);
+              return (
+                <View key={f} style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLOR[f], opacity: activeFilters.has(f) ? 1 : 0.25 }]} />
+                  <Text style={[styles.legendLbl, !activeFilters.has(f) && { opacity: 0.4 }]}>{CATEGORY_LABEL[f]}</Text>
+                  <Text style={[styles.legendNum, !activeFilters.has(f) && { opacity: 0.4 }]}>{numStr}</Text>
+                </View>
+              );
+            })}
           </View>
         </View>
       </View>
@@ -2121,6 +2134,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     color: colors.ink2,
     fontWeight: '600',
+    flex: 1,
+  },
+  legendNum: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    color: colors.ink3,
+    fontWeight: '700',
+    minWidth: 24,
+    textAlign: 'right',
   },
   iconButton: {
     width: 44,
