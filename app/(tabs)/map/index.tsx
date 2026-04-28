@@ -26,7 +26,36 @@ const INITIAL_REGION = {
   longitudeDelta: 22,
 };
 
-type HostFilter = 'free' | 'donativo' | 'budget';
+// WK-205 — five-bucket filter: free, donativo, and three budget tiers (<25 / 25-50 / 50-75)
+type HostFilter = 'free' | 'donativo' | 'b25' | 'b50' | 'b75';
+
+// Resolve a host's filter key. Free / donativo come straight off `category`;
+// budget hosts route through `budget_tier` (set by SQL backfill from host_type).
+const getFilterKey = (h: any): HostFilter => {
+  const cat = (h?.category ?? h?.host_type) as string | undefined;
+  if (cat === 'free' || cat === 'donativo') return cat;
+  const tier = (h?.budget_tier ?? '').toString();
+  if (tier === 'b25' || tier === 'b50' || tier === 'b75') return tier as HostFilter;
+  return 'b50'; // sensible default for any unclassified budget row
+};
+
+// Per-category palette used by markers, cluster pies, and legend.
+// Free = green, Donativo = gold, Budget tiers = a saturation ramp of blue
+// so the map reads as a cool gradient where budget dominates.
+const CATEGORY_COLOR: Record<HostFilter, string> = {
+  free:     '#27864A',
+  donativo: '#D4A017',
+  b25:      '#4FA0C2',
+  b50:      '#2E6DA4',
+  b75:      '#1B4068',
+};
+const CATEGORY_LABEL: Record<HostFilter, string> = {
+  free:     'FREE',
+  donativo: 'DONATIVO',
+  b25:      '<25',
+  b50:      '25–50',
+  b75:      '50–75',
+};
 
 interface LayerState {
   hosts: boolean;
@@ -259,10 +288,11 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange, onViewportChange
+  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange, onViewportChange, onHostCount
 }: {
   hosts: Host[];
   onViewportChange?: (b: { south: number; west: number; north: number; east: number }) => void;
+  onHostCount?: (n: number) => void;
   activeFilters: Set<HostFilter>;
   onHostPress: (id: string) => void;
   walkers: Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>;
@@ -275,11 +305,13 @@ function WebMapComponent({
   const [mapReady, setMapReady] = useState(false);
   const prevDataRef = useRef<string>('');
 
-  // Map host type to marker color
-  const getMarkerColor = (type: string): string => {
-    const config = hostTypeConfig[type as keyof typeof hostTypeConfig];
-    if (!config) return colors.ink3;
-    return config.color;
+  // WK-204 — colour a host by its 5-bucket filter key, falling back to
+  // legacy hostTypeConfig for non-pivoted host_type values (e.g. parish).
+  const getMarkerColor = (h: any): string => {
+    const key = getFilterKey(h);
+    if (CATEGORY_COLOR[key]) return CATEGORY_COLOR[key];
+    const config = hostTypeConfig[h?.host_type as keyof typeof hostTypeConfig];
+    return config?.color ?? colors.ink3;
   };
 
   // Send layer visibility updates to iframe via postMessage (no re-mount!)
@@ -305,7 +337,14 @@ function WebMapComponent({
     if (!mapReady || !iframeRef.current?.contentWindow) return;
     const hostData = hosts.map(h => ({
       id: h.id, name: h.name, lat: h.lat, lng: h.lng,
-      host_type: h.host_type, color: getMarkerColor(((h as any).category ?? h.host_type)),
+      host_type: h.host_type,
+      // WK-202/204/205 — pass category + budget_tier + labels so the
+      // iframe can colour clusters, shape markers, and chip popups.
+      category: (h as any).category,
+      budget_tier: (h as any).budget_tier,
+      labels: (h as any).labels ?? [],
+      filter_key: getFilterKey(h),
+      color: getMarkerColor(h),
     }));
     const dataKey = JSON.stringify(hostData.map(h => h.id));
     if (dataKey === prevDataRef.current) return;
@@ -344,7 +383,12 @@ function WebMapComponent({
     // Pre-compute initial data for embedding
     const initialHosts = hosts.map(h => ({
       id: h.id, name: h.name, lat: h.lat, lng: h.lng,
-      host_type: h.host_type, color: getMarkerColor(((h as any).category ?? h.host_type)),
+      host_type: h.host_type,
+      category: (h as any).category,
+      budget_tier: (h as any).budget_tier,
+      labels: (h as any).labels ?? [],
+      filter_key: getFilterKey(h),
+      color: getMarkerColor(h),
     }));
     const initialWalkers = walkers.map(w => ({
       id: w.id, trail_name: w.trail_name,
@@ -415,22 +459,47 @@ function WebMapComponent({
     setTileLayer('normal');
 
     // === LAYER GROUPS (toggled via postMessage — no iframe re-mount) ===
-    // WK-200 — cluster markers at zoom-out so the map breathes
+    // WK-200/202/205 — cluster markers + 5-segment category pies so a
+    // glance tells you the visible mix (free / donativo / b25 / b50 / b75)
+    var WK_PALETTE = { free:'#27864A', donativo:'#D4A017', b25:'#4FA0C2', b50:'#2E6DA4', b75:'#1B4068' };
+    var WK_ORDER = ['free','donativo','b25','b50','b75'];
+
     var hostGroup = L.markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false,
       disableClusteringAtZoom: 12,
       iconCreateFunction: function(cluster) {
-        var n = cluster.getChildCount();
-        var size = n < 10 ? 32 : n < 50 ? 38 : n < 200 ? 44 : 52;
-        var bg = n < 10 ? '#FBEFD9' : n < 50 ? '#E5D4B8' : n < 200 ? '#C8762A' : '#8C6010';
-        var fg = n < 50 ? '#8C6010' : '#FFFFFF';
-        return L.divIcon({
-          html: '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + bg + ';color:' + fg + ';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,.25);font-family:system-ui">' + n + '</div>',
-          className: '',
-          iconSize: [size, size],
+        var children = cluster.getAllChildMarkers();
+        var n = children.length;
+        var counts = { free:0, donativo:0, b25:0, b50:0, b75:0 };
+        children.forEach(function(m){
+          var k = m.options.wk_key;
+          if (k && counts.hasOwnProperty(k)) counts[k]++; else counts.b50++;
         });
+        var size = n < 10 ? 36 : n < 50 ? 44 : n < 200 ? 52 : 60;
+        // Build the conic-gradient ring stops from non-zero segments
+        var stops = [];
+        var cursor = 0;
+        WK_ORDER.forEach(function(k){
+          var pct = counts[k] / n;
+          if (pct <= 0) return;
+          var endDeg = (cursor + pct * 360);
+          stops.push(WK_PALETTE[k] + ' ' + cursor.toFixed(2) + 'deg ' + endDeg.toFixed(2) + 'deg');
+          cursor = endDeg;
+        });
+        var ringBg = stops.length === 1
+          ? stops[0].split(' ')[0]   // solid colour when cluster is monochromatic
+          : 'conic-gradient(' + stops.join(',') + ')';
+        var inner = Math.max(size - 14, 18);
+        var fontSize = n < 100 ? 13 : n < 1000 ? 12 : 11;
+        var html =
+          '<div style="position:relative;width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + ringBg + ';box-shadow:0 2px 8px rgba(0,0,0,.30);">' +
+            '<div style="position:absolute;top:7px;left:7px;right:7px;bottom:7px;border-radius:50%;background:#FAF6EF;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:' + fontSize + 'px;color:#3F2A0F;font-family:system-ui;letter-spacing:-0.3px;">' +
+              (n >= 1000 ? (n/1000).toFixed(1).replace('.0','') + 'k' : n) +
+            '</div>' +
+          '</div>';
+        return L.divIcon({ html: html, className: '', iconSize: [size, size] });
       },
     }).addTo(map);
     var walkerGroup = L.layerGroup().addTo(map);
@@ -449,23 +518,65 @@ function WebMapComponent({
     // === HOST RENDERING ===
     var allHosts = ${JSON.stringify(initialHosts)};
 
+    // WK-204/205 — markers carry a wk_key (5-bucket filter id) and a
+    // category-specific shape so a zoomed-in viewer can read the mix
+    // without reading text. Free = filled disc, Donativo = ring,
+    // budget = three saturations of blue with progressively smaller squares.
+    function shapeFor(key, mc) {
+      switch (key) {
+        case 'free':
+          return '<div style="width:14px;height:14px;border-radius:50%;background:' + mc + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.40);"></div>';
+        case 'donativo':
+          return '<div style="width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid ' + mc + ';box-shadow:0 1px 3px rgba(0,0,0,.30);"></div>';
+        case 'b25':
+          return '<div style="width:11px;height:11px;background:' + mc + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.30);transform:rotate(45deg);"></div>';
+        case 'b75':
+          return '<div style="width:10px;height:10px;background:' + mc + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.30);"></div>';
+        case 'b50':
+        default:
+          return '<div style="width:11px;height:11px;background:' + mc + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.30);"></div>';
+      }
+    }
+
+    function popupFor(host, mc, label) {
+      var chips = '';
+      if (host.labels && host.labels.length) {
+        chips = '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;justify-content:center;">' +
+          host.labels.slice(0,3).map(function(l){
+            return '<span style="font-size:9px;background:#FBEFD9;color:#8C6010;padding:1px 6px;border-radius:8px;text-transform:lowercase;letter-spacing:.3px;">' + l + '</span>';
+          }).join('') + '</div>';
+      }
+      return '<div style="font-size:12px;text-align:center;min-width:120px;">' +
+             '<strong style="font-size:13px;">' + host.name + '</strong><br/>' +
+             '<span style="color:' + mc + ';font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:1px;">' + label + '</span>' +
+             chips +
+             '</div>';
+    }
+
     function renderHosts() {
       hostGroup.clearLayers();
-      if (!currentLayers.hosts) return;
+      if (!currentLayers.hosts) {
+        window.parent.postMessage({ type: 'host-count', count: 0 }, '*');
+        return;
+      }
+      var activeTypes = currentFilter.split(',').filter(Boolean);
+      var visible = 0;
       allHosts.forEach(function(host) {
-        var activeTypes = currentFilter.split(',');
-        var hostCat = host.category || host.host_type;
-        if (activeTypes.length > 0 && !activeTypes.includes(hostCat)) return;
-        var mc = host.color || '#999';
-        L.circleMarker([host.lat, host.lng], {
-          radius: 7, fillColor: mc, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
-        })
-        .bindPopup('<div style="font-size:12px;text-align:center;"><strong>' + host.name + '</strong><br/><span style="color:' + mc + ';font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:1px;">' + (host.category || host.host_type).toUpperCase() + '</span>' + (host.labels && host.labels.length ? '<br/><span style="font-size:9px;color:#9B8E7E;text-transform:lowercase;">' + host.labels.slice(0,3).join(' · ') + '</span>' : '') + '</div>')
-        .on('click', function() {
-          window.parent.postMessage({ type: 'host-click', hostId: host.id }, '*');
-        })
-        .addTo(hostGroup);
+        var key = host.filter_key || (host.budget_tier ? host.budget_tier : (host.category || 'b50'));
+        if (activeTypes.length > 0 && activeTypes.indexOf(key) === -1) return;
+        visible++;
+        var mc = host.color || WK_PALETTE[key] || '#999';
+        var label = key === 'b25' ? 'BUDGET <25' : key === 'b50' ? 'BUDGET 25–50' : key === 'b75' ? 'BUDGET 50–75' : (host.category || host.host_type || '').toUpperCase();
+        var icon = L.divIcon({ html: shapeFor(key, mc), className: '', iconSize: [18,18], iconAnchor: [9,9] });
+        L.marker([host.lat, host.lng], { icon: icon, wk_key: key })
+          .bindPopup(popupFor(host, mc, label))
+          .on('click', function() {
+            window.parent.postMessage({ type: 'host-click', hostId: host.id }, '*');
+          })
+          .addTo(hostGroup);
       });
+      // WK-203 — emit visible count so the legend overlay stays honest.
+      window.parent.postMessage({ type: 'host-count', count: visible }, '*');
     }
 
     // === WANDERKINDER RENDERING ===
@@ -727,6 +838,10 @@ function WebMapComponent({
       if (event.data?.type === 'host-click') onHostPress(event.data.hostId);
       if (event.data?.type === 'walker-click') onWalkerPress(event.data.profileId);
       if (event.data?.type === 'map-ready') setMapReady(true);
+      // WK-203 — visible host count for the legend overlay.
+      if (event.data?.type === 'host-count' && typeof event.data.count === 'number') {
+        onHostCount?.(event.data.count);
+      }
       // WK-201 — bbox-driven host fetch. Debounce in the iframe (350ms)
       // is already applied; here we just fire the query.
       if (event.data?.type === 'viewport') {
@@ -739,7 +854,7 @@ function WebMapComponent({
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onHostPress, onWalkerPress, onViewportChange]);
+  }, [onHostPress, onWalkerPress, onViewportChange, onHostCount]);
 
   return (
     <View style={styles.map}>
@@ -769,7 +884,11 @@ export default function MapHome() {
   const { profile } = useAuthStore();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
-  const [activeFilters, setActiveFilters] = useState<Set<HostFilter>>(new Set(['free','donativo','budget']));
+  // WK-205 — five-bucket filter; all on by default so first paint
+  // shows the full inventory, then the user pares it down.
+  const [activeFilters, setActiveFilters] = useState<Set<HostFilter>>(new Set(['free','donativo','b25','b50','b75']));
+  // WK-203 — count emitted by the iframe after each render so the legend stays honest.
+  const [visibleHostCount, setVisibleHostCount] = useState<number>(0);
   const toggleFilter = (f: HostFilter) => {
     setActiveFilters(prev => {
       const next = new Set(prev);
@@ -909,8 +1028,8 @@ export default function MapHome() {
       // No user location — sort by popularity
       sorted = [...hosts].sort((a, b) => (b.total_hosted ?? 0) - (a.total_hosted ?? 0));
     }
-    // Apply filter
-    const filtered = sorted.filter(h => activeFilters.has(((h as any).category ?? h.host_type) as HostFilter));
+    // Apply 5-bucket filter via the shared resolver
+    const filtered = sorted.filter(h => activeFilters.has(getFilterKey(h)));
     setNearbyHosts(filtered);
     setActiveHostIndex(0);
   }, [hosts, userLat, userLng, activeFilters]);
@@ -1281,6 +1400,7 @@ export default function MapHome() {
           hosts={hosts}
           activeFilters={activeFilters}
           onViewportChange={handleViewportChange}
+          onHostCount={setVisibleHostCount}
           onHostPress={handleHostPress}
           walkers={liveWalkers}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
@@ -1309,24 +1429,51 @@ export default function MapHome() {
         </MapView>
       )}
 
-      {/* Top controls — filter tags only */}
+      {/* WK-205 — five-bucket filter row (free / donativo / <25 / 25–50 / 50–75) */}
       <SafeAreaView style={styles.topOverlay} edges={['top']}>
         <View style={styles.filterRow}>
-          {(['free','donativo','budget'] as HostFilter[]).map(f => {
+          {(['free','donativo','b25','b50','b75'] as HostFilter[]).map(f => {
             const active = activeFilters.has(f);
-            const label = f === 'free' ? 'FREE' : f === 'donativo' ? 'DONATIVO' : 'BUDGET';
+            const label = CATEGORY_LABEL[f];
+            const tint = CATEGORY_COLOR[f];
             return (
               <TouchableOpacity
                 key={f}
-                style={[styles.filterChip, active && styles.filterChipActive]}
+                style={[
+                  styles.filterChip,
+                  active && styles.filterChipActive,
+                  active && { borderColor: tint, backgroundColor: tint + '1A' },
+                ]}
                 onPress={() => { haptic.selection(); toggleFilter(f); }}
               >
-                <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
+                <View style={[styles.filterDot, { backgroundColor: tint }]} />
+                <Text style={[styles.filterText, active && styles.filterTextActive, active && { color: tint }]}>{label}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
       </SafeAreaView>
+
+      {/* WK-203 — persistent legend with live "in view" count */}
+      <View pointerEvents="none" style={styles.legendOverlay}>
+        <View style={styles.legendCard}>
+          <View style={styles.legendCount}>
+            <Text style={styles.legendCountNum}>
+              {visibleHostCount >= 1000 ? `${(visibleHostCount/1000).toFixed(1).replace('.0','')}k` : visibleHostCount}
+            </Text>
+            <Text style={styles.legendCountLbl}>in view</Text>
+          </View>
+          <View style={styles.legendDivider} />
+          <View style={styles.legendSwatches}>
+            {(['free','donativo','b25','b50','b75'] as HostFilter[]).map(f => (
+              <View key={f} style={styles.legendRow}>
+                <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLOR[f], opacity: activeFilters.has(f) ? 1 : 0.25 }]} />
+                <Text style={[styles.legendLbl, !activeFilters.has(f) && { opacity: 0.4 }]}>{CATEGORY_LABEL[f]}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
 
       {/* Right side — layers, map style, locate/center */}
       <View style={styles.rightActionStrip}>
@@ -1674,26 +1821,97 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   filterChip: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
     borderColor: colors.border,
   },
   filterChipActive: {
-    backgroundColor: colors.amber,
-    borderColor: colors.amber,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   filterText: {
     fontFamily: 'Courier New',
-    fontSize: 11,
-    letterSpacing: 1.2,
+    fontSize: 10,
+    letterSpacing: 1,
     color: colors.ink2,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   filterTextActive: {
-    color: '#FFFFFF',
+    color: colors.ink,
+  },
+  // WK-203 — legend overlay (bottom-right, non-interactive)
+  legendOverlay: {
+    position: 'absolute',
+    bottom: 100,
+    right: 12,
+    zIndex: 8,
+  },
+  legendCard: {
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minWidth: 110,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  legendCount: {
+    alignItems: 'center',
+    paddingBottom: 6,
+  },
+  legendCountNum: {
+    fontFamily: 'Courier New',
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.ink,
+    letterSpacing: -0.5,
+  },
+  legendCountLbl: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    letterSpacing: 1.2,
+    color: colors.ink3,
+    textTransform: 'uppercase',
+    marginTop: 1,
+  },
+  legendDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginBottom: 6,
+  },
+  legendSwatches: {
+    gap: 3,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLbl: {
+    fontFamily: 'Courier New',
+    fontSize: 9,
+    letterSpacing: 0.8,
+    color: colors.ink2,
+    fontWeight: '600',
   },
   iconButton: {
     width: 44,
