@@ -13,7 +13,7 @@ import { useFavoritesStore } from '../../../src/stores/favorites';
 import { useAuthStore } from '../../../src/stores/auth';
 import { getRouteRelativeDistance } from '../../../src/lib/route-distance';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
-import { MapModesPanel } from '../../../src/components/map/MapModesPanel';
+// WK-220 — MapModesPanel removed: a single tile layer is sufficient for now
 import { LayersPanel } from '../../../src/components/map/LayersPanel';
 
 const { width, height } = Dimensions.get('window');
@@ -105,7 +105,8 @@ const SEED_COMMUNITY_PINS: CommunityPin[] = [
   { id: 'cm-10', type: 'campsite', name: 'Forest clearing near Vézelay', lat: 47.4700, lng: 3.7500, note: 'Quiet, pine forest floor. Via Lemovicensis.' },
 ];
 
-type MapMode = 'normal' | 'greyscale' | 'explorer';
+// WK-220 — single tile layer; type kept as a no-op alias to avoid surface churn
+type MapMode = 'normal';
 
 // Dynamically import native-only modules (these crash on web)
 let MapView: any, Marker: any, Polyline: any, PROVIDER_GOOGLE: any, Location: any;
@@ -289,7 +290,7 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange, onViewportChange, onHostCount, onNavInfo
+  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, onViewportChange, onHostCount, onNavInfo
 }: {
   hosts: Host[];
   onViewportChange?: (b: { south: number; west: number; north: number; east: number; zoom?: number }) => void;
@@ -300,8 +301,6 @@ function WebMapComponent({
   walkers: Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>;
   onWalkerPress: (id: string) => void;
   layers: LayerState;
-  mapMode: MapMode;
-  onMapModeChange: (mode: MapMode) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -371,14 +370,7 @@ function WebMapComponent({
     }, '*');
   }, [walkers, mapReady]);
 
-  // Send map mode (tile layer) updates via postMessage
-  useEffect(() => {
-    if (!mapReady || !iframeRef.current?.contentWindow) return;
-    iframeRef.current.contentWindow.postMessage({
-      type: 'update-tiles',
-      mode: mapMode,
-    }, '*');
-  }, [mapMode, mapReady]);
+  // WK-220 — tile layer is fixed; no postMessage needed.
 
   // Build stable HTML — all layer toggling happens via postMessage
   const html = React.useMemo(() => {
@@ -413,6 +405,8 @@ function WebMapComponent({
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     #map { width: 100%; height: 100vh; }
     .leaflet-container { background: #f5f5f0; }
+    @keyframes wk-self-pulse { 0% { transform: scale(0.85); opacity: 0.7; } 100% { transform: scale(1.6); opacity: 0; } }
+    .wk-self-pulse { animation: wk-self-pulse 1.8s ease-out infinite; }
     .wk-icon { display:flex;align-items:center;justify-content:center;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3); }
     @keyframes wk-rotate { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(360deg)} }
     @keyframes wk-walk { 0%{transform:translate(0,0)} 25%{transform:translate(0.3px,-0.2px)} 50%{transform:translate(0.6px,0)} 75%{transform:translate(0.3px,0.2px)} 100%{transform:translate(0,0)} }
@@ -444,28 +438,12 @@ function WebMapComponent({
     }).setView([50.0, 10.0], 4);
     map.zoomControl.setPosition('topright');
 
-    // Tile layer URLs for each mode
-    var tileUrls = {
-      normal: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      greyscale: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      explorer: 'https://tile.opentopomap.org/{z}/{x}/{y}.png'
-    };
-
-    var currentTileLayer = null;
-
-    function setTileLayer(mode) {
-      if (currentTileLayer) {
-        map.removeLayer(currentTileLayer);
-      }
-      currentTileLayer = L.tileLayer(tileUrls[mode], {
-        attribution: '\\u00a9 OSM',
-        attributionControl: true,
-        maxZoom: 19
-      }).addTo(map);
-    }
-
-    // Initialize with normal mode
-    setTileLayer('normal');
+    // WK-220 — single tile layer (default OSM). Style toggle removed.
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '\\u00a9 OSM',
+      attributionControl: true,
+      maxZoom: 19
+    }).addTo(map);
 
     // === LAYER GROUPS (toggled via postMessage — no iframe re-mount) ===
     // WK-200/202/205 — cluster markers + 5-segment category pies so a
@@ -523,6 +501,24 @@ function WebMapComponent({
     var routeGroup = L.layerGroup().addTo(map);
     // WK-210 — dedicated layer for the user-driven walking route.
     var navRouteGroup = L.layerGroup().addTo(map);
+    // WK-221 — dedicated layer for the live "self" dot
+    var selfGroup = L.layerGroup().addTo(map);
+    var selfMarker = null;
+    function updateSelf(lat, lng, accuracy) {
+      if (!selfMarker) {
+        var html = '<div style="position:relative;width:18px;height:18px;">' +
+                   '<div class="wk-self-pulse" style="position:absolute;inset:-8px;border-radius:50%;background:rgba(37,99,235,0.18);"></div>' +
+                   '<div style="position:absolute;inset:0;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4);"></div>' +
+                   '</div>';
+        selfMarker = L.marker([lat, lng], {
+          icon: L.divIcon({ html: html, className: '', iconSize: [18, 18], iconAnchor: [9, 9] }),
+          zIndexOffset: 2000,
+          interactive: false,
+        }).addTo(selfGroup);
+      } else {
+        selfMarker.setLatLng([lat, lng]);
+      }
+    }
     var parishGroup = L.layerGroup();
     var churchGroup = L.layerGroup();
     var wifiGroup = L.layerGroup();
@@ -826,14 +822,17 @@ function WebMapComponent({
           allWalkers = event.data.walkers;
           renderWalkers();
           break;
-        case 'update-tiles':
-          setTileLayer(event.data.mode);
-          break;
         case 'navigate-to':
           drawNavRoute(event.data.dest, event.data.origin);
           break;
         case 'clear-nav-route':
           navRouteGroup.clearLayers();
+          break;
+        case 'update-self':
+          // WK-221 — live geolocation update from the parent.
+          if (typeof event.data.lat === 'number' && typeof event.data.lng === 'number') {
+            updateSelf(event.data.lat, event.data.lng, event.data.accuracy);
+          }
           break;
       }
     });
@@ -980,6 +979,9 @@ export default function MapHome() {
   // WK-210 — active in-map navigation (selected host + walking route info)
   const [navHost, setNavHost] = useState<Host | null>(null);
   const [navInfo, setNavInfo] = useState<{ km: number | null; minutes: number | null; mode: string } | null>(null);
+  // WK-222 — last origin used to draw the route. We recompute when the user
+  // has moved more than 25 m so the polyline + ETA stay honest.
+  const navOriginRef = useRef<{ lat: number; lng: number } | null>(null);
   const toggleFilter = (f: HostFilter) => {
     setActiveFilters(prev => {
       const next = new Set(prev);
@@ -992,11 +994,11 @@ export default function MapHome() {
   const [showLayers, setShowLayers] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showPastStays, setShowPastStays] = useState(false);
-  const [showMapModes, setShowMapModes] = useState(false);
+  // WK-220 — map-mode toggle removed
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [liveWalkers, setLiveWalkers] = useState<Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>>([]);
-  const [mapMode, setMapMode] = useState<MapMode>('normal');
+  // WK-220 — mapMode state removed (single tile layer)
   const hostListRef = useRef<FlatList>(null);
   const [layers, setLayers] = useState<LayerState>({
     hosts: true,
@@ -1050,29 +1052,54 @@ export default function MapHome() {
     );
   }, [roofSentCount]);
 
-  // Get user location on mount
+  // WK-221 — live user location. Web uses navigator.geolocation.watchPosition;
+  // native uses Location.watchPositionAsync. Both push state + post to the
+  // iframe so the blue self-dot moves in real time.
   useEffect(() => {
+    let webId: number | null = null;
+    let nativeSub: any = null;
+    let cancelled = false;
     (async () => {
       try {
         if (Platform.OS === 'web') {
-          if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => { setUserLat(pos.coords.latitude); setUserLng(pos.coords.longitude); },
-              () => { /* fallback: no location */ }
-            );
-          }
+          if (!('geolocation' in navigator)) return;
+          webId = navigator.geolocation.watchPosition(
+            (pos) => {
+              if (cancelled) return;
+              setUserLat(pos.coords.latitude);
+              setUserLng(pos.coords.longitude);
+              const iframe = document.querySelector('iframe') as HTMLIFrameElement | null;
+              iframe?.contentWindow?.postMessage({
+                type: 'update-self',
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+              }, '*');
+            },
+            () => { /* swallow — user denied or no signal */ },
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+          );
         } else {
           const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            setUserLat(loc.coords.latitude);
-            setUserLng(loc.coords.longitude);
-          }
+          if (status !== 'granted') return;
+          nativeSub = await Location.watchPositionAsync(
+            { accuracy: Location.Accuracy.Balanced, timeInterval: 3000, distanceInterval: 5 },
+            (loc: any) => {
+              if (cancelled) return;
+              setUserLat(loc.coords.latitude);
+              setUserLng(loc.coords.longitude);
+            },
+          );
         }
       } catch (err) {
-        console.warn('Location permission or fetch failed:', err);
+        console.warn('Location watch failed:', err);
       }
     })();
+    return () => {
+      cancelled = true;
+      if (webId != null && 'geolocation' in navigator) navigator.geolocation.clearWatch(webId);
+      try { nativeSub?.remove?.(); } catch { /* noop */ }
+    };
   }, []);
 
   useEffect(() => {
@@ -1190,6 +1217,11 @@ export default function MapHome() {
     haptic.medium();
     setNavHost(host);
     setNavInfo(null);
+    if (userLat != null && userLng != null) {
+      navOriginRef.current = { lat: userLat, lng: userLng };
+    } else {
+      navOriginRef.current = null;
+    }
     if (Platform.OS === 'web') {
       const iframe = document.querySelector('iframe') as HTMLIFrameElement | null;
       iframe?.contentWindow?.postMessage({
@@ -1229,11 +1261,33 @@ export default function MapHome() {
     haptic.light();
     setNavHost(null);
     setNavInfo(null);
+    navOriginRef.current = null;
     if (Platform.OS === 'web') {
       const iframe = document.querySelector('iframe') as HTMLIFrameElement | null;
       iframe?.contentWindow?.postMessage({ type: 'clear-nav-route' }, '*');
     }
   }, []);
+
+  // WK-222 — when nav is active and the user moves > 25 m, repaint the
+  // route from the new origin so the polyline + ETA stay accurate.
+  useEffect(() => {
+    if (!navHost || userLat == null || userLng == null) return;
+    const last = navOriginRef.current;
+    const movedMeters = last ? haversineKm(last.lat, last.lng, userLat, userLng) * 1000 : Infinity;
+    if (movedMeters < 25) return;
+    navOriginRef.current = { lat: userLat, lng: userLng };
+    if (Platform.OS === 'web') {
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement | null;
+      iframe?.contentWindow?.postMessage({
+        type: 'navigate-to',
+        dest: { lat: navHost.lat, lng: navHost.lng, name: navHost.name },
+        origin: { lat: userLat, lng: userLng },
+      }, '*');
+    } else {
+      const km = Math.round(haversineKm(userLat, userLng, navHost.lat, navHost.lng) * 10) / 10;
+      setNavInfo({ km, minutes: Math.round(km * 12), mode: 'line' });
+    }
+  }, [navHost, userLat, userLng]);
 
   // Open the destination in the OS-native maps app as a fallback / power-user route.
   const openInMaps = useCallback((host: Host) => {
@@ -1512,41 +1566,50 @@ export default function MapHome() {
           </View>
         )}
 
-        {/* Contact row — phone & email */}
+        {/* WK-224 — fixed 4-CTA row: Call / Email / Navigate / Open.
+            Buttons that aren't actionable for this host are rendered greyed
+            instead of being hidden, so every card has the same shape. */}
         <View style={styles.hostContactRow}>
-          {(item as any).phone ? (
-            <TouchableOpacity
-              style={styles.contactBtn}
-              onPress={() => Linking.openURL(`tel:${(item as any).phone}`)}
-            >
-              <Ionicons name="call" size={14} color={colors.green} />
-              <Text style={styles.contactBtnText}>Call</Text>
-            </TouchableOpacity>
-          ) : null}
-          {(item as any).email ? (
-            <TouchableOpacity
-              style={styles.contactBtn}
-              onPress={() => Linking.openURL(`mailto:${(item as any).email}`)}
-            >
-              <Ionicons name="mail" size={14} color={colors.amber} />
-              <Text style={styles.contactBtnText}>Email</Text>
-            </TouchableOpacity>
-          ) : null}
-          {/* WK-210 — Select takes you to the listing; Navigate draws a route. */}
-          <TouchableOpacity
-            style={[styles.contactBtn, styles.contactBtnPrimary]}
-            onPress={() => { haptic.light(); handleHostPress(item.id); }}
-          >
-            <Ionicons name="open-outline" size={14} color="#fff" />
-            <Text style={[styles.contactBtnText, { color: '#fff' }]}>Select</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.contactBtn, styles.contactBtnNav]}
-            onPress={() => { startNavigation(item); }}
-          >
-            <Ionicons name="navigate" size={14} color={colors.amber} />
-            <Text style={[styles.contactBtnText, { color: colors.amber }]}>Navigate</Text>
-          </TouchableOpacity>
+          {(() => {
+            const phone = (item as any).phone as string | undefined;
+            const email = (item as any).email as string | undefined;
+            const hasPhone = !!phone;
+            const hasEmail = !!email;
+            return (
+              <>
+                <TouchableOpacity
+                  disabled={!hasPhone}
+                  style={[styles.contactBtn, !hasPhone && styles.contactBtnDisabled]}
+                  onPress={() => { if (phone) { haptic.light(); Linking.openURL(`tel:${phone}`); } }}
+                >
+                  <Ionicons name="call" size={14} color={hasPhone ? colors.green : colors.ink3} />
+                  <Text style={[styles.contactBtnText, !hasPhone && styles.contactBtnTextDisabled]}>Call</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={!hasEmail}
+                  style={[styles.contactBtn, !hasEmail && styles.contactBtnDisabled]}
+                  onPress={() => { if (email) { haptic.light(); Linking.openURL(`mailto:${email}`); } }}
+                >
+                  <Ionicons name="mail" size={14} color={hasEmail ? colors.amber : colors.ink3} />
+                  <Text style={[styles.contactBtnText, !hasEmail && styles.contactBtnTextDisabled]}>Email</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.contactBtn, styles.contactBtnNav]}
+                  onPress={() => { startNavigation(item); }}
+                >
+                  <Ionicons name="navigate" size={14} color={colors.amber} />
+                  <Text style={[styles.contactBtnText, { color: colors.amber }]}>Navigate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.contactBtn}
+                  onPress={() => { haptic.light(); handleHostPress(item.id); }}
+                >
+                  <Ionicons name="open-outline" size={14} color={colors.ink2} />
+                  <Text style={styles.contactBtnText}>Open</Text>
+                </TouchableOpacity>
+              </>
+            );
+          })()}
         </View>
       </View>
     );
@@ -1567,8 +1630,6 @@ export default function MapHome() {
           walkers={liveWalkers}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
           layers={layers}
-          mapMode={mapMode}
-          onMapModeChange={setMapMode}
         />
       ) : (
         <MapView
@@ -1702,12 +1763,7 @@ export default function MapHome() {
         >
           <Ionicons name="layers" size={20} color={colors.amber} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.rightActionBtn}
-          onPress={() => { haptic.selection(); setShowMapModes(!showMapModes); }}
-        >
-          <Ionicons name="map" size={20} color={colors.amber} />
-        </TouchableOpacity>
+        {/* WK-220 — map style toggle removed */}
         <TouchableOpacity
           style={styles.rightActionBtn}
           onPress={() => { haptic.light(); handleLocationPress(); }}
@@ -1715,15 +1771,6 @@ export default function MapHome() {
           <Ionicons name="locate" size={20} color={colors.amber} />
         </TouchableOpacity>
       </View>
-
-      {/* Map modes panel */}
-      {showMapModes && (
-        <MapModesPanel
-          mapMode={mapMode}
-          onModeChange={setMapMode}
-          onClose={() => setShowMapModes(false)}
-        />
-      )}
 
       {/* Layers panel */}
       {showLayers && (
@@ -2490,6 +2537,12 @@ const styles = StyleSheet.create({
   contactBtnNav: {
     backgroundColor: colors.amberBg,
     borderColor: colors.amber,
+  },
+  contactBtnDisabled: {
+    opacity: 0.5,
+  },
+  contactBtnTextDisabled: {
+    color: colors.ink3,
   },
   // WK-210 — active navigation banner
   navBanner: {
