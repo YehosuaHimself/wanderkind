@@ -39,15 +39,16 @@ const getFilterKey = (h: any): HostFilter => {
   return 'b50'; // sensible default for any unclassified budget row
 };
 
-// Per-category palette used by markers, cluster pies, and legend.
-// Free = green, Donativo = gold, Budget tiers = a saturation ramp of blue
-// so the map reads as a cool gradient where budget dominates.
+// WK-225 — coherent grey / orange / gold ramp. Free is the visual top
+// note (vivid orange), Donativo is gold, then a warm earth-tone fade
+// through soft gold → taupe → charcoal. Pairs with a CartoDB Voyager
+// basemap so markers always read as the foreground.
 const CATEGORY_COLOR: Record<HostFilter, string> = {
-  free:     '#27864A',
-  donativo: '#D4A017',
-  b25:      '#4FA0C2',
-  b50:      '#2E6DA4',
-  b75:      '#1B4068',
+  free:     '#E2691B', // vivid orange
+  donativo: '#D4A017', // gold
+  b25:      '#B6884D', // soft gold-brown
+  b50:      '#9B8E7E', // taupe warm grey
+  b75:      '#5E5852', // charcoal warm grey
 };
 const CATEGORY_LABEL: Record<HostFilter, string> = {
   free:     'FREE',
@@ -438,17 +439,20 @@ function WebMapComponent({
     }).setView([50.0, 10.0], 4);
     map.zoomControl.setPosition('topright');
 
-    // WK-220 — single tile layer (default OSM). Style toggle removed.
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '\\u00a9 OSM',
+    // WK-225 — CartoDB Voyager: muted, warm-paper basemap that lets the
+    // amber/orange/gold marker palette read as the foreground.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '\\u00a9 OSM \\u00a9 CARTO',
+      subdomains: 'abcd',
       attributionControl: true,
-      maxZoom: 19
+      maxZoom: 20,
     }).addTo(map);
 
     // === LAYER GROUPS (toggled via postMessage — no iframe re-mount) ===
     // WK-200/202/205 — cluster markers + 5-segment category pies so a
     // glance tells you the visible mix (free / donativo / b25 / b50 / b75)
-    var WK_PALETTE = { free:'#27864A', donativo:'#D4A017', b25:'#4FA0C2', b50:'#2E6DA4', b75:'#1B4068' };
+    // WK-225 — palette must mirror CATEGORY_COLOR in the parent
+    var WK_PALETTE = { free:'#E2691B', donativo:'#D4A017', b25:'#B6884D', b50:'#9B8E7E', b75:'#5E5852' };
     var WK_ORDER = ['free','donativo','b25','b50','b75'];
 
     var hostGroup = L.markerClusterGroup({
@@ -506,12 +510,15 @@ function WebMapComponent({
     var selfMarker = null;
     function updateSelf(lat, lng, accuracy) {
       if (!selfMarker) {
-        var html = '<div style="position:relative;width:18px;height:18px;">' +
-                   '<div class="wk-self-pulse" style="position:absolute;inset:-8px;border-radius:50%;background:rgba(37,99,235,0.18);"></div>' +
-                   '<div style="position:absolute;inset:0;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4);"></div>' +
+        // WK-225 — self dot palette: amber WK ring + cream center + amber halo.
+        // Distinct from every host marker: free is solid orange, donativo
+        // gold ring, etc. None use this exact 3-ring shape.
+        var html = '<div style="position:relative;width:20px;height:20px;">' +
+                   '<div class="wk-self-pulse" style="position:absolute;inset:-10px;border-radius:50%;background:rgba(200,118,42,0.20);"></div>' +
+                   '<div style="position:absolute;inset:0;border-radius:50%;background:#FAF6EF;border:4px solid #C8762A;box-shadow:0 1px 6px rgba(0,0,0,.35);"></div>' +
                    '</div>';
         selfMarker = L.marker([lat, lng], {
-          icon: L.divIcon({ html: html, className: '', iconSize: [18, 18], iconAnchor: [9, 9] }),
+          icon: L.divIcon({ html: html, className: '', iconSize: [20, 20], iconAnchor: [10, 10] }),
           zIndexOffset: 2000,
           interactive: false,
         }).addTo(selfGroup);

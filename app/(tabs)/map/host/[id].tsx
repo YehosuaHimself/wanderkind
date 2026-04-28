@@ -272,12 +272,13 @@ export default function HostDetail() {
                 cat === 'free' ? '✦ FREE'
                 : cat === 'donativo' ? '✦ DONATIVO — pay what you can'
                 : tierLabel;
+              // WK-225 — palette mirrors map markers (orange / gold / earth tones)
               const palette =
-                cat === 'free' ? { bg: '#E2EFD9', border: '#5A7A2B', fg: '#3F6112' }
-                : cat === 'donativo' ? { bg: '#FBEFD9', border: '#C8762A', fg: '#8C6010' }
-                : tier === 'b25' ? { bg: '#E1F0F7', border: '#4FA0C2', fg: '#1F6A8A' }
-                : tier === 'b75' ? { bg: '#D5DEEA', border: '#1B4068', fg: '#0F2A48' }
-                : { bg: '#DCE5F0', border: '#2E6DA4', fg: '#1A4470' };
+                cat === 'free' ? { bg: '#FBE3CC', border: '#E2691B', fg: '#8C3A0F' }
+                : cat === 'donativo' ? { bg: '#FBEFD9', border: '#D4A017', fg: '#8C6010' }
+                : tier === 'b25' ? { bg: '#F2E6CC', border: '#B6884D', fg: '#7A5A28' }
+                : tier === 'b75' ? { bg: '#DDDAD3', border: '#5E5852', fg: '#3A3530' }
+                : { bg: '#E5E0D9', border: '#9B8E7E', fg: '#5C5147' };
               return (
                 <View style={[styles.categoryRow, { backgroundColor: palette.bg, borderColor: palette.border }]}>
                   <Text style={[styles.categoryLabel, { color: palette.fg }]}>{text}</Text>
