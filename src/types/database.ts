@@ -220,7 +220,7 @@ export interface BookingRow {
   check_out: string | null;
   guests: number;
   message: string | null;
-  status: 'pending' | 'seen' | 'accepted' | 'declined' | 'cancelled' | 'completed';
+  status: 'pending' | 'seen' | 'accepted' | 'confirmed' | 'declined' | 'cancelled' | 'completed';
   door_code: string | null;
   door_code_type: 'pin' | 'keybox' | 'combo' | null;
   door_code_expires: string | null;
