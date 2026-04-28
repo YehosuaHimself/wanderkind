@@ -259,9 +259,10 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange
+  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange, onViewportChange
 }: {
   hosts: Host[];
+  onViewportChange?: (b: { south: number; west: number; north: number; east: number }) => void;
   activeFilters: Set<HostFilter>;
   onHostPress: (id: string) => void;
   walkers: Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>;
@@ -357,7 +358,10 @@ function WebMapComponent({
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"><\/script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -411,7 +415,24 @@ function WebMapComponent({
     setTileLayer('normal');
 
     // === LAYER GROUPS (toggled via postMessage — no iframe re-mount) ===
-    var hostGroup = L.layerGroup().addTo(map);
+    // WK-200 — cluster markers at zoom-out so the map breathes
+    var hostGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      disableClusteringAtZoom: 12,
+      iconCreateFunction: function(cluster) {
+        var n = cluster.getChildCount();
+        var size = n < 10 ? 32 : n < 50 ? 38 : n < 200 ? 44 : 52;
+        var bg = n < 10 ? '#FBEFD9' : n < 50 ? '#E5D4B8' : n < 200 ? '#C8762A' : '#8C6010';
+        var fg = n < 50 ? '#8C6010' : '#FFFFFF';
+        return L.divIcon({
+          html: '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + bg + ';color:' + fg + ';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,.25);font-family:system-ui">' + n + '</div>',
+          className: '',
+          iconSize: [size, size],
+        });
+      },
+    }).addTo(map);
     var walkerGroup = L.layerGroup().addTo(map);
     var routeGroup = L.layerGroup().addTo(map);
     var parishGroup = L.layerGroup();
@@ -678,6 +699,22 @@ function WebMapComponent({
       }
     });
 
+    // WK-201 — emit viewport bbox after every pan/zoom so RN can
+    // fetch a focused slice of hosts instead of dumping all 262k.
+    var viewportTimer = null;
+    map.on('moveend zoomend', function() {
+      if (viewportTimer) clearTimeout(viewportTimer);
+      viewportTimer = setTimeout(function() {
+        var b = map.getBounds();
+        window.parent.postMessage({
+          type: 'viewport',
+          south: b.getSouth(), west: b.getWest(),
+          north: b.getNorth(), east: b.getEast(),
+          zoom: map.getZoom(),
+        }, '*');
+      }, 350);
+    });
+
     // Signal ready to parent
     window.parent.postMessage({ type: 'map-ready' }, '*');
   <\/script>
@@ -690,10 +727,19 @@ function WebMapComponent({
       if (event.data?.type === 'host-click') onHostPress(event.data.hostId);
       if (event.data?.type === 'walker-click') onWalkerPress(event.data.profileId);
       if (event.data?.type === 'map-ready') setMapReady(true);
+      // WK-201 — bbox-driven host fetch. Debounce in the iframe (350ms)
+      // is already applied; here we just fire the query.
+      if (event.data?.type === 'viewport') {
+        const { south, west, north, east, zoom } = event.data;
+        // Skip ultra-zoomed-out frames where we'd query the whole earth and
+        // hit a slow scan. Cluster icons cover that range.
+        if (zoom != null && zoom < 4) return;
+        onViewportChange?.({ south, west, north, east });
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onHostPress, onWalkerPress]);
+  }, [onHostPress, onWalkerPress, onViewportChange]);
 
   return (
     <View style={styles.map}>
@@ -870,6 +916,8 @@ export default function MapHome() {
   }, [hosts, userLat, userLng, activeFilters]);
 
   const fetchHosts = async () => {
+    // Initial paint — quality-first slice. The viewport handler kicks in
+    // as soon as the map reports its first bbox.
     try {
       try {
         const { data } = await supabase
@@ -878,8 +926,7 @@ export default function MapHome() {
           .eq('is_available', true)
           .eq('hidden_from_map', false)
           .order('quality_score', { ascending: false })
-          .limit(2000);
-
+          .limit(500);
         if (data && data.length > 0) {
           setHosts(data as Host[]);
           return;
@@ -887,8 +934,6 @@ export default function MapHome() {
       } catch (err) {
         console.error('Failed to fetch hosts from Supabase:', err);
       }
-
-      // Fallback to seed data — dynamically imported for bundle optimization
       const { default: seedHosts } = await import('../../../src/data/seed-hosts.json');
       setHosts(seedHosts as unknown as Host[]);
     } catch (err) {
@@ -896,6 +941,26 @@ export default function MapHome() {
       toast.error('Could not load hosts');
     }
   };
+
+  // WK-201 — viewport-bounded host fetch. Triggered by the iframe's
+  // 350ms-debounced 'viewport' postMessage; capped at 500 markers per
+  // viewport so the map never tries to render the whole 262k graph.
+  const handleViewportChange = useCallback(async (b: { south: number; west: number; north: number; east: number }) => {
+    try {
+      const { data } = await supabase
+        .from('hosts')
+        .select('*')
+        .eq('is_available', true)
+        .eq('hidden_from_map', false)
+        .gte('lat', b.south).lte('lat', b.north)
+        .gte('lng', b.west).lte('lng', b.east)
+        .order('quality_score', { ascending: false })
+        .limit(500);
+      if (data) setHosts(data as Host[]);
+    } catch (err) {
+      console.error('viewport fetch failed', err);
+    }
+  }, []);
 
   const toggleLayer = (key: keyof LayerState) => {
     setLayers(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1215,6 +1280,7 @@ export default function MapHome() {
         <WebMapComponent
           hosts={hosts}
           activeFilters={activeFilters}
+          onViewportChange={handleViewportChange}
           onHostPress={handleHostPress}
           walkers={liveWalkers}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
