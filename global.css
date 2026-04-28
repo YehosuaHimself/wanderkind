@@ -66,3 +66,19 @@ div[role="textbox"] {
     touch-action: manipulation !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WK-150 — Theme tokens (Phase-1 scaffolding)
+   The data-theme attribute is set by ThemeApplier in app/_layout.tsx
+   based on user preference + system appearance. Only the body
+   background flips today. Phase-2 will wire the colors object via a
+   ThemeProvider so screens visually swap.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --wk-bg: #FAF6EF;
+}
+[data-theme="dark"] {
+  --wk-bg: #0E0A05;
+  color-scheme: dark;
+}
+[data-theme="dark"] body { background: var(--wk-bg); }

@@ -3,10 +3,27 @@
  * and provides reactive state across the app.
  */
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
 
-export type AppTheme = 'light' | 'dark';
+const THEME_KEY = 'wk-theme-preference';
+
+// Best-effort hydrate from AsyncStorage at module load. The store is
+// created with a default of 'system' and updates synchronously when the
+// stored preference resolves.
+async function hydrateThemeFromStorage() {
+  try {
+    const v = await AsyncStorage.getItem(THEME_KEY);
+    if (v === 'light' || v === 'dark' || v === 'system') {
+      useSettings.setState({ theme: v });
+    }
+  } catch {
+    // best effort
+  }
+}
+
+export type AppTheme = 'light' | 'dark' | 'system';
 export type AppLanguage = 'en' | 'de' | 'fr' | 'es' | 'it' | 'pt' | 'nl' | 'pl' | 'cz' | 'sk' | 'hu' | 'ro' | 'sv' | 'no' | 'da' | 'el';
 
 type SettingsState = {
@@ -46,7 +63,7 @@ const persistToProfile = async (updates: Record<string, any>) => {
 };
 
 export const useSettings = create<SettingsState>((set) => ({
-  theme: 'light',
+  theme: 'system',
   language: 'en',
   textSize: 0.5,
   reduceMotion: false,
@@ -60,8 +77,9 @@ export const useSettings = create<SettingsState>((set) => ({
 
   setTheme: (theme) => {
     set({ theme });
+    AsyncStorage.setItem(THEME_KEY, theme).catch(() => {});
     persistToProfile({ theme });
-    toast.success(`Theme changed to ${theme}`);
+    toast.success(`Theme: ${theme}`);
   },
 
   setLanguage: (language) => {
@@ -111,3 +129,6 @@ export const useSettings = create<SettingsState>((set) => ({
     });
   },
 }));
+
+// Fire-and-forget hydration on import
+hydrateThemeFromStorage();

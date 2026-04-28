@@ -21,8 +21,9 @@ export default function AppearanceScreen() {
   } = useSettings();
 
   const themes = [
-    { id: 'light', label: 'Light', icon: 'sunny-outline' as const },
-    { id: 'dark', label: 'Dark', icon: 'moon-outline' as const },
+    { id: 'system', label: 'System', icon: 'phone-portrait-outline' as const },
+    { id: 'light',  label: 'Light',  icon: 'sunny-outline' as const },
+    { id: 'dark',   label: 'Dark',   icon: 'moon-outline' as const },
   ];
 
   return (

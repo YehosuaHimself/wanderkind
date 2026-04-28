@@ -5,8 +5,27 @@ import { View, Text, Platform, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../src/stores/auth';
 import { DesktopGate } from '../src/components/web/DesktopGate';
 import { ToastProvider } from '../src/components/ToastProvider';
+import { useEffectiveTheme } from '../src/hooks/useEffectiveTheme';
 import '../global.css';
 import { initSentry, reportError } from '../src/lib/sentry';
+
+
+function ThemeApplier() {
+  const theme = useEffectiveTheme();
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    document.documentElement.dataset.theme = theme;
+    // Update <meta name="theme-color"> so the iOS PWA chrome flips too.
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = theme === 'dark' ? '#0E0A05' : '#FAF6EF';
+  }, [theme]);
+  return null;
+}
 
 // Initialize Sentry error monitoring as early as possible
 initSentry();
@@ -246,6 +265,7 @@ function RootLayoutInner() {
 
   return (
     <>
+      <ThemeApplier />
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 250, gestureEnabled: true }}>
         <Stack.Screen name="(auth)" />
