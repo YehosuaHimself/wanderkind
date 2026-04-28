@@ -108,11 +108,12 @@ const SEED_COMMUNITY_PINS: CommunityPin[] = [
 type MapMode = 'normal' | 'greyscale' | 'explorer';
 
 // Dynamically import native-only modules (these crash on web)
-let MapView: any, Marker: any, PROVIDER_GOOGLE: any, Location: any;
+let MapView: any, Marker: any, Polyline: any, PROVIDER_GOOGLE: any, Location: any;
 if (Platform.OS !== 'web') {
   const maps = require('react-native-maps');
   MapView = maps.default;
   Marker = maps.Marker;
+  Polyline = maps.Polyline; // WK-212 — native nav route
   PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
   Location = require('expo-location');
 }
@@ -1188,6 +1189,31 @@ export default function MapHome() {
         dest: { lat: host.lat, lng: host.lng, name: host.name },
         origin: userLat != null && userLng != null ? { lat: userLat, lng: userLng } : null,
       }, '*');
+    } else {
+      // WK-212 — fit native viewport to user + destination + compute haversine ETA.
+      if (mapRef.current && userLat != null && userLng != null) {
+        const minLat = Math.min(userLat, host.lat);
+        const maxLat = Math.max(userLat, host.lat);
+        const minLng = Math.min(userLng, host.lng);
+        const maxLng = Math.max(userLng, host.lng);
+        const latDelta = (maxLat - minLat) * 1.6 + 0.01;
+        const lngDelta = (maxLng - minLng) * 1.6 + 0.01;
+        mapRef.current.animateToRegion?.({
+          latitude: (minLat + maxLat) / 2,
+          longitude: (minLng + maxLng) / 2,
+          latitudeDelta: latDelta,
+          longitudeDelta: lngDelta,
+        }, 800);
+        const km = Math.round(haversineKm(userLat, userLng, host.lat, host.lng) * 10) / 10;
+        setNavInfo({ km, minutes: Math.round(km * 12), mode: 'line' });
+      } else if (mapRef.current) {
+        mapRef.current.animateToRegion?.({
+          latitude: host.lat,
+          longitude: host.lng,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }, 800);
+      }
     }
   }, [userLat, userLng]);
 
@@ -1550,10 +1576,30 @@ export default function MapHome() {
             <Marker
               key={host.id}
               coordinate={{ latitude: host.lat, longitude: host.lng }}
-              pinColor={hostTypeConfig[host.host_type as keyof typeof hostTypeConfig]?.color ?? colors.ink3}
+              pinColor={CATEGORY_COLOR[getFilterKey(host)] ?? hostTypeConfig[host.host_type as keyof typeof hostTypeConfig]?.color ?? colors.ink3}
               onPress={() => handleHostPress(host.id)}
             />
           ))}
+          {/* WK-212 — native nav route + highlighted destination */}
+          {navHost && Polyline && userLat != null && userLng != null ? (
+            <Polyline
+              coordinates={[
+                { latitude: userLat, longitude: userLng },
+                { latitude: navHost.lat, longitude: navHost.lng },
+              ]}
+              strokeColor="#C8762A"
+              strokeWidth={5}
+              lineDashPattern={[8, 6]}
+            />
+          ) : null}
+          {navHost ? (
+            <Marker
+              key={`nav-${navHost.id}`}
+              coordinate={{ latitude: navHost.lat, longitude: navHost.lng }}
+              pinColor="#C8762A"
+              title={navHost.name}
+            />
+          ) : null}
         </MapView>
       )}
 
