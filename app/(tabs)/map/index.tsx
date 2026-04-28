@@ -288,11 +288,12 @@ const ROUTE_LINES: { id: string; name: string; color: string; coords: [number, n
 ];
 
 function WebMapComponent({
-  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange, onViewportChange, onHostCount
+  hosts, activeFilters, onHostPress, walkers, onWalkerPress, layers, mapMode, onMapModeChange: _onMapModeChange, onViewportChange, onHostCount, onNavInfo
 }: {
   hosts: Host[];
-  onViewportChange?: (b: { south: number; west: number; north: number; east: number }) => void;
+  onViewportChange?: (b: { south: number; west: number; north: number; east: number; zoom?: number }) => void;
   onHostCount?: (n: number) => void;
+  onNavInfo?: (i: { km: number | null; minutes: number | null; mode: string }) => void;
   activeFilters: Set<HostFilter>;
   onHostPress: (id: string) => void;
   walkers: Array<{ id: string; trail_name: string; avatar_url?: string; is_walking: boolean; lat: number; lng: number; tier?: string }>;
@@ -425,15 +426,22 @@ function WebMapComponent({
 <body>
   <div id="map"></div>
   <script>
+    // WK-211 — give zoom back to the user. Default Leaflet behaviour was
+    // gated by wheelPxPerZoomLevel:120 (scroll-wheel felt locked) and
+    // zoomControl:false (no +/- buttons). Result: many users couldn't zoom out.
     var map = L.map('map', {
-      zoomSnap: 1,
-      zoomDelta: 1,
-      wheelPxPerZoomLevel: 120,
+      zoomSnap: 0.5,
+      zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 60,
+      minZoom: 2,
+      maxZoom: 19,
       fadeAnimation: true,
       zoomAnimation: true,
       markerZoomAnimation: true,
-      zoomControl: false,
+      zoomControl: true,
+      worldCopyJump: true,
     }).setView([50.0, 10.0], 4);
+    map.zoomControl.setPosition('topright');
 
     // Tile layer URLs for each mode
     var tileUrls = {
@@ -465,10 +473,13 @@ function WebMapComponent({
     var WK_ORDER = ['free','donativo','b25','b50','b75'];
 
     var hostGroup = L.markerClusterGroup({
-      maxClusterRadius: 50,
+      // WK-211 — smaller cluster radius so even at z4 you see many clusters
+      // distributed across the continent rather than 5 huge ones.
+      maxClusterRadius: function(zoom){ return zoom < 6 ? 32 : zoom < 10 ? 40 : 50; },
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false,
-      disableClusteringAtZoom: 12,
+      chunkedLoading: true,
+      disableClusteringAtZoom: 13,
       iconCreateFunction: function(cluster) {
         var children = cluster.getAllChildMarkers();
         var n = children.length;
@@ -504,6 +515,8 @@ function WebMapComponent({
     }).addTo(map);
     var walkerGroup = L.layerGroup().addTo(map);
     var routeGroup = L.layerGroup().addTo(map);
+    // WK-210 — dedicated layer for the user-driven walking route.
+    var navRouteGroup = L.layerGroup().addTo(map);
     var parishGroup = L.layerGroup();
     var churchGroup = L.layerGroup();
     var wifiGroup = L.layerGroup();
@@ -807,8 +820,67 @@ function WebMapComponent({
         case 'update-tiles':
           setTileLayer(event.data.mode);
           break;
+        case 'navigate-to':
+          drawNavRoute(event.data.dest, event.data.origin);
+          break;
+        case 'clear-nav-route':
+          navRouteGroup.clearLayers();
+          break;
       }
     });
+
+    // WK-210 — draw a walking route from origin → dest. Uses OSRM public
+    // demo API (CORS-enabled, no key) for a real polyline; falls back to a
+    // straight great-circle line if OSRM is unavailable or origin missing.
+    function drawNavRoute(dest, origin) {
+      navRouteGroup.clearLayers();
+      if (!dest || dest.lat == null || dest.lng == null) return;
+      // Always drop a vivid pin on the destination so the user sees where they're going.
+      var pinHtml = '<div style="width:34px;height:34px;border-radius:50% 50% 50% 0;background:#C8762A;border:3px solid #fff;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);color:#fff;font-size:16px;font-weight:800;">★</span></div>';
+      L.marker([dest.lat, dest.lng], {
+        icon: L.divIcon({ html: pinHtml, className: '', iconSize: [34,34], iconAnchor: [17,28] }),
+        zIndexOffset: 1000,
+      }).bindPopup('<strong>' + (dest.name || 'Destination') + '</strong>').addTo(navRouteGroup);
+      if (!origin || origin.lat == null || origin.lng == null) {
+        map.flyTo([dest.lat, dest.lng], Math.max(map.getZoom(), 13), { duration: 0.9 });
+        window.parent.postMessage({ type:'nav-info', km: null, minutes: null, mode: 'pin' }, '*');
+        return;
+      }
+      // Origin marker (a small disc) — anchors the line.
+      L.circleMarker([origin.lat, origin.lng], {
+        radius: 6, fillColor: '#2563EB', color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.95,
+      }).addTo(navRouteGroup);
+      // Great-circle straight line as immediate feedback.
+      var fallback = L.polyline([[origin.lat, origin.lng], [dest.lat, dest.lng]], {
+        color: '#C8762A', weight: 4, opacity: 0.55, dashArray: '6 6', lineCap: 'round',
+      }).addTo(navRouteGroup);
+      // Fit both points.
+      try { map.fitBounds(fallback.getBounds(), { padding: [60, 60] }); } catch (e) {}
+      // Background-fetch a real walking route via OSRM and replace the dashed line.
+      var url = 'https://router.project-osrm.org/route/v1/foot/' +
+                origin.lng + ',' + origin.lat + ';' + dest.lng + ',' + dest.lat +
+                '?overview=full&geometries=geojson';
+      fetch(url).then(function(r){ return r.json(); }).then(function(j){
+        if (!j || !j.routes || !j.routes[0]) return;
+        var route = j.routes[0];
+        var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
+        navRouteGroup.removeLayer(fallback);
+        L.polyline(coords, {
+          color: '#C8762A', weight: 5, opacity: 0.85, lineCap: 'round', lineJoin: 'round',
+        }).addTo(navRouteGroup);
+        var km = Math.round((route.distance/1000) * 10) / 10;
+        var minutes = Math.round(route.duration / 60);
+        window.parent.postMessage({ type:'nav-info', km: km, minutes: minutes, mode: 'walk' }, '*');
+      }).catch(function(){
+        // Straight line stays; emit haversine fallback so banner has numbers.
+        var R = 6371;
+        var dLat = (dest.lat - origin.lat) * Math.PI/180;
+        var dLng = (dest.lng - origin.lng) * Math.PI/180;
+        var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(origin.lat*Math.PI/180)*Math.cos(dest.lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+        var km = Math.round((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))) * 10) / 10;
+        window.parent.postMessage({ type:'nav-info', km: km, minutes: Math.round(km * 12), mode: 'line' }, '*');
+      });
+    }
 
     // WK-201 — emit viewport bbox after every pan/zoom so RN can
     // fetch a focused slice of hosts instead of dumping all 262k.
@@ -842,19 +914,21 @@ function WebMapComponent({
       if (event.data?.type === 'host-count' && typeof event.data.count === 'number') {
         onHostCount?.(event.data.count);
       }
-      // WK-201 — bbox-driven host fetch. Debounce in the iframe (350ms)
-      // is already applied; here we just fire the query.
+      // WK-210 — walking-route info from the OSRM fetch in the iframe.
+      if (event.data?.type === 'nav-info') {
+        onNavInfo?.({ km: event.data.km, minutes: event.data.minutes, mode: event.data.mode });
+      }
+      // WK-201/211 — bbox-driven host fetch with the zoom passed through
+      // so the parent can scale the limit (more at low zoom, fewer at high).
       if (event.data?.type === 'viewport') {
         const { south, west, north, east, zoom } = event.data;
-        // Skip ultra-zoomed-out frames where we'd query the whole earth and
-        // hit a slow scan. Cluster icons cover that range.
-        if (zoom != null && zoom < 4) return;
-        onViewportChange?.({ south, west, north, east });
+        if (zoom != null && zoom < 3) return; // pure world view — clusters cover it
+        onViewportChange?.({ south, west, north, east, zoom });
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onHostPress, onWalkerPress, onViewportChange, onHostCount]);
+  }, [onHostPress, onWalkerPress, onViewportChange, onHostCount, onNavInfo]);
 
   return (
     <View style={styles.map}>
@@ -889,6 +963,9 @@ export default function MapHome() {
   const [activeFilters, setActiveFilters] = useState<Set<HostFilter>>(new Set(['free','donativo','b25','b50','b75']));
   // WK-203 — count emitted by the iframe after each render so the legend stays honest.
   const [visibleHostCount, setVisibleHostCount] = useState<number>(0);
+  // WK-210 — active in-map navigation (selected host + walking route info)
+  const [navHost, setNavHost] = useState<Host | null>(null);
+  const [navInfo, setNavInfo] = useState<{ km: number | null; minutes: number | null; mode: string } | null>(null);
   const toggleFilter = (f: HostFilter) => {
     setActiveFilters(prev => {
       const next = new Set(prev);
@@ -1035,8 +1112,9 @@ export default function MapHome() {
   }, [hosts, userLat, userLng, activeFilters]);
 
   const fetchHosts = async () => {
-    // Initial paint — quality-first slice. The viewport handler kicks in
-    // as soon as the map reports its first bbox.
+    // WK-211 — initial paint at 1500 so a continental view actually feels
+    // populated (was 500 → looked sparse). Viewport handler refines once
+    // the map settles.
     try {
       try {
         const { data } = await supabase
@@ -1045,7 +1123,7 @@ export default function MapHome() {
           .eq('is_available', true)
           .eq('hidden_from_map', false)
           .order('quality_score', { ascending: false })
-          .limit(500);
+          .limit(1500);
         if (data && data.length > 0) {
           setHosts(data as Host[]);
           return;
@@ -1061,10 +1139,13 @@ export default function MapHome() {
     }
   };
 
-  // WK-201 — viewport-bounded host fetch. Triggered by the iframe's
-  // 350ms-debounced 'viewport' postMessage; capped at 500 markers per
-  // viewport so the map never tries to render the whole 262k graph.
-  const handleViewportChange = useCallback(async (b: { south: number; west: number; north: number; east: number }) => {
+  // WK-201 + WK-211 — viewport-bounded host fetch. The cap scales with zoom:
+  // wide views get 2000 (so the map looks dense), zoomed-in views stay at 500
+  // to keep the marker layer light. Last-known viewport stored for refresh.
+  const lastViewportRef = useRef<{ south:number; west:number; north:number; east:number; zoom?: number } | null>(null);
+  const handleViewportChange = useCallback(async (b: { south: number; west: number; north: number; east: number; zoom?: number }) => {
+    lastViewportRef.current = b;
+    const limit = b.zoom != null && b.zoom < 7 ? 2000 : b.zoom != null && b.zoom < 11 ? 1000 : 500;
     try {
       const { data } = await supabase
         .from('hosts')
@@ -1074,7 +1155,7 @@ export default function MapHome() {
         .gte('lat', b.south).lte('lat', b.north)
         .gte('lng', b.west).lte('lng', b.east)
         .order('quality_score', { ascending: false })
-        .limit(500);
+        .limit(limit);
       if (data) setHosts(data as Host[]);
     } catch (err) {
       console.error('viewport fetch failed', err);
@@ -1088,6 +1169,42 @@ export default function MapHome() {
   const handleHostPress = (hostId: string) => {
     router.push(`/(tabs)/map/host/${hostId}`);
   };
+
+  // WK-210 — start in-map navigation. Centers, fits, and asks the iframe
+  // to draw a walking route from the user's current location.
+  const startNavigation = useCallback(async (host: Host) => {
+    haptic.medium();
+    setNavHost(host);
+    setNavInfo(null);
+    if (Platform.OS === 'web') {
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement | null;
+      iframe?.contentWindow?.postMessage({
+        type: 'navigate-to',
+        dest: { lat: host.lat, lng: host.lng, name: host.name },
+        origin: userLat != null && userLng != null ? { lat: userLat, lng: userLng } : null,
+      }, '*');
+    }
+  }, [userLat, userLng]);
+
+  const cancelNavigation = useCallback(() => {
+    haptic.light();
+    setNavHost(null);
+    setNavInfo(null);
+    if (Platform.OS === 'web') {
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement | null;
+      iframe?.contentWindow?.postMessage({ type: 'clear-nav-route' }, '*');
+    }
+  }, []);
+
+  // Open the destination in the OS-native maps app as a fallback / power-user route.
+  const openInMaps = useCallback((host: Host) => {
+    const lat = host.lat, lng = host.lng;
+    const label = encodeURIComponent(host.name);
+    let url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+    if (Platform.OS === 'ios') url = `maps://?daddr=${lat},${lng}&dirflg=w`;
+    else if (Platform.OS === 'android') url = `geo:${lat},${lng}?q=${lat},${lng}(${label})`;
+    Linking.openURL(url).catch(() => { /* swallow — user can copy from card */ });
+  }, []);
 
   // Center map on a specific host
   const centerMapOnHost = useCallback((host: Host) => {
@@ -1230,11 +1347,10 @@ export default function MapHome() {
     const dist = formatDistance(item);
 
     return (
-      <TouchableOpacity
-        style={styles.hostCard}
-        activeOpacity={0.95}
-        onPress={() => haptic.light()}
-      >
+      // WK-211 — was TouchableOpacity; on RN-web the activeOpacity wrapper
+      // captured horizontal pan gestures and the FlatList never received
+      // the swipe. Plain View lets the carousel scroll cleanly.
+      <View style={styles.hostCard}>
         {/* Top label row */}
         <View style={styles.hostCardHeader}>
           <View style={[styles.hostTypeBadge, { backgroundColor: config?.bg ?? colors.amberBg }]}>
@@ -1377,19 +1493,25 @@ export default function MapHome() {
               <Text style={styles.contactBtnText}>Email</Text>
             </TouchableOpacity>
           ) : null}
+          {/* WK-210 — Select takes you to the listing; Navigate draws a route. */}
           <TouchableOpacity
-            style={styles.contactBtn}
-            onPress={() => {
-              centerMapOnHost(item);
-            }}
+            style={[styles.contactBtn, styles.contactBtnPrimary]}
+            onPress={() => { haptic.light(); handleHostPress(item.id); }}
           >
-            <Ionicons name="navigate" size={14} color={colors.ink2} />
-            <Text style={styles.contactBtnText}>Focus</Text>
+            <Ionicons name="open-outline" size={14} color="#fff" />
+            <Text style={[styles.contactBtnText, { color: '#fff' }]}>Select</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.contactBtn, styles.contactBtnNav]}
+            onPress={() => { startNavigation(item); }}
+          >
+            <Ionicons name="navigate" size={14} color={colors.amber} />
+            <Text style={[styles.contactBtnText, { color: colors.amber }]}>Navigate</Text>
           </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     );
-  }, [nearbyHosts.length, userLat, userLng, router, centerMapOnHost]);
+  }, [nearbyHosts.length, userLat, userLng, router, centerMapOnHost, handleHostPress, startNavigation]);
 
   return (
     <RouteErrorBoundary routeName="Map">
@@ -1401,6 +1523,7 @@ export default function MapHome() {
           activeFilters={activeFilters}
           onViewportChange={handleViewportChange}
           onHostCount={setVisibleHostCount}
+          onNavInfo={setNavInfo}
           onHostPress={handleHostPress}
           walkers={liveWalkers}
           onWalkerPress={(profileId) => router.push(`/(tabs)/me/profile/${profileId}`)}
@@ -1453,6 +1576,31 @@ export default function MapHome() {
           })}
         </View>
       </SafeAreaView>
+
+      {/* WK-210 — active navigation banner */}
+      {navHost ? (
+        <View style={styles.navBanner}>
+          <View style={styles.navBannerInner}>
+            <View style={[styles.navIconCircle, { backgroundColor: '#C8762A' + '22' }]}>
+              <Ionicons name="navigate" size={18} color="#C8762A" />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.navBannerName} numberOfLines={1}>{navHost.name}</Text>
+              <Text style={styles.navBannerSub}>
+                {navInfo?.km != null ? `${navInfo.km} km` : 'Routing…'}
+                {navInfo?.minutes != null ? ` · ${navInfo.minutes} min walk` : ''}
+                {navInfo?.mode === 'line' ? ' · straight line' : ''}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.navBannerBtn} onPress={() => openInMaps(navHost)}>
+              <Ionicons name="open-outline" size={16} color={colors.amber} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navBannerBtn} onPress={cancelNavigation}>
+              <Ionicons name="close" size={18} color={colors.ink2} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
 
       {/* WK-203 — persistent legend with live "in view" count */}
       <View pointerEvents="none" style={styles.legendOverlay}>
@@ -2255,6 +2403,61 @@ const styles = StyleSheet.create({
   contactBtnPrimary: {
     backgroundColor: colors.amber,
     borderColor: colors.amber,
+  },
+  contactBtnNav: {
+    backgroundColor: colors.amberBg,
+    borderColor: colors.amber,
+  },
+  // WK-210 — active navigation banner
+  navBanner: {
+    position: 'absolute',
+    top: 56,
+    left: 12,
+    right: 12,
+    zIndex: 11,
+    backgroundColor: 'rgba(255,255,255,0.98)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.goldBorder,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  navBannerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  navIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navBannerName: {
+    fontFamily: 'Courier New',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  navBannerSub: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    color: colors.ink3,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  navBannerBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt,
   },
   contactBtnText: {
     fontSize: 11,
