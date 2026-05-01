@@ -77,7 +77,7 @@ export default function PreferencesScreen() {
         <View style={styles.empty}>
           <Ionicons name="home-outline" size={36} color={colors.amber} />
           <Text style={styles.emptyTitle}>Claim your listing first</Text>
-          <Text style={styles.emptyBody}>Open MORE → Wanderhost → Become a Wanderhost.</Text>
+          <Text style={styles.emptyBody}>Open MORE → Your Offering → Set Up Your Offering.</Text>
         </View>
       </SafeAreaView>
     );

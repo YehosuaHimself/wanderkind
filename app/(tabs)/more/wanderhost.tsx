@@ -112,7 +112,7 @@ export default function WanderHostScreen() {
         setIsSnoozed(prev);
         showAlert('Error', error.message);
       } else if (snooze) {
-        showAlert('Hosting Snoozed', 'Your listing is hidden for 24 hours. Wanderkinder won\'t see your place on the map until then.');
+        showAlert('Hosting Snoozed', 'Your offering is paused for 24 hours. You won\'t appear on the community map until then.');
       }
     }
   };
@@ -127,9 +127,9 @@ export default function WanderHostScreen() {
         <View style={styles.headerCenter}>
           <View style={styles.headerLabel}>
             <Ionicons name="home" size={14} color={colors.amber} />
-            <Text style={styles.headerLabelText}>WANDERHOST</Text>
+            <Text style={styles.headerLabelText}>YOUR OFFERING</Text>
           </View>
-          <Text style={styles.headerTitle}>Your Hosting Home</Text>
+          <Text style={styles.headerTitle}>What You Give</Text>
         </View>
         <View style={{ width: 28 }} />
       </View>
@@ -149,8 +149,8 @@ export default function WanderHostScreen() {
               <Ionicons name="home" size={22} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.claimTitle}>Become a Wanderhost</Text>
-              <Text style={styles.claimSub}>Open your door — free or donativo. Three taps.</Text>
+              <Text style={styles.claimTitle}>Complete Your Profile</Text>
+              <Text style={styles.claimSub}>Every Wanderkind has something to offer. Tell the community what yours is.</Text>
             </View>
             <Ionicons name="arrow-forward" size={20} color={colors.amber} />
           </TouchableOpacity>
@@ -189,10 +189,10 @@ export default function WanderHostScreen() {
           </View>
           <Text style={styles.statusSub}>
             {isHosting && !isSnoozed
-              ? 'Wanderkinder can see your place on the map and send requests.'
+              ? 'Your offering is live — Wanderkinder can find you on the map.'
               : isSnoozed
                 ? 'Your listing is temporarily hidden. It will reappear automatically.'
-                : 'Turn on to welcome Wanderkinder to your home.'}
+                : 'Turn on to share your offering with the community.'}
           </Text>
 
           {/* Quick stats */}

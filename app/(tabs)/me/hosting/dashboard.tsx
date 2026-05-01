@@ -195,7 +195,7 @@ export default function HostingDashboard() {
                 A Wanderhost is a Wanderkind who hosts. Free or donativo. Three taps.
               </Text>
               <WKButton
-                title="Become a Wanderhost"
+                title="Set Up Your Offering"
                 onPress={() => router.push('/(tabs)/more/wanderhost-claim' as any)}
                 variant="primary"
                 fullWidth

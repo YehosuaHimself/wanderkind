@@ -36,7 +36,7 @@ type AppTile = {
 const page1Tiles: AppTile[] = [
   {
     icon: 'home',
-    title: 'WanderHost',
+    title: 'Your Offering',
     route: '/(tabs)/more/wanderhost',
     accent: colors.amber,
     bgTint: `${colors.amber}12`,

@@ -171,7 +171,7 @@ export default function WanderhostClaim() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Become a Wanderhost" showBack />
+      <WKHeader title="Set Up Your Offering" showBack />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -200,7 +200,7 @@ export default function WanderhostClaim() {
           {/* Step 1 — choose category */}
           <Step
             n={1}
-            title="Choose how you host"
+            title="What can you offer?"
             sub="The whole point of Wanderhost. Pick one."
           >
             <TouchableOpacity
@@ -243,7 +243,7 @@ export default function WanderhostClaim() {
           {/* Step 2 — basics */}
           <Step
             n={2}
-            title="Tell walkers about your place"
+            title="Describe your offering"
             sub="A name, how many beds, optional notes."
           >
             <Text style={styles.fieldLabel}>Name</Text>
@@ -284,7 +284,7 @@ export default function WanderhostClaim() {
           {/* Step 3 — location + opening months */}
           <Step
             n={3}
-            title="Where and when"
+            title="Location and availability"
             sub="Pin your place on the map and tell us which months you welcome guests."
           >
             <Text style={styles.fieldLabel}>Location</Text>
@@ -334,7 +334,7 @@ export default function WanderhostClaim() {
           {/* Submit */}
           <View style={styles.submitWrap}>
             <WKButton
-              title={existingHostId ? 'Manage my listing' : (submitting ? 'Creating…' : 'Become a Wanderhost')}
+              title={existingHostId ? 'Update My Offering' : (submitting ? 'Saving…' : 'Share My Offering')}
               onPress={submit}
               variant="primary"
               size="lg"

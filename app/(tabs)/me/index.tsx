@@ -168,6 +168,18 @@ export default function MeScreen() {
   const isQuietMode = profile?.quiet_mode ?? false;
   const galleryPhotos: string[] = profile?.gallery_urls || profile?.gallery || [];
 
+  // Profile completeness — offering is set if is_hosting is true OR hosting_project_title exists
+  const hasOffering = !!(profile?.is_hosting || (profile as any)?.hosting_project_title);
+  const hasBio = !!(profile?.bio && profile.bio.trim().length > 10);
+  const hasAvatar = !!profile?.avatar_url;
+  const isProfileComplete = hasOffering && hasBio && hasAvatar;
+  const completionSteps = [
+    { done: hasAvatar,   label: 'Add a profile photo' },
+    { done: hasBio,      label: 'Write a short bio' },
+    { done: hasOffering, label: 'Set up your offering' },
+  ];
+  const pendingSteps = completionSteps.filter(s => !s.done);
+
   return (
     <RouteErrorBoundary routeName="Profile">
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -295,6 +307,28 @@ export default function MeScreen() {
           ) : (
             <TouchableOpacity onPress={() => router.push('/(tabs)/me/edit-profile' as any)}>
               <Text style={styles.bioPlaceholder}>Add a bio to let others know your story...</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* ── Offering incomplete banner ────────────────────────── */}
+          {!isProfileComplete && (
+            <TouchableOpacity
+              style={styles.offeringBanner}
+              onPress={() => router.push('/(tabs)/more/wanderhost' as any)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.offeringBannerLeft}>
+                <View style={styles.offeringBannerDot} />
+                <View>
+                  <Text style={styles.offeringBannerLabel}>PROFILE INCOMPLETE</Text>
+                  <Text style={styles.offeringBannerText}>
+                    {pendingSteps.length === 1
+                      ? pendingSteps[0].label
+                      : `${pendingSteps.length} things left to complete`}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="arrow-forward" size={16} color={colors.amber} />
             </TouchableOpacity>
           )}
 
@@ -984,4 +1018,43 @@ const styles = StyleSheet.create({
   },
 
 
+  offeringBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.amberBg,
+    borderWidth: 1,
+    borderColor: 'rgba(200,118,42,0.22)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  offeringBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  offeringBannerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.amber,
+    flexShrink: 0,
+  },
+  offeringBannerLabel: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 9,
+    letterSpacing: 2,
+    color: colors.amber,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  offeringBannerText: {
+    fontSize: 13,
+    color: colors.ink,
+    fontWeight: '500',
+  },
 });
