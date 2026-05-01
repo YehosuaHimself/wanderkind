@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WK-170 v2 · Nightly enrichment job
+WK-170 v3 · Nightly enrichment job
 ====================================
 Smarter targeting: rows that ALREADY have a website (typically from OSM
 contact:website / website tags) but are missing phone or email. We fetch
@@ -42,15 +42,35 @@ RE_EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
 EMAIL_BAD_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".svg", ".css", ".js")
 
 
-def sb_get(table: str, params: str) -> list:
+def sb_get(table: str, params: str, retries: int = 3) -> list:
+    """Fetch rows from Supabase REST API with exponential-backoff retry on 500."""
     url = f"{SUPABASE_URL}/rest/v1/{table}?{params}"
-    req = urllib.request.Request(url, headers={
+    headers = {
         "apikey": SERVICE_KEY,
         "Authorization": f"Bearer {SERVICE_KEY}",
         "Accept": "application/json",
-    })
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode())
+        "Prefer": "count=none",
+    }
+    last_err: Exception | None = None
+    for attempt in range(1, retries + 1):
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            body = e.read(500).decode("utf-8", errors="ignore")
+            log.warning(
+                f"sb_get attempt {attempt}/{retries} — HTTP {e.code}: {body[:200]}"
+            )
+            last_err = e
+            if e.code != 500:
+                raise  # don't retry on 4xx
+            time.sleep(2 ** attempt)  # 2s, 4s, 8s
+        except Exception as e:
+            log.warning(f"sb_get attempt {attempt}/{retries} — {e}")
+            last_err = e
+            time.sleep(2 ** attempt)
+    raise last_err
 
 
 def sb_patch(table: str, where: str, payload: dict) -> None:
@@ -66,92 +86,111 @@ def sb_patch(table: str, where: str, payload: dict) -> None:
         r.read()
 
 
-def fetch_and_extract(row: dict) -> dict:
-    """Fetch the host's website (NOT the OSM page) and extract phone/email."""
-    site = row.get("website")
-    if not site:
-        return {}
+def fetch_page(url: str) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
+        charset = "utf-8"
+        ct = r.headers.get("Content-Type", "")
+        if "charset=" in ct:
+            charset = ct.split("charset=")[-1].strip()
+        return r.read(200_000).decode(charset, errors="ignore")
+
+
+def extract_contacts(html: str) -> tuple[str | None, str | None]:
+    phone = None
+    email = None
+
+    emails = [
+        e for e in RE_EMAIL.findall(html)
+        if not any(e.lower().endswith(s) for s in EMAIL_BAD_SUFFIXES)
+    ]
+    if emails:
+        email = emails[0]
+
+    phones = RE_PHONE.findall(html)
+    if phones:
+        phone = re.sub(r"[\s().\-]", "", phones[0])
+
+    return phone, email
+
+
+def enrich_one(host: dict) -> dict:
+    hid  = host["id"]
+    site = host.get("website", "")
+    if not site.startswith("http"):
+        site = "https://" + site
+
+    result = {"id": hid, "status": "skip", "phone": None, "email": None}
     try:
-        req = urllib.request.Request(site, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
-            text = r.read(800_000).decode("utf-8", errors="ignore")
-    except Exception:
-        return {}
-
-    update = {}
-    if not row.get("phone"):
-        m = RE_PHONE.search(text)
-        if m:
-            cand = re.sub(r"\s+", " ", m.group(1)).strip()
-            digits = re.sub(r"\D", "", cand)
-            if 7 <= len(digits) <= 16:
-                update["phone"] = cand
-    if not row.get("email"):
-        m = RE_EMAIL.search(text)
-        if m:
-            email = m.group(0).lower()
-            if not email.endswith(EMAIL_BAD_SUFFIXES):
-                update["email"] = m.group(0)
-    return update
-
-
-def quality_score(row: dict, after: dict) -> int:
-    phone   = after.get("phone")   or row.get("phone")
-    email   = after.get("email")   or row.get("email")
-    website = row.get("website")
-    desc    = row.get("description") or ""
-    s = 0
-    if phone or email:                 s += 20
-    if website or row.get("source_url"): s += 20
-    if len(desc) >= 50:                s += 15
-    if (row.get("capacity") or 0) > 0: s += 15
-    if row.get("opening_months"):      s += 15
-    if row.get("last_confirmed"):      s += 5
-    return min(100, s)
+        html = fetch_page(site)
+        phone, email = extract_contacts(html)
+        if phone or email:
+            patch: dict = {}
+            if phone and not host.get("phone"):
+                patch["phone"] = phone
+                result["phone"] = phone
+            if email and not host.get("email"):
+                patch["email"] = email
+                result["email"] = email
+            if patch:
+                sb_patch(
+                    "hosts",
+                    f"id=eq.{hid}",
+                    {**patch, "enriched_at": "now()"},
+                )
+                result["status"] = "enriched"
+            else:
+                result["status"] = "already_complete"
+        else:
+            result["status"] = "no_contact_found"
+    except urllib.error.HTTPError as e:
+        result["status"] = f"http_{e.code}"
+    except urllib.error.URLError as e:
+        result["status"] = "url_error"
+    except Exception as e:
+        result["status"] = f"error:{type(e).__name__}"
+    return result
 
 
 def main() -> int:
-    log.info(f"Pulling up to {MAX_ROWS} candidate rows (have website, missing phone/email)…")
-    select = "id,source_url,phone,email,website,description,capacity,opening_months,last_confirmed,quality_score"
+    log.info(f"Enrich v3 — MAX_ROWS={MAX_ROWS} WORKERS={WORKERS} TIMEOUT={TIMEOUT_S}s")
+
     params = (
-        f"select={select}"
-        f"&website=not.is.null"
-        f"&or=(phone.is.null,email.is.null)"
-        f"&order=quality_score.asc.nullsfirst"
+        "select=id,website,phone,email"
+        "&website=not.is.null"
+        "&website=neq."
+        "&or=(phone.is.null,email.is.null)"
+        "&order=quality_score.asc.nullsfirst"
         f"&limit={MAX_ROWS}"
     )
-    rows = sb_get("hosts", params)
-    log.info(f"Got {len(rows)} candidates")
-    if not rows:
-        log.info("Nothing to enrich — done")
+
+    try:
+        hosts = sb_get("hosts", params)
+    except Exception as e:
+        log.error(f"Failed to fetch candidates: {e}")
+        return 1
+
+    log.info(f"Fetched {len(hosts)} candidates")
+    if not hosts:
+        log.info("Nothing to enrich.")
         return 0
 
+    stats: dict[str, int] = {}
     enriched = 0
-    fetched_ok = 0
-    t0 = time.time()
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        futures = {pool.submit(fetch_and_extract, r): r for r in rows}
-        for fut in as_completed(futures):
-            r = futures[fut]
-            try:
-                update = fut.result()
-            except Exception as e:
-                continue
-            fetched_ok += 1 if update is not None else 0
-            if not update:
-                continue
-            update["quality_score"] = quality_score(r, update)
-            try:
-                sb_patch("hosts", f"id=eq.{r['id']}", update)
-                enriched += 1
-                if enriched % 100 == 0:
-                    log.info(f"  enriched {enriched} so far…")
-            except Exception:
-                pass
 
-    elapsed = time.time() - t0
-    log.info(f"DONE: enriched {enriched}/{len(rows)} rows in {elapsed:.0f}s "
-             f"(rate {enriched/max(1,elapsed):.1f}/s)")
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        futures = {pool.submit(enrich_one, h): h["id"] for h in hosts}
+        for fut in as_completed(futures):
+            res = fut.result()
+            s = res["status"]
+            stats[s] = stats.get(s, 0) + 1
+            if s == "enriched":
+                enriched += 1
+                log.info(
+                    f"  ✓ {res['id']} — phone={res['phone']} email={res['email']}"
+                )
+
+    log.info(f"Done. enriched={enriched}  stats={stats}")
     return 0
 
 
