@@ -1172,17 +1172,13 @@ export default function MapHome() {
           .select('*')
           .eq('is_available', true)
           .eq('hidden_from_map', false)
+          .is('source_id', null)
           .order('quality_score', { ascending: false })
           .limit(1500);
-        if (data && data.length > 0) {
-          setHosts(data as Host[]);
-          return;
-        }
+        if (data) setHosts(data as Host[]);
       } catch (err) {
         console.error('Failed to fetch hosts from Supabase:', err);
       }
-      const { default: seedHosts } = await import('../../../src/data/seed-hosts.json');
-      setHosts(seedHosts as unknown as Host[]);
     } catch (err) {
       console.error('Failed to load hosts:', err);
       toast.error('Could not load hosts');
@@ -1211,6 +1207,7 @@ export default function MapHome() {
         .select('*')
         .eq('is_available', true)
         .eq('hidden_from_map', false)
+        .is('source_id', null)
         .gte('lat', b.south).lte('lat', b.north)
         .gte('lng', b.west).lte('lng', b.east)
         .order('quality_score', { ascending: false })

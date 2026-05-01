@@ -1,8 +1,7 @@
 name: Enrich Host Data
 
 on:
-  schedule:
-    - cron: '0 3 * * *'    # 03:00 UTC nightly — runs after import (02:00)
+  # schedule disabled — scraped hosts hidden from app
   workflow_dispatch:
     inputs:
       max_rows:

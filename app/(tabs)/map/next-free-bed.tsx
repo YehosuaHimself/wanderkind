@@ -38,6 +38,7 @@ export default function NextFreeBed() {
         .select('*')
         .eq('is_available', true)
         .eq('hidden_from_map', false)
+        .is('source_id', null)
         .in('category', ['free', 'donativo'])
         .order('route_km', { ascending: true, nullsFirst: false })
         .limit(1)

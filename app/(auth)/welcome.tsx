@@ -139,7 +139,7 @@ export default function WelcomeScreen() {
     const fetchStats = async () => {
       try {
         const [hostsRes, routesRes] = await Promise.all([
-          supabase.from('hosts').select('id', { count: 'exact', head: true }),
+          supabase.from('hosts').select('id', { count: 'exact', head: true }).is('source_id', null),
           supabase.from('routes').select('id', { count: 'exact', head: true }),
         ]);
         const hostCount = hostsRes.count ?? 505;
@@ -147,6 +147,7 @@ export default function WelcomeScreen() {
         const { data: countryData } = await supabase
           .from('hosts')
           .select('country')
+          .is('source_id', null)
           .not('country', 'is', null);
         const uniqueCountries = new Set((countryData ?? []).map((h: any) => h.country));
         setStats({

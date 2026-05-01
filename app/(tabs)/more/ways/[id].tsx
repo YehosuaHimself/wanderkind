@@ -131,6 +131,7 @@ export default function WayDetail() {
       const { data: hostsData } = await supabase
         .from('hosts')
         .select('*')
+        .is('source_id', null)
         .eq('route_id', id)
         .limit(10);
 

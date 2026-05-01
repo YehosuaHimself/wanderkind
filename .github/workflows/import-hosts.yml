@@ -1,8 +1,7 @@
 name: Import Host Data
 
 on:
-  schedule:
-    - cron: '0 2 * * *'    # 02:00 UTC nightly
+  # schedule disabled — scraped hosts hidden from app
   workflow_dispatch:         # manual trigger from GitHub UI
     inputs:
       source:

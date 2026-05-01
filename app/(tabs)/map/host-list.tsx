@@ -68,6 +68,7 @@ export default function HostList() {
         .select('*')
         .eq('is_available', true)
         .eq('hidden_from_map', false)
+        .is('source_id', null)
         .order('quality_score', { ascending: false })
         .limit(2000);
 

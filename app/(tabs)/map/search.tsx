@@ -36,7 +36,7 @@ export default function Search() {
       setSearching(true);
       try {
         const [hostsRes, wanderersRes, routesRes] = await Promise.all([
-          supabase.from('hosts').select('*').or(`name.ilike.%${q}%,address.ilike.%${q}%`).limit(10),
+          supabase.from('hosts').select('*').is('source_id', null).or(`name.ilike.%${q}%,address.ilike.%${q}%`).limit(10),
           supabase.from('profiles').select('id,trail_name,avatar_url,tier,nights_walked').ilike('trail_name', `%${q}%`).neq('id', user?.id ?? '').limit(10),
           supabase.from('routes').select('*').or(`name.ilike.%${q}%,country.ilike.%${q}%`).limit(10),
         ]);
