@@ -298,55 +298,57 @@ function injectStyles() {
 }
 
 // ── REAL QR CODE ──────────────────────────────────────────────────────────────
+const WK_URL = 'https://wanderkind.love';
+const QR_API = (s) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=${s*2}x${s*2}&data=${encodeURIComponent(WK_URL)}&color=1A120A&bgcolor=FAFAF5&margin=3&format=svg`;
+
 function WKQRCode({ size = 180 }) {
-  const ref = useRef(null);
-  const [ready, setReady] = useState(false);
+  const [src, setSrc] = useState(null);
+
   useEffect(() => {
     let dead = false;
-    import('qrcode').then(mod => {
-      if (dead || !ref.current) return;
-      const QR = mod.default || mod;
-      QR.toCanvas(ref.current, 'https://wanderkind.love', {
-        width: size, margin: 2,
+    // Primary: use bundled qrcode package via require
+    try {
+      const QR = require('qrcode');
+      QR.toDataURL(WK_URL, {
+        width: size * 2,
+        margin: 2,
         color: { dark: '#1A120A', light: '#FAFAF5' },
         errorCorrectionLevel: 'H',
-      }, err => {
-        if (err || dead || !ref.current) return;
-        const ctx = ref.current.getContext('2d');
-        const cell = size / 29;
-        // Amber finder patterns over the three corners
-        [[2*cell,2*cell],[size-9*cell,2*cell],[2*cell,size-9*cell]].forEach(([fx,fy]) => {
-          const fp = 7*cell;
-          // wipe
-          ctx.fillStyle='#FAFAF5'; ctx.fillRect(fx,fy,fp,fp);
-          // outer dark rounded square
-          ctx.fillStyle='#1A120A'; rr(ctx,fx,fy,fp,fp,3); ctx.fill();
-          // inner light
-          ctx.fillStyle='#FAFAF5'; rr(ctx,fx+cell,fy+cell,fp-2*cell,fp-2*cell,2); ctx.fill();
-          // amber centre
-          ctx.fillStyle='#C8762A'; rr(ctx,fx+2*cell,fy+2*cell,3*cell,3*cell,2); ctx.fill();
-        });
-        // W logo in centre
-        const lw=size*.16, lx=(size-lw)/2, ly=(size-lw)/2;
-        ctx.fillStyle='#FAFAF5'; rr(ctx,lx-4,ly-4,lw+8,lw+8,3); ctx.fill();
-        ctx.strokeStyle='#C8762A'; ctx.lineWidth=1.8; ctx.lineCap='round'; ctx.lineJoin='round';
-        ctx.beginPath();
-        ctx.moveTo(lx+lw*.05,ly+lw*.2); ctx.lineTo(lx+lw*.25,ly+lw*.82);
-        ctx.lineTo(lx+lw*.5,ly+lw*.48); ctx.lineTo(lx+lw*.75,ly+lw*.82);
-        ctx.lineTo(lx+lw*.95,ly+lw*.2); ctx.stroke();
-        setReady(true);
-      });
-    }).catch(()=>{});
+      }).then(url => { if (!dead) setSrc(url); })
+        .catch(() => { if (!dead) setSrc(QR_API(size)); });
+    } catch(e) {
+      // Fallback: external QR API — guaranteed to work, always links to wanderkind.love
+      if (!dead) setSrc(QR_API(size));
+    }
     return () => { dead = true; };
   }, [size]);
-  return <canvas ref={ref} width={size} height={size} style={{width:size,height:size,borderRadius:8,display:'block',opacity:ready?1:0,transition:'opacity .3s'}} />;
-}
-function rr(ctx,x,y,w,h,r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+
+  const logoSize = Math.round(size * 0.22);
+
+  return (
+    <div style={{ position:'relative', width:size, height:size, borderRadius:10, overflow:'hidden', background:'#FAFAF5' }}>
+      {src && (
+        <img src={src} width={size} height={size}
+          style={{ display:'block', width:size, height:size }} />
+      )}
+      {/* Amber W logo centred — covers the QR centre (high error correction handles it) */}
+      <div style={{
+        position:'absolute', top:'50%', left:'50%',
+        transform:'translate(-50%,-50%)',
+        background:'#FAFAF5', borderRadius:6, padding:4,
+        display:'flex', alignItems:'center', justifyContent:'center',
+      }}>
+        <svg width={logoSize} height={logoSize} viewBox="0 0 40 40" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <polyline
+            points="3,8 11,32 20,17 29,32 37,8"
+            fill="none" stroke="#C8762A" strokeWidth="3.5"
+            strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 // ── SVG ICONS ─────────────────────────────────────────────────────────────────
