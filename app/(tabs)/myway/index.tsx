@@ -1,93 +1,100 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../../src/lib/theme';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, spacing } from '../../../src/lib/theme';
 import { haptic } from '../../../src/lib/haptics';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import CommunityMapView from '../../../src/components/map/CommunityMapView';
 
-// Direct imports instead of React.lazy — fixes rendering issues
+// Direct imports — avoids React.lazy rendering flickers
 import WaysContent from '../more/ways';
 import GroupWalkContent from '../more/group-walk';
 
-type TabMode = 'ways' | 'groups';
+type TabMode = 'map' | 'ways' | 'groups';
+
+const TABS: { key: TabMode; label: string; icon: string }[] = [
+  { key: 'map',    label: 'Map',    icon: 'compass-outline' },
+  { key: 'ways',   label: 'Ways',   icon: 'trail-sign-outline' },
+  { key: 'groups', label: 'Groups', icon: 'people-outline' },
+];
+
+const HEADER_TITLES: Record<TabMode, string> = {
+  map:    'Community',
+  ways:   'Walking Routes',
+  groups: 'WanderGroups',
+};
 
 export default function MyWayScreen() {
-  const [activeTab, setActiveTab] = useState<TabMode>('ways');
+  const [activeTab, setActiveTab] = useState<TabMode>('map');
 
   return (
     <RouteErrorBoundary routeName="My Way">
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLabel}>
-          <View style={styles.headerDot} />
-          <Text style={styles.headerLabelText}>MY WAY</Text>
+      <SafeAreaView style={styles.container} edges={['top']}>
+
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <View style={styles.headerLabel}>
+            <View style={styles.amberLine} />
+            <Text style={styles.headerLabelText}>MY WAY</Text>
+          </View>
+          <Text style={styles.headerTitle}>{HEADER_TITLES[activeTab]}</Text>
         </View>
-        <Text style={styles.headerTitle}>
-          {activeTab === 'ways' ? 'Walking Routes' : 'WanderGroups'}
-        </Text>
-      </View>
 
-      {/* Tab Toggle */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'ways' && styles.tabActive]}
-          onPress={() => { haptic.selection(); setActiveTab('ways'); }}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="trail-sign-outline"
-            size={16}
-            color={activeTab === 'ways' ? colors.amber : colors.ink3}
-          />
-          <Text style={[styles.tabText, activeTab === 'ways' && styles.tabTextActive]}>
-            Ways
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'groups' && styles.tabActive]}
-          onPress={() => { haptic.selection(); setActiveTab('groups'); }}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="people-outline"
-            size={16}
-            color={activeTab === 'groups' ? colors.amber : colors.ink3}
-          />
-          <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>
-            WanderGroups
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* ── Tab toggle ─────────────────────────────────────────────────── */}
+        <View style={styles.tabBar}>
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => { haptic.selection(); setActiveTab(tab.key); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={tab.icon as any}
+                size={15}
+                color={activeTab === tab.key ? colors.amber : colors.ink3}
+              />
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* Content — direct rendering, no lazy load */}
-      <View style={styles.content}>
-        {activeTab === 'ways' ? <WaysContent embedded /> : <GroupWalkContent embedded />}
-      </View>
-    </SafeAreaView>
+        {/* ── Content ───────────────────────────────────────────────────── */}
+        <View style={styles.content}>
+          {activeTab === 'map'    && <CommunityMapView />}
+          {activeTab === 'ways'   && <WaysContent embedded />}
+          {activeTab === 'groups' && <GroupWalkContent embedded />}
+        </View>
+
+      </SafeAreaView>
     </RouteErrorBoundary>
   );
 }
 
+// ─── Styles ────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+
   header: {
     paddingHorizontal: spacing.xl,
     paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
   headerLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 3,
   },
-  headerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  amberLine: {
+    width: 14,
+    height: 1.5,
     backgroundColor: colors.amber,
+    borderRadius: 1,
   },
   headerLabelText: {
     fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
@@ -97,9 +104,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitle: {
-    ...typography.h2,
+    fontSize: 22,
+    fontWeight: '700',
     color: colors.ink,
+    letterSpacing: -0.3,
   },
+
   tabBar: {
     flexDirection: 'row',
     marginHorizontal: spacing.xl,
@@ -113,25 +123,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
+    gap: 5,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: colors.surface,
-    shadowColor: '#000',
+    backgroundColor: colors.bg,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.ink3,
+    letterSpacing: 0.2,
   },
   tabTextActive: {
     color: colors.amber,
   },
+
   content: { flex: 1 },
 });

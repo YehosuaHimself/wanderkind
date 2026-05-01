@@ -110,6 +110,10 @@ export interface ProfileRow {
   allow_messages_from: 'everyone' | 'verified' | 'nobody';
   show_on_map: boolean;
   show_in_search: boolean;
+  // Biometric gate (US-03)
+  biometric_verified: boolean;
+  biometric_selfie_url: string | null;
+  biometric_verified_at: string | null;
   // Passport / identity fields
   surname: string | null;
   given_names: string | null;
