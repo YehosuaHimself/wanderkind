@@ -70,6 +70,8 @@ export default function MeScreen() {
   };
 
   const toggleWalking = async (value: boolean) => {
+    // Once wandering is activated, it cannot be toggled off
+    if (isWalking && !value) return;
     const prev = isWalking;
     setIsWalking(value);
     if (user) {
@@ -347,20 +349,7 @@ export default function MeScreen() {
           </View>
         </View>
 
-        {/* ===== CURRENTLY WANDERING ===== */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>CURRENTLY</Text>
-          <View style={styles.currentlyCard}>
-            <Ionicons
-              name={isWalking ? 'footsteps-outline' : 'bed-outline'}
-              size={18}
-              color={isWalking ? colors.amber : colors.ink3}
-            />
-            <Text style={[styles.currentlyText, isWalking && { color: colors.amber }]}>
-              {isWalking ? 'On the road' : 'Resting at home'}
-            </Text>
-          </View>
-        </View>
+
 
         {/* ===== STATS ===== */}
         {!isQuietMode && (
@@ -621,21 +610,6 @@ const styles = StyleSheet.create({
   sectionBlock: {
     paddingHorizontal: 20,
     marginTop: 16,
-  },
-  currentlyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 10,
-  },
-  currentlyText: {
-    fontSize: 14,
-    color: colors.ink2,
-    fontWeight: '500',
   },
   sectionTitle: {
     fontSize: 11,

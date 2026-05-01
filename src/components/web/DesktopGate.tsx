@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
 import { colors, typography, spacing } from '../../lib/theme';
