@@ -8,6 +8,8 @@ import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { toast } from '../../../src/lib/toast';
 import { haptic } from '../../../src/lib/haptics';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
 
 /**
  * 3-STAGE VERIFICATION SYSTEM
@@ -44,10 +46,10 @@ const STAGES: VerificationStage[] = [
     bg: '#22863A12',
     description: 'Your email address has been confirmed. This gives you general access to the Wanderkind community.',
     unlocks: [
-      'Browse the map and discover hosts',
+      'Browse the community map (read only)',
+      'Explore Ways and plan your route',
+      'View profiles and offerings',
       'Post moments and stories',
-      'Message other wanderkinder',
-      'Collect stamps on your journey',
     ],
     actionLabel: 'Resend Verification Email',
   },
@@ -61,10 +63,11 @@ const STAGES: VerificationStage[] = [
     bg: '#C8762A12',
     description: 'Record a short video selfie to prove you are a real person. Similar to identity checks on trusted platforms. Quick, private, and secure.',
     unlocks: [
-      'Food Pass — free meals from hosts',
-      'Hospitality Pass — free accommodation',
-      'Water Pass — refill access points',
-      'Higher trust score on your profile',
+      'Send and receive messages',
+      'Request stays with Wanderhosts',
+      'Food, Hospitality & Water Passes',
+      'Share and receive door PINs',
+      'Appear on the community map as a host',
     ],
     actionLabel: 'Start Video Selfie',
   },
@@ -117,6 +120,8 @@ export default function VerificationScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useAuth();
   const [processingStage, setProcessingStage] = useState<StageId | null>(null);
+  const [showSelfieGate, setShowSelfieGate] = useState(false);
+  const { isVerified: isBiometricVerified } = useBiometricGate();
 
   // Current verification level from profile
   const verificationLevel = (profile?.verification_level as string) ?? 'none';
@@ -136,11 +141,9 @@ export default function VerificationScreen() {
           break;
 
         case 'biometric':
-          // In production: launch FaceTec or similar biometric SDK
-          // For now: simulate the process
-          await updateProfile({ verification_level: 'biometric_pending' });
-          toast.success('Video selfie recorded — verification in progress');
-          break;
+          setProcessingStage(null);
+          setShowSelfieGate(true);
+          return;  // BiometricGate handles the rest
 
         case 'document':
           // In production: launch camera/gallery for document photo
@@ -155,6 +158,25 @@ export default function VerificationScreen() {
       setProcessingStage(null);
     }
   };
+
+  if (showSelfieGate) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(200,118,42,0.10)' }}>
+          <TouchableOpacity onPress={() => setShowSelfieGate(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <BiometricGate
+            action="access your passes"
+            onVerified={() => { setShowSelfieGate(false); }}
+            onDismiss={() => setShowSelfieGate(false)}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

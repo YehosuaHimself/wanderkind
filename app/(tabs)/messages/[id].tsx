@@ -17,6 +17,8 @@ import { toast } from '../../../src/lib/toast';
 import { sanitizeText, isEmpty, enforceMaxLength, canPerformAction, LIMITS } from '../../../src/lib/validate';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
 import { Message, Profile, Thread } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { encryptMessage, decryptMessage, isEncrypted, isE2EAvailable } from '../../../src/lib/encryption';
@@ -260,29 +262,45 @@ export default function ChatThread() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Input */}
-      <View style={styles.inputSection}>
-        <TextInput
-          style={styles.input}
-          placeholder="Message..."
-          placeholderTextColor={colors.ink3}
-          value={messageText}
-          onChangeText={setMessageText}
-          multiline
-          maxLength={500}
+      {/* Input — gated to biometric-verified users */}
+      {gateVisible ? (
+        <BiometricGate
+          action="send messages"
+          onVerified={() => { onVerified(); closeGate(); }}
+          onDismiss={closeGate}
         />
-        <TouchableOpacity
-          style={[styles.sendBtn, !messageText.trim() && styles.sendBtnDisabled]}
-          onPress={handleSend}
-          disabled={sending || !messageText.trim()}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color={colors.amber} />
-          ) : (
-            <Ionicons name="send" size={18} color={colors.amber} />
-          )}
-        </TouchableOpacity>
-      </View>
+      ) : !isVerified ? (
+        <View style={styles.gatePrompt}>
+          <Ionicons name="shield-outline" size={16} color={colors.amber} />
+          <Text style={styles.gatePromptText}>Verify your identity to send messages</Text>
+          <TouchableOpacity style={styles.gatePromptBtn} onPress={openGate} activeOpacity={0.8}>
+            <Text style={styles.gatePromptBtnText}>Verify</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.inputSection}>
+          <TextInput
+            style={styles.input}
+            placeholder="Message..."
+            placeholderTextColor={colors.ink3}
+            value={messageText}
+            onChangeText={setMessageText}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity
+            style={[styles.sendBtn, !messageText.trim() && styles.sendBtnDisabled]}
+            onPress={handleSend}
+            disabled={sending || !messageText.trim()}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color={colors.amber} />
+            ) : (
+              <Ionicons name="send" size={18} color={colors.amber} />
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -377,4 +395,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendBtnDisabled: { opacity: 0.5 },
+  gatePrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(200,118,42,0.12)',
+    backgroundColor: colors.amberBg,
+  },
+  gatePromptText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink2,
+  },
+  gatePromptBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: colors.amber,
+    borderRadius: 20,
+  },
+  gatePromptBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FAF6EF',
+    letterSpacing: 0.3,
+  },
 });

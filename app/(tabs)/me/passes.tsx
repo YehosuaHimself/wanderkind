@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -65,6 +67,7 @@ const PASSES = [
 
 export default function PassesScreen() {
   useAuthGuard();
+  const { isVerified, gateVisible, openGate, closeGate, onVerified } = useBiometricGate();
 
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -82,6 +85,28 @@ export default function PassesScreen() {
     scrollRef.current?.scrollTo({ x: idx * SCREEN_WIDTH, animated: true });
     setActiveIndex(idx);
   };
+
+  // If not verified, show the gate full-screen (passes require biometric)
+  if (gateVisible || !isVerified) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.gatedHeader}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="chevron-back" size={28} color={colors.ink} />
+          </TouchableOpacity>
+          <Text style={styles.gatedHeaderTitle}>PASSES</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.gatedBody}>
+          <BiometricGate
+            action="access your passes"
+            onVerified={() => { onVerified(); }}
+            onDismiss={() => router.back()}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -315,4 +340,21 @@ const styles = StyleSheet.create({
     color: colors.ink3,
     letterSpacing: 0.5,
   },
+  gatedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(200,118,42,0.10)',
+  },
+  gatedHeaderTitle: {
+    fontFamily: 'Courier New',
+    fontSize: 10,
+    letterSpacing: 3,
+    color: colors.amber,
+    fontWeight: '600',
+  },
+  gatedBody: { flex: 1, justifyContent: 'center' },
 });

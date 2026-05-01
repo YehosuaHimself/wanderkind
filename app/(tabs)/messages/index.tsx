@@ -9,6 +9,8 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
 import { listSeedThreads, isSeedProfileId } from '../../../src/lib/seedMessages';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
@@ -263,10 +265,19 @@ export default function MessagesScreen() {
         />
       )}
 
+      {/* Biometric gate — slides in above FAB when needed */}
+      {gateVisible && (
+        <BiometricGate
+          action="send messages"
+          onVerified={() => { onVerified(); closeGate(); }}
+          onDismiss={closeGate}
+        />
+      )}
+
       {/* FAB — New Message */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => { haptic.medium(); router.push('/(tabs)/messages/new' as any); }}
+        onPress={requireVerification(() => { haptic.medium(); router.push('/(tabs)/messages/new' as any); })}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={24} color="#FFFFFF" />

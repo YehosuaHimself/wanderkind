@@ -18,11 +18,14 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/stores/auth';
 import { Booking, Profile } from '../../../src/types/database';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
 
 type BookingWithDetails = Booking & { host?: { name: string } };
 
 export default function PINShare() {
   useAuthGuard();
+  const { isVerified, gateVisible, openGate, closeGate, onVerified } = useBiometricGate();
 
   const router = useRouter();
   const { threadId } = useLocalSearchParams();
@@ -58,6 +61,7 @@ export default function PINShare() {
   };
 
   const handleSharePIN = async () => {
+    if (!isVerified) { openGate(); return; }
     if (!user || !selectedBooking || !pin.trim()) {
       showAlert('Missing information', 'Please select a booking and enter the PIN.');
       return;
@@ -132,7 +136,24 @@ export default function PINShare() {
   );
 
   if (loading) {
+    if (gateVisible) {
     return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+          <TouchableOpacity onPress={closeGate} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={28} color={colors.ink} />
+          </TouchableOpacity>
+        </View>
+        <BiometricGate
+          action="share a PIN"
+          onVerified={() => { onVerified(); }}
+          onDismiss={closeGate}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -144,6 +165,23 @@ export default function PINShare() {
         <View style={styles.centerLoading}>
           <ActivityIndicator size="large" color={colors.amber} />
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (gateVisible) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+          <TouchableOpacity onPress={closeGate} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={28} color={colors.ink} />
+          </TouchableOpacity>
+        </View>
+        <BiometricGate
+          action="share a PIN"
+          onVerified={() => { onVerified(); }}
+          onDismiss={closeGate}
+        />
       </SafeAreaView>
     );
   }
