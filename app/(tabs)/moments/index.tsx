@@ -7,8 +7,6 @@ import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
 import { haptic } from '../../../src/lib/haptics';
 import { supabase } from '../../../src/lib/supabase';
 import { Moment, Profile } from '../../../src/types/database';
-import { SEED_MOMENTS } from '../../../src/data/seed-moments';
-import { SEED_STORIES } from '../../../src/data/seed-stories';
 import { StoryRing } from '../../../src/components/stories/StoryRing';
 import { StoryViewer } from '../../../src/components/stories/StoryViewer';
 import { useAuth } from '../../../src/stores/auth';
@@ -21,7 +19,7 @@ type StoryGroup = {
   authorId: string;
   authorName: string;
   authorAvatar: string | null;
-  stories: typeof SEED_STORIES;
+  stories: any[];
 };
 
 type FeedFilter = 'nearby' | 'recent';
@@ -154,8 +152,7 @@ export default function MomentsFeed() {
       console.error('Failed to fetch moments:', err);
     }
 
-    // Fallback to seed data if Supabase returns empty or fails
-    setMoments(SEED_MOMENTS as unknown as MomentWithAuthor[]);
+    // DB returned 0 moments — show empty state
   }, []);
 
   const fetchLikes = useCallback(async (momentIds: string[]) => {
@@ -231,12 +228,10 @@ export default function MomentsFeed() {
       console.error('Failed to fetch stories:', err);
     }
 
-    // Fallback to seed stories
-    const grouped = groupStoriesByAuthor(SEED_STORIES as any);
-    setStoryGroups(grouped);
+    // DB returned 0 stories — story bar stays hidden
   }, []);
 
-  const groupStoriesByAuthor = useCallback((stories: typeof SEED_STORIES): StoryGroup[] => {
+  const groupStoriesByAuthor = useCallback((stories: any[]): StoryGroup[] => {
     const map = new Map<string, StoryGroup & { lat?: number | null; lng?: number | null }>();
     for (const story of stories) {
       if (!map.has(story.author_id)) {
