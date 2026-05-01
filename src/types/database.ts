@@ -216,8 +216,8 @@ export interface BookingRow {
   id: string;
   walker_id: string;
   host_id: string;
-  check_in: string;
-  check_out: string | null;
+  start_date: string;
+  end_date: string | null;
   guests: number;
   message: string | null;
   status: 'pending' | 'seen' | 'accepted' | 'confirmed' | 'declined' | 'cancelled' | 'completed';

@@ -81,11 +81,11 @@ export default function CheckInScreen() {
     const today = new Date().toISOString().split('T')[0];
     supabase
       .from('bookings')
-      .select('id, check_in, walker_id')
+      .select('id, start_date, walker_id')
       .eq('host_id', user.id)
       .in('status', ['accepted'])
-      .gte('check_in', today)
-      .order('check_in')
+      .gte('start_date', today)
+      .order('start_date')
       .limit(20)
       .then(({ data }) => {
         if (!data) return;
@@ -93,7 +93,7 @@ export default function CheckInScreen() {
           id: b.id,
           name: b.walker_name ?? 'Wanderkind',
           checked: false,
-          date: new Date(b.check_in).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          date: new Date(b.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
         }));
         setGuests(items);
       });

@@ -122,7 +122,7 @@ export default function HostingRequests() {
           <View style={styles.detailItem}>
             <Ionicons name="calendar" size={16} color={colors.ink2} />
             <Text style={styles.detailText}>
-              {formatDate(item.check_in)}{item.check_out ? ` – ${formatDate(item.check_out)}` : ''}
+              {formatDate(item.start_date)}{item.end_date ? ` – ${formatDate(item.end_date)}` : ''}
             </Text>
           </View>
           <View style={styles.detailItem}>

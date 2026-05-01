@@ -120,6 +120,7 @@ export default function BookingRequest() {
           start_date: checkIn,
           end_date: checkOut,
           message: sanitizeText(message),
+          guests,
         })
         .select('id')
         .single();

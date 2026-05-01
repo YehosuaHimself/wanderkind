@@ -34,8 +34,8 @@ export default function GuestsScreen() {
         .select('*')
         .eq('host_id', user.id)
         .in('status', ['accepted'])
-        .gte('check_in', today)
-        .order('check_in', { ascending: true });
+        .gte('start_date', today)
+        .order('start_date', { ascending: true });
 
       if (!bookings?.length) { setGuests([]); return; }
 
@@ -71,7 +71,7 @@ export default function GuestsScreen() {
           <Text style={styles.name}>{item.walker_trail_name}</Text>
           <View style={styles.dateRow}>
             <Ionicons name="calendar-outline" size={13} color={colors.ink3} />
-            <Text style={styles.dates}>{formatDate(item.check_in)}{item.check_out ? ` → ${formatDate(item.check_out)}` : ''}</Text>
+            <Text style={styles.dates}>{formatDate(item.start_date)}{item.end_date ? ` → ${formatDate(item.end_date)}` : ''}</Text>
           </View>
           <View style={styles.dateRow}>
             <Ionicons name="people-outline" size={13} color={colors.ink3} />

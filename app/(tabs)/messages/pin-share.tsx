@@ -46,7 +46,7 @@ export default function PINShare() {
         .select('*, host:hosts!bookings_host_id_fkey(name)')
         .eq('walker_id', user?.id || '')
         .eq('status', 'accepted')
-        .order('check_in', { ascending: true });
+        .order('start_date', { ascending: true });
 
       if (error) throw error;
       setBookings((data || []) as BookingWithDetails[]);
@@ -117,7 +117,7 @@ export default function PINShare() {
       <View>
         <Text style={styles.hostName}>{item.host?.name || 'Host'}</Text>
         <Text style={styles.checkInDate}>
-          {new Date(item.check_in).toLocaleDateString('en-US', {
+          {new Date(item.start_date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
           })}

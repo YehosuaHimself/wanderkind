@@ -155,7 +155,7 @@ export default function MyBookings() {
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.hostName} numberOfLines={1}>{item.host_name}</Text>
                     <Text style={styles.sub} numberOfLines={1}>
-                      {dateRange(item.check_in, item.check_out)}{item.host_country ? ` · ${item.host_country}` : ''}
+                      {dateRange(item.start_date, item.end_date)}{item.host_country ? ` · ${item.host_country}` : ''}
                     </Text>
                   </View>
                   <View style={[styles.statusChip, { backgroundColor: bg, borderColor: tint }]}>
