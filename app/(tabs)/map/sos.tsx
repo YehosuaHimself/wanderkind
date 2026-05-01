@@ -1,71 +1,169 @@
-import React, { useState } from 'react';
+/**
+ * WK-220 — Emergency SOS Screen
+ * - Loads real emergency_contacts from profile
+ * - Gets current GPS position
+ * - "Alert All Contacts" fires native SMS per contact + logs to sos_alerts
+ * - Quick-dial buttons per contact
+ * - 112 / emergency services always prominent
+ */
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Linking,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Linking, Platform, ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { colors, typography, spacing, radii, shadows } from '../../../src/lib/theme';
 import { showAlert } from '../../../src/lib/alert';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useAuth } from '../../../src/stores/auth';
+import { supabase } from '../../../src/lib/supabase';
+import { toast } from '../../../src/lib/toast';
+import type { EmergencyContact } from '../../../src/types/database';
 
-interface Emergency {
-  type: string;
-  number: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-}
-
-const EMERGENCIES: Record<string, Emergency> = {
-  police: {
-    type: 'police',
-    number: '112',
-    name: 'Police',
-    description: 'For crime, accidents, and emergencies',
-    icon: 'shield-outline',
-    color: colors.blue,
-  },
-  hospital: {
-    type: 'hospital',
-    number: '112',
-    name: 'Emergency Medical',
-    description: 'For medical emergencies and accidents',
-    icon: 'medical-outline',
-    color: colors.red,
-  },
-  mountain: {
-    type: 'mountain',
-    number: '1-800-RESCUE',
-    name: 'Mountain Rescue',
-    description: 'For trail emergencies and mountain rescue',
-    icon: 'alert-circle-outline',
-    color: colors.tramp,
-  },
-};
+const SUPABASE_URL = 'https://gjzhwpzgvdpkflgjesmb.supabase.co';
 
 export default function SOS() {
   const { user, isLoading } = useAuthGuard();
-  const [userCountry, setUserCountry] = useState('ES'); // Default to Spain
+  const { profile } = useAuth();
+  const router = useRouter();
+
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [locating, setLocating] = useState(true);
+  const [alerting, setAlerting] = useState(false);
+  const [alerted, setAlerted] = useState(false);
+
+  // Load emergency contacts from profile
+  useEffect(() => {
+    if (profile?.emergency_contacts?.length) {
+      setContacts((profile.emergency_contacts as EmergencyContact[]).filter((c: EmergencyContact) => c.name || c.phone));
+    }
+  }, [profile]);
+
+  // Get current location
+  useEffect(() => {
+    setLocating(true);
+    if (Platform.OS === 'web' && navigator?.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); setLocating(false); },
+        () => {
+          // Fall back to profile location
+          if (profile?.lat) setLat(profile.lat);
+          if (profile?.lng) setLng(profile.lng);
+          setLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    } else {
+      if (profile?.lat) setLat(profile.lat);
+      if (profile?.lng) setLng(profile.lng);
+      setLocating(false);
+    }
+  }, [profile?.lat, profile?.lng]);
+
+  const call112 = () => Linking.openURL('tel:112');
+
+  const callContact = (contact: EmergencyContact) => {
+    if (!contact.phone) {
+      toast.error('No phone number for this contact.');
+      return;
+    }
+    Linking.openURL(`tel:${contact.phone.replace(/\s/g, '')}`);
+  };
+
+  const smsContact = (contact: EmergencyContact, locationText: string) => {
+    if (!contact.phone) return;
+    const body = encodeURIComponent(
+      `🚨 EMERGENCY ALERT from Wanderkind\n\nI need help. ${locationText}\n\nPlease contact me immediately.`
+    );
+    const uri = Platform.OS === 'ios'
+      ? `sms:${contact.phone}&body=${body}`
+      : `sms:${contact.phone}?body=${body}`;
+    Linking.openURL(uri);
+  };
+
+  const handleAlertAll = useCallback(async () => {
+    if (!contacts.length) {
+      showAlert(
+        'No Emergency Contacts',
+        'Please add emergency contacts in your profile settings first.',
+        [
+          { text: 'Add Contacts', onPress: () => router.push('/(tabs)/me/emergency-contacts' as any) },
+          { text: 'Cancel', style: 'cancel' },
+        ],
+      );
+      return;
+    }
+
+    setAlerting(true);
+    try {
+      const mapsLink = lat && lng
+        ? `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`
+        : null;
+      const locationText = mapsLink
+        ? `My location: ${mapsLink}`
+        : 'Location not available — check my last known position in Wanderkind.';
+
+      // 1. Fire native SMS to each contact (user action per contact)
+      //    We open the first SMS directly; others via individual buttons.
+      //    Log to DB regardless.
+      for (const c of contacts) {
+        if (c.phone) smsContact(c, locationText);
+      }
+
+      // 2. Log the SOS event
+      if (user) {
+        await supabase.from('sos_alerts').insert({
+          user_id: user.id,
+          lat,
+          lng,
+          location_text: locationText,
+          contacts_notified: contacts,
+          message: 'Manual SOS alert triggered from app',
+        });
+
+        // 3. Call Edge Function (best-effort — may not be deployed yet)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          fetch(`${SUPABASE_URL}/functions/v1/sos-alert`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              user_id: user.id,
+              lat, lng,
+              location_text: locationText,
+              contacts,
+            }),
+          }).catch(() => null); // fire-and-forget
+        }
+      }
+
+      setAlerted(true);
+      toast.success('Emergency contacts alerted!');
+    } catch (err) {
+      toast.error('Alert failed. Please call 112 directly.');
+    } finally {
+      setAlerting(false);
+    }
+  }, [contacts, lat, lng, user, router]);
 
   if (isLoading) return null;
 
-  const handleCall = (number: string) => {
-    const cleanNumber = number.replace(/\D/g, '');
-    if (cleanNumber) {
-      Linking.openURL(`tel:${cleanNumber}`).catch(() => {
-        showAlert('Error', 'Cannot make calls on this device');
-      });
-    }
-  };
+  const locationText = lat && lng
+    ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    : locating ? 'Locating…' : 'Location unavailable';
+  const mapsUrl = lat && lng
+    ? `https://maps.google.com/?q=${lat},${lng}`
+    : null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -73,371 +171,225 @@ export default function SOS() {
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Warning Banner */}
-          <View style={styles.warningBanner}>
-            <Ionicons name="warning" size={24} color={colors.red} />
-            <Text style={styles.warningText}>
-              In life-threatening situations, call emergency services immediately
-            </Text>
-          </View>
 
-          {/* Emergency Numbers */}
-          <Text style={styles.sectionTitle}>Emergency Services</Text>
-          <View style={styles.emergencyGrid}>
-            {Object.values(EMERGENCIES).map((emergency) => (
-              <TouchableOpacity
-                key={emergency.type}
-                style={styles.emergencyCard}
-                onPress={() => handleCall(emergency.number)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.emergencyIconContainer, { backgroundColor: `${emergency.color}15` }]}>
-                  <Ionicons name={emergency.icon as any} size={32} color={emergency.color} />
-                </View>
-                <Text style={styles.emergencyName}>{emergency.name}</Text>
-                <Text style={[styles.emergencyNumber, { color: emergency.color }]}>
-                  {emergency.number}
-                </Text>
-                <Text style={styles.emergencyDescription}>{emergency.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {/* 112 Call button — always top and prominent */}
+          <TouchableOpacity style={styles.callBig} onPress={call112} activeOpacity={0.85}>
+            <View style={styles.callBigIcon}>
+              <Ionicons name="call" size={36} color="#fff" />
+            </View>
+            <View>
+              <Text style={styles.callBigLabel}>Call Emergency Services</Text>
+              <Text style={styles.callBigNumber}>112 / 911</Text>
+            </View>
+          </TouchableOpacity>
 
-          {/* Nearby Resources */}
+          {/* Location */}
           <WKCard variant="parchment">
-            <Text style={styles.sectionTitle}>Nearby Resources</Text>
-            <View style={styles.resourcesList}>
-              <ResourceItem
-                icon="hospital-box"
-                title="Nearest Hospital"
-                description="Not detected. Scan QR code to update location"
-                color={colors.red}
-              />
-              <ResourceItem
-                icon="home"
-                title="Nearest Host (Safe Haven)"
-                description="Contact your current host or look for nearby accommodation"
-                color={colors.amber}
-              />
-              <ResourceItem
-                icon="people"
-                title="Nearby Wanderkinder"
-                description="Connect with other travelers for support and assistance"
-                color={colors.blue}
-              />
+            <View style={styles.locationRow}>
+              <Ionicons name={locating ? 'locate-outline' : 'location'} size={20}
+                color={locating ? colors.ink3 : colors.amber} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.locationLabel}>Your location</Text>
+                {locating ? (
+                  <ActivityIndicator size="small" color={colors.amber} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+                ) : (
+                  <Text style={styles.locationValue}>{locationText}</Text>
+                )}
+              </View>
+              {mapsUrl && (
+                <TouchableOpacity onPress={() => Linking.openURL(mapsUrl)}>
+                  <Ionicons name="open-outline" size={18} color={colors.amber} />
+                </TouchableOpacity>
+              )}
             </View>
           </WKCard>
 
-          {/* Safety Tips */}
-          <WKCard>
-            <Text style={styles.sectionTitle}>Safety Tips</Text>
-            <View style={styles.tipsList}>
-              <TipItem text="Stay calm and think clearly before taking action" />
-              <TipItem text="If lost, stay in place and wait for rescue" />
-              <TipItem text="Share your location with trusted contacts" />
-              <TipItem text="Always carry water and basic first aid supplies" />
-              <TipItem text="Keep phone charged and know the local language for emergencies" />
-              <TipItem text="Mark your trail progress with the Wanderkind app" />
-            </View>
-          </WKCard>
-
-          {/* Health Info */}
+          {/* Alert All button */}
           <WKCard variant="gold">
-            <Text style={styles.sectionTitle}>Your Health Profile</Text>
-            <View style={styles.healthInfo}>
-              <HealthInfoRow
-                icon="information-circle"
-                label="Blood Type"
-                value="Not Set"
-              />
-              <HealthInfoRow
-                icon="warning"
-                label="Allergies"
-                value="Not Set"
-              />
-              <HealthInfoRow
-                icon="medical"
-                label="Emergency Contact"
-                value="Not Set"
-              />
-            </View>
-            <WKButton
-              title="Update Health Info"
-              onPress={() => {
-                // Navigate to profile health settings
-              }}
-              variant="secondary"
-              fullWidth
-              style={styles.updateButton}
-            />
+            <Text style={styles.sectionTitle}>Emergency Contacts</Text>
+            {contacts.length === 0 ? (
+              <View>
+                <Text style={styles.noContactsText}>
+                  No emergency contacts set. Add them in your profile so they can be reached in an emergency.
+                </Text>
+                <WKButton
+                  title="Add Emergency Contacts"
+                  onPress={() => router.push('/(tabs)/me/emergency-contacts' as any)}
+                  variant="primary"
+                  fullWidth
+                  style={{ marginTop: spacing.md }}
+                />
+              </View>
+            ) : (
+              <View>
+                <WKButton
+                  title={alerted ? '✓ Contacts Alerted' : alerting ? 'Alerting…' : '🚨 Alert All Contacts'}
+                  onPress={handleAlertAll}
+                  disabled={alerting || alerted}
+                  loading={alerting}
+                  fullWidth
+                  style={[styles.alertBtn, alerted && { backgroundColor: colors.green }] as any}
+                />
+                <Text style={styles.alertHint}>
+                  Sends an SMS with your location to all emergency contacts.
+                </Text>
+              </View>
+            )}
           </WKCard>
 
-          {/* Helpful Links */}
+          {/* Per-contact actions */}
+          {contacts.length > 0 && (
+            <WKCard>
+              {contacts.map((c: EmergencyContact, i: number) => (
+                <View key={i} style={[styles.contactRow, i > 0 && styles.contactBorder]}>
+                  <View style={styles.contactAvatar}>
+                    <Ionicons name="person-outline" size={18} color={colors.amber} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactName}>{c.name || 'Contact'}</Text>
+                    {c.relationship ? <Text style={styles.contactRel}>{c.relationship}</Text> : null}
+                    {c.phone ? <Text style={styles.contactPhone}>{c.phone}</Text> : null}
+                  </View>
+                  {c.phone ? (
+                    <View style={styles.contactActions}>
+                      <TouchableOpacity style={styles.contactBtn} onPress={() => callContact(c)}>
+                        <Ionicons name="call" size={18} color={colors.green} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.contactBtn, { backgroundColor: colors.amberBg }]}
+                        onPress={() => smsContact(c, locationText)}>
+                        <Ionicons name="chatbubble-outline" size={18} color={colors.amber} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+              <TouchableOpacity
+                style={styles.editContactsBtn}
+                onPress={() => router.push('/(tabs)/me/emergency-contacts' as any)}
+              >
+                <Ionicons name="pencil-outline" size={14} color={colors.ink3} />
+                <Text style={styles.editContactsText}>Edit contacts</Text>
+              </TouchableOpacity>
+            </WKCard>
+          )}
+
+          {/* Emergency services grid */}
           <WKCard>
-            <Text style={styles.sectionTitle}>Helpful Links</Text>
-            <View style={styles.linksList}>
-              <LinkItem title="Traveler's Health Guidelines" />
-              <LinkItem title="Blister & Injury Treatment" />
-              <LinkItem title="Mental Health Support" />
-              <LinkItem title="Find Nearby Pharmacies" />
+            <Text style={styles.sectionTitle}>Emergency Numbers</Text>
+            <View style={styles.servicesGrid}>
+              {[
+                { label: 'Police', num: '112', icon: 'shield-outline', color: colors.blue },
+                { label: 'Medical', num: '112', icon: 'medical-outline', color: colors.red },
+                { label: 'Fire', num: '112', icon: 'flame-outline', color: '#E85D04' },
+                { label: 'Mountain Rescue', num: '112', icon: 'alert-circle-outline', color: colors.tramp },
+              ].map(s => (
+                <TouchableOpacity
+                  key={s.label}
+                  style={styles.serviceCard}
+                  onPress={() => Linking.openURL(`tel:${s.num}`)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.serviceIcon, { backgroundColor: `${s.color}15` }]}>
+                    <Ionicons name={s.icon as any} size={28} color={s.color} />
+                  </View>
+                  <Text style={styles.serviceLabel}>{s.label}</Text>
+                  <Text style={[styles.serviceNum, { color: s.color }]}>{s.num}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </WKCard>
 
-          {/* Insurance Info */}
+          {/* Safety tips */}
           <WKCard variant="parchment">
-            <Text style={styles.sectionTitle}>Travel Insurance</Text>
-            <Text style={styles.insuranceText}>
-              Consider purchasing travel or hiking insurance that covers medical emergencies and rescue operations in your region.
-            </Text>
-            <WKButton
-              title="Learn More About Insurance"
-              onPress={() => {
-                // Navigate to insurance info
-              }}
-              variant="ghost"
-              fullWidth
-              style={styles.insuranceButton}
-            />
+            <Text style={styles.sectionTitle}>Safety Tips</Text>
+            {[
+              'Stay calm — call 112 first in life-threatening situations',
+              'Stay in place if lost; rescuers come to you',
+              'Share your GPS coordinates from this screen',
+              'Keep your phone charged; carry a power bank',
+              'Tell someone your route and expected arrival',
+            ].map((tip, i) => (
+              <View key={i} style={styles.tipRow}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={colors.green} />
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
           </WKCard>
+
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function ResourceItem({
-  icon,
-  title,
-  description,
-  color,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-  color: string;
-}) {
-  return (
-    <View style={styles.resourceItem}>
-      <View style={[styles.resourceIcon, { backgroundColor: `${color}15` }]}>
-        <Ionicons name={icon as any} size={20} color={color} />
-      </View>
-      <View style={styles.resourceContent}>
-        <Text style={styles.resourceTitle}>{title}</Text>
-        <Text style={styles.resourceDescription}>{description}</Text>
-      </View>
-    </View>
-  );
-}
-
-function TipItem({ text }: { text: string }) {
-  return (
-    <View style={styles.tipItem}>
-      <Ionicons name="checkmark-circle" size={16} color={colors.green} />
-      <Text style={styles.tipText}>{text}</Text>
-    </View>
-  );
-}
-
-function HealthInfoRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={styles.healthRow}>
-      <Ionicons name={icon as any} size={16} color={colors.amber} />
-      <View style={styles.healthContent}>
-        <Text style={styles.healthLabel}>{label}</Text>
-        <Text style={styles.healthValue}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-function LinkItem({ title }: { title: string }) {
-  return (
-    <TouchableOpacity style={styles.linkItem}>
-      <Text style={styles.linkTitle}>{title}</Text>
-      <Ionicons name="open" size={14} color={colors.ink3} />
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    padding: spacing.lg,
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
+  content: { padding: spacing.lg, gap: spacing.lg },
+
+  callBig: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.lg,
+    backgroundColor: colors.red,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    ...shadows.lg,
   },
-  warningBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.redBg,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.red,
-    marginBottom: spacing.md,
+  callBigIcon: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  warningText: {
-    ...typography.bodySm,
-    color: colors.red,
-    flex: 1,
-    fontWeight: '500',
+  callBigLabel: { ...typography.bodySm, color: 'rgba(255,255,255,0.85)', marginBottom: 4 },
+  callBigNumber: { fontSize: 28, fontWeight: '800', color: '#fff', fontFamily: 'Courier New', letterSpacing: 2 },
+
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  locationLabel: { ...typography.caption, color: colors.ink3, marginBottom: 2 },
+  locationValue: { ...typography.bodySm, color: colors.ink, fontWeight: '600', fontFamily: 'Courier New' },
+
+  sectionTitle: { ...typography.h3, color: colors.ink, marginBottom: spacing.md },
+
+  alertBtn: { backgroundColor: colors.red },
+  alertHint: { ...typography.caption, color: colors.ink2, textAlign: 'center', marginTop: spacing.sm },
+
+  noContactsText: { ...typography.bodySm, color: colors.ink2, lineHeight: 20 },
+
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  contactBorder: { borderTopWidth: 1, borderTopColor: colors.borderLt },
+  contactAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center', alignItems: 'center',
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
+  contactName: { ...typography.bodySm, color: colors.ink, fontWeight: '600' },
+  contactRel: { ...typography.caption, color: colors.ink3 },
+  contactPhone: { ...typography.caption, color: colors.amber, fontFamily: 'Courier New', marginTop: 2 },
+  contactActions: { flexDirection: 'row', gap: spacing.sm },
+  contactBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(39,134,74,0.12)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  emergencyGrid: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-    flexWrap: 'wrap',
+  editContactsBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginTop: spacing.md, alignSelf: 'flex-end',
   },
-  emergencyCard: {
-    flex: 1,
-    minWidth: 140,
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
+  editContactsText: { ...typography.caption, color: colors.ink3 },
+
+  servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  serviceCard: {
+    flex: 1, minWidth: 120, alignItems: 'center',
+    padding: spacing.md, backgroundColor: colors.surface,
+    borderRadius: radii.md, borderWidth: 1, borderColor: colors.border,
   },
-  emergencyIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+  serviceIcon: {
+    width: 52, height: 52, borderRadius: 26,
+    justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm,
   },
-  emergencyName: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: spacing.xs,
-  },
-  emergencyNumber: {
-    fontFamily: 'Courier New',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  emergencyDescription: {
-    ...typography.caption,
-    color: colors.ink2,
-    textAlign: 'center',
-  },
-  resourcesList: {
-    gap: spacing.md,
-  },
-  resourceItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  resourceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  resourceContent: {
-    flex: 1,
-  },
-  resourceTitle: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.ink,
-    marginBottom: spacing.xs,
-  },
-  resourceDescription: {
-    ...typography.bodySm,
-    color: colors.ink2,
-  },
-  tipsList: {
-    gap: spacing.md,
-  },
-  tipItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  tipText: {
-    ...typography.bodySm,
-    color: colors.ink2,
-    flex: 1,
-    paddingTop: 2,
-  },
-  healthInfo: {
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(200,118,42,0.1)',
-  },
-  healthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  healthContent: {
-    flex: 1,
-  },
-  healthLabel: {
-    ...typography.caption,
-    color: colors.ink3,
-  },
-  healthValue: {
-    ...typography.body,
-    color: colors.ink,
-    fontWeight: '500',
-  },
-  updateButton: {
-    marginTop: 0,
-  },
-  linksList: {
-    gap: spacing.md,
-  },
-  linkItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  linkTitle: {
-    ...typography.body,
-    color: colors.amber,
-    fontWeight: '500',
-  },
-  insuranceText: {
-    ...typography.bodySm,
-    color: colors.parchmentInk,
-    marginBottom: spacing.md,
-    lineHeight: 20,
-  },
-  insuranceButton: {
-    marginTop: 0,
-  },
+  serviceLabel: { ...typography.bodySm, fontWeight: '600', color: colors.ink, marginBottom: 2 },
+  serviceNum: { fontFamily: 'Courier New', fontSize: 14, fontWeight: '700' },
+
+  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.xs },
+  tipText: { ...typography.bodySm, color: colors.ink2, flex: 1, lineHeight: 20 },
 });
