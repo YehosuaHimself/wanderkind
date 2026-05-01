@@ -77,8 +77,8 @@ const STATUS_CONFIG: Record<string, {
   completed: {
     icon: 'checkmark-circle',
     title: 'Stay completed',
-    color: '#7A8896',
-    message: "Your stay is done. Don't forget to leave a Gästebuch entry.",
+    color: '#5A7A2B',
+    message: "Your stay is recorded. Leave a review to stamp your journey.",
   },
 };
 
@@ -313,6 +313,13 @@ export default function BookingConfirm() {
           <WKButton
             title="Add to calendar (.ics)"
             onPress={exportICS}
+            variant="primary"
+            fullWidth
+          />
+        ) : booking.status === 'completed' ? (
+          <WKButton
+            title="Leave a Review"
+            onPress={() => router.push({ pathname: '/(tabs)/map/booking/review', params: { bookingId: booking.id } } as any)}
             variant="primary"
             fullWidth
           />
