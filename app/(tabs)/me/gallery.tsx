@@ -51,19 +51,30 @@ export default function GalleryScreen() {
         setLoading(true);
         const response = await fetch(uri);
         const blob = await response.blob();
-        const filename = `gallery_${user.id}_${Date.now()}.jpg`;
+        const filename = `${user.id}/gallery_${Date.now()}.jpg`;
 
         const { error: uploadError } = await supabase.storage
-          .from('profiles')
-          .upload(filename, blob);
+          .from('avatars')
+          .upload(filename, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
 
-        if (uploadError) throw uploadError;
+        let photoUrl: string;
+        if (uploadError) {
+          console.warn('Gallery upload failed, using base64 fallback:', uploadError.message);
+          // Persist as base64 data URL — works without storage bucket
+          photoUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } else {
+          const { data: publicData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filename);
+          photoUrl = publicData.publicUrl;
+        }
 
-        const { data: publicData } = supabase.storage
-          .from('profiles')
-          .getPublicUrl(filename);
-
-        const newPhotos = [...photos, { id: filename, url: publicData.publicUrl, order: photos.length }];
+        const newPhotos = [...photos, { id: filename, url: photoUrl, order: photos.length }];
         setPhotos(newPhotos);
 
         const { error: updateError } = await supabase

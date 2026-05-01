@@ -100,29 +100,24 @@ export default function MeScreen() {
 
   // === PHOTO UPLOAD HANDLERS ===
   const uploadToStorage = async (uri: string, filename: string): Promise<string> => {
-    // Fetch the image as a blob
     const response = await fetch(uri);
     const blob = await response.blob();
+    const contentType = blob.type || 'image/jpeg';
 
-    // On web, wrap in File for proper content-type handling
-    const file = Platform.OS === 'web'
-      ? new File([blob], filename, { type: 'image/jpeg' })
-      : blob;
-
-    // Try upload — if bucket doesn't exist or RLS blocks, fall back to base64 data URL
+    // Path: {userId}/filename — userId MUST be first segment for Supabase RLS
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
+      .upload(filename, blob, { upsert: true, contentType });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError.message);
-      // If storage fails (bucket missing, RLS, etc.), store the URI directly
-      // This lets the user see their photo locally even without storage working
-      if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
-        console.warn('Storage bucket not configured — saving image URI directly');
-        return uri;
-      }
-      throw uploadError;
+      console.warn('Storage upload failed, using base64 fallback:', uploadError.message);
+      // Convert to base64 data URL — persists in DB across sessions
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     }
 
     const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(filename);
@@ -138,7 +133,7 @@ export default function MeScreen() {
       if (!imageUri || !user) return;
 
       setUploadingAvatar(true);
-      const filename = `profile_photos/${user.id}/avatar_${Date.now()}.jpg`;
+      const filename = `${user.id}/avatar_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
       // Use store's updateProfile for immediate local state + DB persist
@@ -163,7 +158,7 @@ export default function MeScreen() {
       if (!imageUri || !user) return;
 
       setUploadingCover(true);
-      const filename = `profile_photos/${user.id}/cover_${Date.now()}.jpg`;
+      const filename = `${user.id}/cover_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
       // Use store's updateProfile for immediate local state + DB persist
