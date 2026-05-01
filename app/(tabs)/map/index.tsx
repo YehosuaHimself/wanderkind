@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, ScrollView, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, shadows, hostTypeConfig, getFreshnessBadge, getResponseTimeBadge, dataSourceConfig } from '../../../src/lib/theme';
 import { toast } from '../../../src/lib/toast';
@@ -970,6 +970,8 @@ function WebMapComponent({
 export default function MapHome() {
   useAuthGuard(); // Track auth but don't block map rendering
   const router = useRouter();
+  // WK-226 — accept ?navHostId from the host detail screen
+  const params = useLocalSearchParams<{ navHostId?: string }>();
   const { profile } = useAuthStore();
   const mapRef = useRef<any>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
@@ -1187,13 +1189,22 @@ export default function MapHome() {
     }
   };
 
-  // WK-201 + WK-211 — viewport-bounded host fetch. The cap scales with zoom:
-  // wide views get 2000 (so the map looks dense), zoomed-in views stay at 500
-  // to keep the marker layer light. Last-known viewport stored for refresh.
+  // WK-201 + WK-211 + WK-228 — viewport-bounded host fetch with an in-memory
+  // FIFO cache (8 entries, 30s TTL). Re-panning over a recent bbox returns
+  // instantly. Cap scales with zoom: wide views get 2000, zoomed-in 500.
   const lastViewportRef = useRef<{ south:number; west:number; north:number; east:number; zoom?: number } | null>(null);
+  const viewportCacheRef = useRef<Map<string, { ts: number; data: Host[] }>>(new Map());
   const handleViewportChange = useCallback(async (b: { south: number; west: number; north: number; east: number; zoom?: number }) => {
     lastViewportRef.current = b;
     const limit = b.zoom != null && b.zoom < 7 ? 2000 : b.zoom != null && b.zoom < 11 ? 1000 : 500;
+    // Round the bbox so near-identical pans hit the cache.
+    const r = (n: number) => Math.round(n * 100) / 100;
+    const key = `${r(b.south)},${r(b.west)},${r(b.north)},${r(b.east)},${limit}`;
+    const cached = viewportCacheRef.current.get(key);
+    if (cached && Date.now() - cached.ts < 30_000) {
+      setHosts(cached.data);
+      return;
+    }
     try {
       const { data } = await supabase
         .from('hosts')
@@ -1204,7 +1215,16 @@ export default function MapHome() {
         .gte('lng', b.west).lte('lng', b.east)
         .order('quality_score', { ascending: false })
         .limit(limit);
-      if (data) setHosts(data as Host[]);
+      if (data) {
+        const rows = data as Host[];
+        setHosts(rows);
+        const cache = viewportCacheRef.current;
+        cache.set(key, { ts: Date.now(), data: rows });
+        if (cache.size > 8) {
+          const oldest = cache.keys().next().value;
+          if (oldest) cache.delete(oldest);
+        }
+      }
     } catch (err) {
       console.error('viewport fetch failed', err);
     }
@@ -1274,6 +1294,37 @@ export default function MapHome() {
       iframe?.contentWindow?.postMessage({ type: 'clear-nav-route' }, '*');
     }
   }, []);
+
+  // WK-226 — auto-start navigation when arriving from the detail page
+  // with ?navHostId. We try the in-memory list first; if not present,
+  // we one-shot fetch the row so the deep-link works regardless of
+  // which viewport is currently loaded.
+  const navHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = params?.navHostId;
+    if (!id || typeof id !== 'string') return;
+    if (navHandledRef.current === id) return;
+    const inList = hosts.find(h => h.id === id);
+    if (inList) {
+      navHandledRef.current = id;
+      startNavigation(inList);
+      router.setParams({ navHostId: undefined } as any);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.from('hosts').select('*').eq('id', id).maybeSingle();
+        if (cancelled || !data) return;
+        navHandledRef.current = id;
+        // Surface the host in the carousel so it isn't a phantom.
+        setHosts(prev => (prev.some(h => h.id === id) ? prev : [data as Host, ...prev]));
+        startNavigation(data as Host);
+        router.setParams({ navHostId: undefined } as any);
+      } catch { /* swallow */ }
+    })();
+    return () => { cancelled = true; };
+  }, [params?.navHostId, hosts, startNavigation, router]);
 
   // WK-222 — when nav is active and the user moves > 25 m, repaint the
   // route from the new origin so the polyline + ETA stay accurate.

@@ -364,15 +364,20 @@ export default function HostDetail() {
                 <Text style={styles.actionLabel}>Email</Text>
               </TouchableOpacity>
             ) : null}
+            {/* WK-226 — Navigate brings you back to the map with the
+                in-app polyline auto-painted toward this host. */}
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={openDirections}
+              onPress={() => {
+                if (!host) return;
+                router.replace({ pathname: '/(tabs)/map', params: { navHostId: host.id } } as any);
+              }}
               activeOpacity={0.7}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.blueBg }]}>
-                <Ionicons name="navigate" size={18} color={colors.blue} />
+              <View style={[styles.actionIcon, { backgroundColor: 'rgba(200,118,42,0.12)' }]}>
+                <Ionicons name="navigate" size={18} color={'#C8762A'} />
               </View>
-              <Text style={styles.actionLabel}>Directions</Text>
+              <Text style={styles.actionLabel}>Navigate</Text>
             </TouchableOpacity>
             {(host as any).website ? (
               <TouchableOpacity
