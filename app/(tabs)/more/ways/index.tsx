@@ -170,21 +170,31 @@ export default function WaysList({ embedded = false }: { embedded?: boolean }) {
     );
   }, [router]);
 
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="map-outline" size={48} color={colors.amberLine} />
-      <Text style={styles.emptyTitle}>
-        {search || regionFilter !== 'All' || difficultyFilter !== 'All'
-          ? 'No matching ways'
-          : 'No ways yet'}
-      </Text>
-      <Text style={styles.emptyText}>
-        {search || regionFilter !== 'All' || difficultyFilter !== 'All'
-          ? 'Try adjusting your filters or search terms.'
-          : 'Check back soon for walking routes.'}
-      </Text>
-    </View>
-  );
+  const renderEmpty = () => {
+    const isFiltered = !!(search || regionFilter !== 'All' || difficultyFilter !== 'All');
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="trail-sign-outline" size={48} color={colors.amberLine} />
+        <Text style={styles.emptyTitle}>
+          {isFiltered ? 'No matching ways' : 'No ways yet'}
+        </Text>
+        <Text style={styles.emptyText}>
+          {isFiltered
+            ? 'Try adjusting your filters or search terms.'
+            : 'Walking routes will appear here as the community grows.'}
+        </Text>
+        {isFiltered && (
+          <TouchableOpacity
+            style={styles.emptyBtn}
+            onPress={() => { setSearch(''); setRegionFilter('All'); setDifficultyFilter('All'); }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.emptyBtnText}>Clear Filters</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   const activeFilterCount =
     (regionFilter !== 'All' ? 1 : 0) +
@@ -475,4 +485,17 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { ...typography.h3, color: colors.ink, marginTop: 12, textAlign: 'center' },
   emptyText: { ...typography.bodySm, color: colors.ink2, marginTop: 6, textAlign: 'center' },
+  emptyBtn: {
+    marginTop: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(200,118,42,0.35)',
+    borderRadius: 20,
+  },
+  emptyBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.amber,
+  },
 });

@@ -272,7 +272,7 @@ export default function CommunityMapView() {
       }
       if (e.data.type === 'member-tap' || e.data.type === 'marker-tap') {
         haptic.light();
-        router.push(`/profile/${e.data.id}` as any);
+        router.push(`/(tabs)/me/profile/${e.data.id}` as any);
       }
     };
     window.addEventListener('message', handler);

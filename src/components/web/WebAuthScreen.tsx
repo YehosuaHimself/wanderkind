@@ -109,7 +109,7 @@ export function WebAuthScreen({ mode, role }: Props) {
           if (error) {
             setErrors({ form: error.message });
           } else {
-            router.replace('/(tabs)/map');
+            router.replace('/(tabs)/myway');
           }
         }
       } catch {

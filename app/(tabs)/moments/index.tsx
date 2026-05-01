@@ -490,11 +490,17 @@ export default function MomentsFeed() {
 
   const renderEmpty = () => (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name="star-outline" size={48} color={colors.amberLine} />
-      </View>
-      <Text style={styles.emptyTitle}>No moments yet</Text>
-      <Text style={styles.emptyText}>Share your first moment from the road.{'\n'}Photos, thoughts, a sunrise.</Text>
+      <Ionicons name="image-outline" size={48} color={colors.amberLine} />
+      <Text style={styles.emptyTitle}>No moments here yet</Text>
+      <Text style={styles.emptyText}>Be the first to share from this stretch of the road.</Text>
+      <TouchableOpacity
+        style={styles.emptyBtn}
+        onPress={() => router.push('/(tabs)/moments/create' as any)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add-outline" size={16} color="#FAF6EF" />
+        <Text style={styles.emptyBtnText}>Share a Moment</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -793,5 +799,21 @@ const styles = StyleSheet.create({
   modalImage: {
     width: '100%',
     height: '100%',
+  },
+  emptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.amber,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 16,
+  },
+  emptyBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FAF6EF',
+    letterSpacing: 0.2,
   },
 });

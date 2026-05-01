@@ -274,7 +274,7 @@ export default function ShuffleScreen() {
   const handleAccept = useCallback(() => {
     if (!matchedHost) return;
     haptic.medium();
-    router.push(`/(tabs)/map/host/${matchedHost.id}` as any);
+    router.push(`/(tabs)/me/profile/${matchedHost.id}` as any);
   }, [matchedHost, router]);
 
   const handlePass = useCallback(async () => {

@@ -11,6 +11,8 @@ import { supabase } from '../../../src/lib/supabase';
 import { SEED_PROFILES } from '../../../../src/data/seed-profiles';
 import { isSeedProfileId } from '../../../../src/lib/seedMessages';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { useBiometricGate } from '../../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../../src/components/verification/BiometricGate';
 
 interface PublicProfile {
   id: string;
@@ -30,6 +32,7 @@ interface PublicProfile {
 export default function PublicProfileScreen() {
   const { user, isLoading } = useAuthGuard();
   const router = useRouter();
+  const { isVerified, gateVisible, openGate, closeGate, onVerified } = useBiometricGate();
   const { id } = useLocalSearchParams();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,9 +205,22 @@ export default function PublicProfileScreen() {
       </ScrollView>
 
       <View style={styles.actions}>
+        {gateVisible && (
+          <BiometricGate
+            action="send messages"
+            onVerified={() => {
+              onVerified();
+              router.push((isSeedProfileId(id as string) ? `/(tabs)/messages/seed/${id}` : `/(tabs)/messages/${id}`) as any);
+            }}
+            onDismiss={closeGate}
+          />
+        )}
         <WKButton
           title="Send Message"
-          onPress={() => router.push((isSeedProfileId(id as string) ? `/(tabs)/messages/seed/${id}` : `/(tabs)/messages/${id}`) as any)}
+          onPress={() => isVerified
+            ? router.push((isSeedProfileId(id as string) ? `/(tabs)/messages/seed/${id}` : `/(tabs)/messages/${id}`) as any)
+            : openGate()
+          }
           variant="primary"
           size="lg"
           fullWidth

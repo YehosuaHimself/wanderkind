@@ -22,5 +22,5 @@ export default function Index() {
     return <Redirect href="/(auth)/select-way" />;
   }
 
-  return <Redirect href="/(tabs)/map" />;
+  return <Redirect href="/(tabs)/myway" />;
 }

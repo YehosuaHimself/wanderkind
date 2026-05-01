@@ -31,6 +31,7 @@ export default function MessagesScreen() {
 
   const router = useRouter();
   const { user } = useAuth();
+  const { isVerified, gateVisible, openGate, closeGate, require: requireVerification, onVerified } = useBiometricGate();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,13 +150,19 @@ export default function MessagesScreen() {
 
   const renderEmpty = () => (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name="chatbubble-outline" size={48} color={colors.amberLine} />
-      </View>
+      <Ionicons name="paper-plane-outline" size={48} color={colors.amberLine} />
       <Text style={styles.emptyTitle}>No messages yet</Text>
       <Text style={styles.emptyText}>
-        Connect with hosts and wanderkinder{'\n'}along your Way.
+        Connect with hosts and Wanderkinder along your Way.
       </Text>
+      <TouchableOpacity
+        style={styles.emptyBtn}
+        onPress={requireVerification(() => router.push('/(tabs)/messages/new' as any))}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="search-outline" size={16} color="#FAF6EF" />
+        <Text style={styles.emptyBtnText}>Find a Wanderkind</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -467,4 +474,20 @@ const styles = StyleSheet.create({
   emptyIcon: { marginBottom: 16 },
   emptyTitle: { ...typography.h3, color: colors.ink, marginBottom: 8, textAlign: 'center' },
   emptyText: { ...typography.bodySm, color: colors.ink2, textAlign: 'center', lineHeight: 20 },
+  emptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.amber,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 16,
+  },
+  emptyBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FAF6EF',
+    letterSpacing: 0.2,
+  },
 });
