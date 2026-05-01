@@ -14,6 +14,7 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 import { showAlert } from '../../../src/lib/alert';
+import { haptic } from '../../../src/lib/haptics';
 import { QRCode } from '../../../src/components/ui/QRCode';
 import { StoryRing } from '../../../src/components/stories/StoryRing';
 import { useBiometricGate } from '../../../src/hooks/useBiometricGate';

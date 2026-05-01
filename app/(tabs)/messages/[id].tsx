@@ -31,6 +31,7 @@ export default function ChatThread() {
   const router = useRouter();
   const { id: threadId } = useLocalSearchParams();
   const { user } = useAuth();
+  const { isVerified, gateVisible, openGate, closeGate, onVerified } = useBiometricGate();
   const [thread, setThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<MessageWithAuthor[]>([]);
   const [otherUser, setOtherUser] = useState<Profile | null>(null);

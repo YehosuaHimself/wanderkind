@@ -13,6 +13,7 @@ import {
   Vibration,
   Linking,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +24,8 @@ import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
 import { supabase } from '../../../src/lib/supabase';
 import { toast } from '../../../src/lib/toast';
 import { haptic } from '../../../src/lib/haptics';
@@ -40,11 +43,59 @@ interface RideEntry {
   distance_km: number | null;
 }
 
+// ── GPS helper — real location on both web and native ──────────────
+function getCurrentPosition(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve, reject) => {
+    if (Platform.OS === 'web') {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => reject(err),
+        { timeout: 10000, enableHighAccuracy: false }
+      );
+    } else {
+      // React Native: use expo-location if available, otherwise fall back to web API
+      try {
+        // Dynamic import so the web bundle doesn't error if expo-location isn't installed
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const Location = require('expo-location');
+        Location.requestForegroundPermissionsAsync().then((permResult: { status: string }) => {
+          if (permResult.status !== 'granted') {
+            reject(new Error('Location permission denied'));
+            return;
+          }
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+            .then((loc: { coords: { latitude: number; longitude: number } }) =>
+              resolve({ lat: loc.coords.latitude, lng: loc.coords.longitude })
+            )
+            .catch(reject);
+        });
+      } catch {
+        // expo-location not installed — skip GPS silently
+        reject(new Error('expo-location not available'));
+      }
+    }
+  });
+}
+
 export default function TrampMode() {
   const _AnimView = Animated.View as any;
   const { user, isLoading } = useAuthGuard();
   const router = useRouter();
   const { profile } = useAuth();
+
+  // ── Biometric gate ─────────────────────────────────────────────────
+  const {
+    isVerified,
+    gateVisible,
+    openGate,
+    closeGate,
+    require: requireVerification,
+    onVerified,
+  } = useBiometricGate();
 
   // ── State ──────────────────────────────────────────────────────────
   const [signalActive, setSignalActive] = useState(false);
@@ -57,6 +108,7 @@ export default function TrampMode() {
   const [rideEndedAwaitingFeedback, setRideEndedAwaitingFeedback] = useState<RideEntry | null>(null);
   const [feedbackNote, setFeedbackNote] = useState('');
   const [feedbackRating, setFeedbackRating] = useState<'good' | 'bad' | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   // ── Animations ─────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -64,14 +116,12 @@ export default function TrampMode() {
 
   useEffect(() => {
     if (signalActive) {
-      // Gentle pulse on the W
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.06, duration: 2000, useNativeDriver: true }),
           Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
         ])
       ).start();
-      // Glow ring
       Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
@@ -121,12 +171,20 @@ export default function TrampMode() {
   }, [waitStarted]);
 
   // ── Handlers ───────────────────────────────────────────────────────
-  const activateSignal = useCallback(() => {
+
+  // Inner activate (runs after biometric verification)
+  const _doActivateSignal = useCallback(() => {
     haptic.heavy();
     setSignalActive(true);
     setWaitStarted(new Date());
     setShowSignalScreen(true);
   }, []);
+
+  // Gate-wrapped: requires biometric before activating
+  const activateSignal = useCallback(
+    requireVerification(_doActivateSignal),
+    [requireVerification, _doActivateSignal]
+  );
 
   const deactivateSignal = useCallback(() => {
     haptic.medium();
@@ -136,22 +194,26 @@ export default function TrampMode() {
     setShowSignalScreen(false);
   }, []);
 
-  const shareLocationHandler = useCallback(() => {
-    // In a real app, you'd get actual GPS coordinates
-    // For now, use placeholder or fetch from location service
-    const lat = 37.7749; // Example: San Francisco
-    const lng = -122.4194;
-    const mapUrl = `https://maps.google.com/?q=${lat},${lng}`;
-    const message = `I'm hitchhiking near ${lat.toFixed(4)}, ${lng.toFixed(4)}. Track me: ${mapUrl}`;
-
-    const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-    Linking.openURL(smsUrl).catch(() => {
-      // Fallback: try WhatsApp
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-      Linking.openURL(whatsappUrl).catch(() => {
-        toast.error('Could not open messaging app');
+  // ── Real GPS share ─────────────────────────────────────────────────
+  const shareLocationHandler = useCallback(async () => {
+    setLocationLoading(true);
+    try {
+      const { lat, lng } = await getCurrentPosition();
+      const mapUrl = `https://maps.google.com/?q=${lat},${lng}`;
+      const message = `I'm hitchhiking near ${lat.toFixed(4)}, ${lng.toFixed(4)}. Track me: ${mapUrl}`;
+      const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+      Linking.openURL(smsUrl).catch(() => {
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        Linking.openURL(waUrl).catch(() => toast.error('Could not open messaging app'));
       });
-    });
+    } catch (err) {
+      // Location unavailable — let user share manually
+      const fallback = `I'm hitchhiking! Stay tuned for my location.`;
+      const smsUrl = `sms:?body=${encodeURIComponent(fallback)}`;
+      Linking.openURL(smsUrl).catch(() => toast.error('Could not open messaging app'));
+    } finally {
+      setLocationLoading(false);
+    }
   }, []);
 
   const startRide = useCallback(() => {
@@ -176,7 +238,6 @@ export default function TrampMode() {
       ...currentRide,
       ended_at: new Date().toISOString(),
     };
-    // Show feedback screen instead of immediately finishing
     setRideEndedAwaitingFeedback(finished);
     setCurrentRide(null);
     setFeedbackNote('');
@@ -191,11 +252,9 @@ export default function TrampMode() {
       rating: feedbackRating,
     };
 
-    // Always add to local state first (fallback)
     setRideLog(prev => [finished, ...prev]);
     setRideEndedAwaitingFeedback(null);
 
-    // Try to save to Supabase
     try {
       const { error } = await supabase
         .from('rides')
@@ -220,6 +279,22 @@ export default function TrampMode() {
       toast.error('Ride saved locally (network error)');
     }
   }, [rideEndedAwaitingFeedback, feedbackNote, feedbackRating, user?.id]);
+
+  // ── Biometric gate overlay — shown before anything else ────────────
+  if (gateVisible) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Hitchhike" showBack />
+        <View style={styles.gateWrap}>
+          <BiometricGate
+            action="use Hitchhike Mode"
+            onVerified={() => { onVerified(); }}
+            onDismiss={closeGate}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // ── Full-screen signal (the core feature) ──────────────────────────
   if (showSignalScreen && signalActive) {
@@ -299,6 +374,13 @@ export default function TrampMode() {
               Hold your phone up while thumbing a ride. The bright orange screen with the Wanderkind W tells drivers you are a trusted wanderkind.
             </Text>
 
+            {!isVerified && (
+              <View style={styles.gateBadge}>
+                <Ionicons name="shield-checkmark-outline" size={14} color={colors.amber} />
+                <Text style={styles.gateBadgeText}>Biometric verification required</Text>
+              </View>
+            )}
+
             <WKButton
               title={signalActive ? 'Signal is Active' : 'Activate Signal'}
               onPress={signalActive ? () => setShowSignalScreen(true) : activateSignal}
@@ -320,7 +402,7 @@ export default function TrampMode() {
                 Started {formatTimeSince(currentRide.started_at)}
               </Text>
               <WKButton
-                title="Share Location"
+                title={locationLoading ? 'Getting location…' : 'Share Location'}
                 onPress={shareLocationHandler}
                 variant="primary"
                 size="md"
@@ -412,7 +494,10 @@ export default function TrampMode() {
 
           {/* ── Settings ───────────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>SETTINGS</Text>
+            <View style={styles.sectionLabelRow}>
+              <View style={styles.sectionLabelLine} />
+              <Text style={styles.sectionLabel}>SETTINGS</Text>
+            </View>
             <View style={styles.settingsCard}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
@@ -433,7 +518,10 @@ export default function TrampMode() {
 
           {/* ── How It Works ───────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
+            <View style={styles.sectionLabelRow}>
+              <View style={styles.sectionLabelLine} />
+              <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
+            </View>
             <View style={styles.stepsCard}>
               <StepRow
                 number="1"
@@ -455,7 +543,10 @@ export default function TrampMode() {
 
           {/* ── Safety Tips ────────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>STAY SAFE</Text>
+            <View style={styles.sectionLabelRow}>
+              <View style={styles.sectionLabelLine} />
+              <Text style={styles.sectionLabel}>STAY SAFE</Text>
+            </View>
             <View style={styles.safetyCard}>
               <SafetyTip icon="location-outline" text="Share your live location with someone you trust before hitching." />
               <SafetyTip icon="shield-checkmark-outline" text="Trust your instincts. If something feels off, wait for the next ride." />
@@ -467,7 +558,10 @@ export default function TrampMode() {
 
           {/* ── Ride Log ───────────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>RIDE LOG</Text>
+            <View style={styles.sectionLabelRow}>
+              <View style={styles.sectionLabelLine} />
+              <Text style={styles.sectionLabel}>RIDE LOG</Text>
+            </View>
             {rideLog.length === 0 ? (
               <View style={styles.emptyLog}>
                 <Ionicons name="car-outline" size={36} color={colors.ink3} />
@@ -491,6 +585,13 @@ export default function TrampMode() {
                         {formatRideDuration(ride.started_at, ride.ended_at)}
                       </Text>
                     </View>
+                    {ride.rating && (
+                      <Ionicons
+                        name={ride.rating === 'good' ? 'thumbs-up' : 'thumbs-down'}
+                        size={16}
+                        color={ride.rating === 'good' ? colors.green : colors.red}
+                      />
+                    )}
                   </View>
                 ))}
               </View>
@@ -577,7 +678,6 @@ const signalStyles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -2,
-    // Helvetica Neue on iOS, fallback on Android/web
     ...(Platform.OS === 'ios'
       ? { fontFamily: 'Helvetica Neue' }
       : { fontFamily: 'sans-serif' }),
@@ -649,6 +749,28 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
 
+  // Gate wrap
+  gateWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+
+  // Gate badge (verification hint on hero)
+  gateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.sm,
+  },
+  gateBadgeText: {
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    color: colors.amber,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+
   // Hero
   heroCard: {
     backgroundColor: colors.surface,
@@ -690,6 +812,7 @@ const styles = StyleSheet.create({
   },
   heroBtn: {
     marginTop: spacing.sm,
+    width: '100%',
   },
 
   // Active ride
@@ -714,15 +837,27 @@ const styles = StyleSheet.create({
     color: colors.ink2,
   },
 
-  // Sections
+  // Sections — H-LABEL pattern
   section: {
     gap: spacing.md,
   },
+  sectionLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionLabelLine: {
+    width: 14,
+    height: 1.5,
+    backgroundColor: colors.amber,
+  },
   sectionLabel: {
     fontSize: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
     fontWeight: '600',
     letterSpacing: 3,
-    color: colors.tramp,
+    color: colors.amber,
+    textTransform: 'uppercase',
   },
 
   // Settings
