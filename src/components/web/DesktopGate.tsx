@@ -75,7 +75,8 @@ function injectStyles() {
 
     .wk-landing {
       font-family: var(--wk-font-body); background: var(--wk-bg); color: var(--wk-ink);
-      min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+      position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
       animation: wk-fadein .7s ease forwards;
     }
     @keyframes wk-fadein { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -296,26 +297,6 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-// ── LENIS ─────────────────────────────────────────────────────────────────────
-let _lenis = null;
-function initLenis() {
-  if (typeof window === 'undefined' || _lenis) return;
-  if (window.__wkLenisReady) { _startLenis(); return; }
-  const s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js';
-  s.onload = () => { window.__wkLenisReady = true; _startLenis(); };
-  document.head.appendChild(s);
-}
-function _startLenis() {
-  try {
-    _lenis = new window.Lenis({ duration: 1.3, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
-    (function raf(t) { _lenis.raf(t); requestAnimationFrame(raf); })(0);
-  } catch(e) {}
-}
-function destroyLenis() {
-  if (_lenis) { try { _lenis.destroy(); } catch(e) {} _lenis = null; }
-}
-
 // ── REAL QR CODE ──────────────────────────────────────────────────────────────
 function WKQRCode({ size = 180 }) {
   const ref = useRef(null);
@@ -429,28 +410,31 @@ function QRScreen({ onBack }) {
 
 // ── LANDING ───────────────────────────────────────────────────────────────────
 function LandingPage({ onQR }) {
-  const statsRef  = useRef(null);
-  const valuesRef = useRef(null);
-  const quoteRef  = useRef(null);
+  const landingRef = useRef(null);
+  const statsRef    = useRef(null);
+  const valuesRef   = useRef(null);
+  const quoteRef    = useRef(null);
 
   useEffect(() => {
+    const el = landingRef.current;
+    if (!el) return;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return; ticking = true;
       requestAnimationFrame(() => {
-        const y = window.scrollY;
+        const y = el.scrollTop;
         if (statsRef.current)  statsRef.current.style.transform  = `translateY(${y * 0.035}px)`;
         if (valuesRef.current) valuesRef.current.style.transform = `translateY(${y * -0.018}px)`;
         if (quoteRef.current)  quoteRef.current.style.transform  = `translateY(${y * 0.012}px)`;
         ticking = false;
       });
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
   return (
-    <div className="wk-landing">
+    <div className="wk-landing" ref={landingRef}>
       <nav className="wk-nav">
         <a className="wk-nav-logo" href="#">WANDER<span>KIND</span></a>
         <div className="wk-nav-links">
@@ -472,7 +456,7 @@ function LandingPage({ onQR }) {
           </p>
           <div className="wk-hero-actions">
             <button className="wk-btn-primary" onClick={onQR}>Scan to open on mobile</button>
-            <button className="wk-btn-secondary" onClick={() => document.getElementById('values')?.scrollIntoView({behavior:'smooth'})}>How it works &rarr;</button>
+            <button className="wk-btn-secondary" onClick={() => { const el = document.getElementById('values'); if(el && landingRef.current) landingRef.current.scrollTo({top: el.offsetTop - 60, behavior:'smooth'}); }}>How it works &rarr;</button>
           </div>
         </div>
         <div className="wk-hero-right" id="join">
@@ -559,11 +543,6 @@ export function DesktopGate({ children }) {
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
   }, []);
-
-  useEffect(() => {
-    if (phase === 'landing') initLenis();
-    else destroyLenis();
-  }, [phase]);
 
   if (!isDesktop) return <>{children}</>;
 
