@@ -15,6 +15,9 @@ import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 import { showAlert } from '../../../src/lib/alert';
 import { QRCode } from '../../../src/components/ui/QRCode';
+import { StoryRing } from '../../../src/components/stories/StoryRing';
+import { useBiometricGate } from '../../../src/hooks/useBiometricGate';
+import { BiometricGate } from '../../../src/components/verification/BiometricGate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -32,6 +35,10 @@ export default function MeScreen() {
   const [moments, setMoments] = useState<any[]>([]);
   const [showQrModal, setShowQrModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ContentTab>('posts');
+  const [mainTab, setMainTab] = useState<'profile' | 'credentials'>('profile');
+  const [fabOpen, setFabOpen] = useState(false);
+  const [selfStories, setSelfStories] = useState<any[]>([]);
+  const { isVerified, gateVisible, openGate, closeGate, onVerified } = useBiometricGate();
   const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
@@ -56,6 +63,16 @@ export default function MeScreen() {
         .order('created_at', { ascending: false })
         .limit(20);
       setMoments(momentsData || []);
+
+      // Fetch own stories (11h11m = 671 min duration)
+      const cutoff = new Date(Date.now() - 671 * 60 * 1000).toISOString();
+      const { data: storyData } = await supabase
+        .from('stories')
+        .select('id, image_url, created_at')
+        .eq('author_id', user?.id)
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false });
+      setSelfStories(storyData || []);
     } catch (err) {
       console.error('Failed to fetch content:', err);
       toast.error('Could not load your content');
@@ -189,6 +206,38 @@ export default function MeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
         }
       >
+        {/* ── Main tab toggle: PROFILE | CREDENTIALS ────────────── */}
+        <View style={styles.mainTabBar}>
+          {(['profile', 'credentials'] as const).map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.mainTab, mainTab === tab && styles.mainTabActive]}
+              onPress={() => {
+                haptic.selection();
+                if (tab === 'credentials' && !isVerified) { openGate(); return; }
+                setMainTab(tab);
+              }}
+              activeOpacity={0.7}
+            >
+              {tab === 'credentials' && !isVerified && (
+                <Ionicons name="lock-closed-outline" size={10} color={mainTab === tab ? colors.amber : colors.ink3} style={{ marginRight: 4 }} />
+              )}
+              <Text style={[styles.mainTabText, mainTab === tab && styles.mainTabTextActive]}>
+                {tab === 'profile' ? 'PROFILE' : 'CREDENTIALS'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Biometric gate for credentials tab ─────────────────────── */}
+        {gateVisible && (
+          <BiometricGate
+            action="access your passes"
+            onVerified={() => { onVerified(); setMainTab('credentials'); }}
+            onDismiss={closeGate}
+          />
+        )}
+
         {/* ===== COVER PHOTO ===== */}
         <TouchableOpacity
           style={styles.coverContainer}
@@ -332,6 +381,30 @@ export default function MeScreen() {
             </TouchableOpacity>
           )}
 
+          {/* ── 11h11m Stories ring ────────────────────────────────── */}
+          <View style={styles.storiesSection}>
+            {/* Self "add" ring */}
+            <StoryRing
+              imageUri={profile?.avatar_url}
+              name="Your Story"
+              size={68}
+              hasUnseenStories={selfStories.length > 0}
+              isAdd={selfStories.length === 0}
+              onPress={() => router.push('/(tabs)/moments/create-story' as any)}
+            />
+            {/* Placeholder rings if stories exist */}
+            {selfStories.slice(0, 4).map((s, i) => (
+              <StoryRing
+                key={s.id}
+                imageUri={s.image_url || profile?.avatar_url}
+                name={`Story ${i + 1}`}
+                size={68}
+                hasUnseenStories={false}
+                onPress={() => router.push('/(tabs)/moments' as any)}
+              />
+            ))}
+          </View>
+
           {/* Profile Images — horizontal scroll right below bio */}
           <ScrollView
             horizontal
@@ -385,8 +458,8 @@ export default function MeScreen() {
 
 
 
-        {/* ===== STATS ===== */}
-        {!isQuietMode && (
+        {/* ===== STATS + POSTS — only on PROFILE tab ===== */}
+        {mainTab === 'profile' && !isQuietMode && (
           <>
             <View style={styles.statsTitleRow}>
               <Text style={[styles.sectionTitle, { paddingHorizontal: 0, marginBottom: 0 }]}>STATS</Text>
@@ -1056,5 +1129,152 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.ink,
     fontWeight: '500',
+  },
+  // ── Main tab bar
+  mainTabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 4,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 10,
+    padding: 3,
+  },
+  mainTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  mainTabActive: {
+    backgroundColor: colors.bg,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  mainTabText: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 9,
+    letterSpacing: 2,
+    color: colors.ink3,
+    fontWeight: '700',
+  },
+  mainTabTextActive: { color: colors.amber },
+
+  // ── Stories section
+  storiesSection: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+
+  // ── Credentials panel
+  credentialsPanel: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: colors.bg,
+    paddingTop: 120,
+  },
+  credSectionLabel: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 9,
+    letterSpacing: 3,
+    color: colors.amber,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 14,
+    marginTop: 8,
+  },
+  passRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: 'rgba(200,118,42,0.12)',
+    borderRadius: 12,
+    padding: 14,
+  },
+  passIcon: {
+    width: 44, height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  passInfo: { flex: 1 },
+  passLabel: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 9,
+    letterSpacing: 2,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  passDesc: { fontSize: 12, color: colors.ink2, lineHeight: 16 },
+
+  // ── Floating + button
+  fabContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  fab: {
+    width: 54, height: 54,
+    borderRadius: 27,
+    backgroundColor: colors.amber,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  fabOpen: {
+    backgroundColor: colors.ink,
+    shadowOpacity: 0.3,
+  },
+  fabMenu: {
+    alignItems: 'flex-end',
+    gap: 8,
+    marginBottom: 4,
+  },
+  fabMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: 'rgba(200,118,42,0.2)',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  fabMenuLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  fabMenuIcon: {
+    width: 32, height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.amberBg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
