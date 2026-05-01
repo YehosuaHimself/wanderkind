@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * POI Detail — fetches a real host row (monastery, church, tourist_info, etc.)
+ * from Supabase by id. The id is a hosts.id UUID passed from the map.
+ */
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, Image,
+  ActivityIndicator, TouchableOpacity, Linking, Platform,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../../src/lib/theme';
@@ -17,57 +16,87 @@ import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
 
-interface POI {
+type POI = {
   id: string;
   name: string;
-  category: string;
-  description: string;
-  image_url?: string;
-  distance_km?: number;
+  host_type: string;
+  description: string | null;
+  gallery: string[];
   lat: number;
   lng: number;
-  phone?: string;
-  website?: string;
-  opening_hours?: string;
-}
-
-const MOCK_POI: Record<string, POI> = {
-  '1': {
-    id: '1',
-    name: 'Cathedral of Santiago de Compostela',
-    category: 'Religious Site',
-    description: 'The magnificent final destination of the Camino de Santiago journey. A stunning Romanesque and Baroque cathedral.',
-    distance_km: 0.2,
-    lat: 42.88044,
-    lng: -8.54569,
-    phone: '+34 981 57 59 00',
-    website: 'catedraldesantiago.es',
-    opening_hours: '7:00 AM - 9:00 PM',
-  },
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  address: string | null;
+  availability_notes: string | null;
+  country: string | null;
+  region: string | null;
 };
 
+function typeLabel(host_type: string): string {
+  const MAP: Record<string, string> = {
+    monastery: 'Monastery',
+    church: 'Church / Chapel',
+    tourist_info: 'Tourist Information',
+    community: 'Community Space',
+    albergue_parroquial: 'Parish Hostel',
+  };
+  return MAP[host_type] ?? host_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function typeIcon(host_type: string): string {
+  if (host_type === 'monastery') return 'library-outline';
+  if (host_type === 'church' || host_type === 'albergue_parroquial') return 'business-outline';
+  if (host_type === 'tourist_info') return 'information-circle-outline';
+  return 'location-outline';
+}
+
+function typeColor(host_type: string): string {
+  if (host_type === 'monastery') return colors.amber;
+  if (host_type === 'church' || host_type === 'albergue_parroquial') return '#7B68EE';
+  if (host_type === 'tourist_info') return '#2E86C1';
+  return colors.ink2;
+}
+
 export default function POIDetail() {
-  const { user, isLoading } = useAuthGuard();
+  const { isLoading } = useAuthGuard();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [poi, setPoi] = useState<POI | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      // In a real app, fetch from Supabase
+  const load = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from('hosts')
+        .select('id, name, host_type, description, gallery, lat, lng, phone, email, website, address, availability_notes, country, region')
+        .eq('id', id)
+        .maybeSingle();
+      setPoi(data as POI | null);
+    } finally {
       setLoading(false);
-      setPoi(MOCK_POI[id] || null);
     }
   }, [id]);
 
-  if (loading) {
+  useEffect(() => { load(); }, [load]);
+
+  const openDirections = () => {
+    if (!poi) return;
+    const url = Platform.OS === 'ios'
+      ? `maps:?daddr=${poi.lat},${poi.lng}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${poi.lat},${poi.lng}`;
+    Linking.openURL(url);
+  };
+
+  if (isLoading || loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <WKHeader title="Point of Interest" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.amber} />
-        </View>
+        <WKHeader title="Point of Interest" showBack />
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.amber} /></View>
       </SafeAreaView>
     );
   }
@@ -75,228 +104,109 @@ export default function POIDetail() {
   if (!poi) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <WKHeader title="Point of Interest" />
+        <WKHeader title="Point of Interest" showBack />
         <WKEmpty
           icon="alert-circle-outline"
-          title="Not Found"
-          message="This point of interest could not be loaded"
+          title="Not found"
+          message="This point of interest could not be loaded."
         />
       </SafeAreaView>
     );
   }
 
-  const getCategoryIcon = (category: string) => {
-    if (category === 'Religious Site') return 'church';
-    if (category === 'Restaurant') return 'restaurant';
-    if (category === 'Monastery') return 'library';
-    if (category === 'Museum') return 'image';
-    return 'location';
-  };
-
-  const getCategoryColor = (category: string) => {
-    if (category === 'Religious Site') return colors.green;
-    if (category === 'Restaurant') return colors.red;
-    if (category === 'Monastery') return colors.amber;
-    return colors.blue;
-  };
-
-  if (isLoading) return null;
+  const heroImage = poi.gallery?.[0] ?? null;
+  const color = typeColor(poi.host_type);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title={poi.name} />
+      <WKHeader title={poi.name} showBack />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Hero Image */}
-        {poi.image_url && (
-          <Image source={{ uri: poi.image_url }} style={styles.heroImage} />
-        )}
+        {heroImage ? (
+          <Image source={{ uri: heroImage }} style={styles.hero} resizeMode="cover" />
+        ) : null}
 
         <View style={styles.content}>
-          {/* Header Card */}
+          {/* Badge + name */}
           <WKCard variant="gold">
-            <View style={styles.categoryBadge}>
-              <View style={[styles.categoryIcon, { backgroundColor: `${getCategoryColor(poi.category)}20` }]}>
-                <Ionicons
-                  name={getCategoryIcon(poi.category) as any}
-                  size={16}
-                  color={getCategoryColor(poi.category)}
-                />
+            <View style={styles.badge}>
+              <View style={[styles.badgeIcon, { backgroundColor: `${color}20` }]}>
+                <Ionicons name={typeIcon(poi.host_type) as any} size={16} color={color} />
               </View>
-              <Text style={[styles.categoryText, { color: getCategoryColor(poi.category) }]}>
-                {poi.category.toUpperCase()}
-              </Text>
+              <Text style={[styles.badgeText, { color }]}>{typeLabel(poi.host_type).toUpperCase()}</Text>
             </View>
-
             <Text style={styles.poiName}>{poi.name}</Text>
-
-            {poi.distance_km !== undefined && (
-              <View style={styles.distanceRow}>
+            {(poi.region || poi.country) && (
+              <View style={styles.locationRow}>
                 <Ionicons name="location" size={14} color={colors.amber} />
-                <Text style={styles.distance}>{poi.distance_km} km away</Text>
+                <Text style={styles.locationText}>
+                  {[poi.region, poi.country].filter(Boolean).join(', ')}
+                </Text>
               </View>
             )}
           </WKCard>
 
           {/* Description */}
-          {poi.description && (
+          {poi.description ? (
             <WKCard>
               <Text style={styles.sectionTitle}>About</Text>
               <Text style={styles.description}>{poi.description}</Text>
             </WKCard>
-          )}
+          ) : null}
 
-          {/* Details */}
+          {/* Contact details */}
           <WKCard variant="parchment">
             <Text style={styles.sectionTitle}>Details</Text>
-            <View style={styles.detailsList}>
-              {poi.phone && (
-                <DetailRow icon="call" label="Phone" value={poi.phone} />
-              )}
-              {poi.website && (
-                <DetailRow icon="globe" label="Website" value={poi.website} />
-              )}
-              {poi.opening_hours && (
-                <DetailRow icon="time" label="Hours" value={poi.opening_hours} />
-              )}
-              <DetailRow
-                icon="navigate"
-                label="Coordinates"
-                value={`${poi.lat.toFixed(4)}, ${poi.lng.toFixed(4)}`}
-              />
+            <View style={styles.detailList}>
+              {poi.address ? <DetailRow icon="home-outline" label="Address" value={poi.address} onPress={openDirections} /> : null}
+              {poi.phone ? <DetailRow icon="call-outline" label="Phone" value={poi.phone} onPress={() => Linking.openURL(`tel:${poi.phone}`)} /> : null}
+              {poi.email ? <DetailRow icon="mail-outline" label="Email" value={poi.email} onPress={() => Linking.openURL(`mailto:${poi.email}`)} /> : null}
+              {poi.website ? <DetailRow icon="globe-outline" label="Website" value={poi.website} onPress={() => Linking.openURL(poi.website!.startsWith('http') ? poi.website! : `https://${poi.website}`)} /> : null}
+              {poi.availability_notes ? <DetailRow icon="time-outline" label="Hours / Notes" value={poi.availability_notes} /> : null}
+              <DetailRow icon="navigate-outline" label="Coordinates" value={`${poi.lat.toFixed(5)}, ${poi.lng.toFixed(5)}`} onPress={openDirections} />
             </View>
           </WKCard>
 
-          {/* Map Button */}
-          <WKButton
-            title="View on Map"
-            onPress={() => {
-              // Navigate to map centered on POI
-            }}
-            fullWidth
-            style={styles.mapButton}
-          />
+          <WKButton title="Get Directions" onPress={openDirections} fullWidth />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
+function DetailRow({ icon, label, value, onPress }: { icon: string; label: string; value: string; onPress?: () => void }) {
+  const inner = (
     <View style={styles.detailRow}>
       <View style={styles.detailIcon}>
         <Ionicons name={icon as any} size={16} color={colors.amber} />
       </View>
       <View style={styles.detailContent}>
         <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value}</Text>
+        <Text style={[styles.detailValue, onPress && { color: colors.amber }]}>{value}</Text>
       </View>
+      {onPress ? <Ionicons name="chevron-forward" size={16} color={colors.ink3} /> : null}
     </View>
   );
+  return onPress ? <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{inner}</TouchableOpacity> : inner;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  heroImage: {
-    width: '100%',
-    height: 200,
-    backgroundColor: colors.surfaceAlt,
-  },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  categoryIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryText: {
-    fontFamily: 'Courier New',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  poiName: {
-    ...typography.h2,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  distanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(200,118,42,0.1)',
-  },
-  distance: {
-    ...typography.bodySm,
-    color: colors.amber,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  description: {
-    ...typography.body,
-    color: colors.ink2,
-    lineHeight: 24,
-  },
-  detailsList: {
-    gap: spacing.md,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  detailIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: 'rgba(200,118,42,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  detailContent: {
-    flex: 1,
-  },
-  detailLabel: {
-    ...typography.caption,
-    color: colors.ink3,
-    marginBottom: spacing.xs,
-  },
-  detailValue: {
-    ...typography.body,
-    color: colors.ink,
-    fontWeight: '500',
-  },
-  mapButton: {
-    marginVertical: spacing.lg,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  hero: { width: '100%', height: 220, backgroundColor: colors.surfaceAlt },
+  content: { padding: spacing.lg, gap: spacing.lg },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  badgeIcon: { width: 28, height: 28, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
+  badgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, fontFamily: 'Courier New' },
+  poiName: { ...typography.h2, color: colors.ink, marginBottom: spacing.sm },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  locationText: { ...typography.bodySm, color: colors.amber },
+  sectionTitle: { ...typography.h3, color: colors.ink, marginBottom: spacing.md },
+  description: { ...typography.body, color: colors.ink2, lineHeight: 24 },
+  detailList: { gap: 0 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLt },
+  detailIcon: { width: 32, height: 32, borderRadius: 6, backgroundColor: 'rgba(200,118,42,0.1)', justifyContent: 'center', alignItems: 'center' },
+  detailContent: { flex: 1 },
+  detailLabel: { ...typography.caption, color: colors.ink3, marginBottom: 2 },
+  detailValue: { ...typography.bodySm, color: colors.ink, fontWeight: '500' },
 });

@@ -1,80 +1,88 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Camping Detail — fetches a real hosts row (host_type='camping')
+ * from Supabase by id. The id is a hosts.id UUID passed from the map.
+ */
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, Image,
+  ActivityIndicator, TouchableOpacity, Linking, Platform,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/lib/theme';
+import { colors, typography, spacing, radii } from '../../../src/lib/theme';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { WKCard } from '../../../src/components/ui/WKCard';
 import { WKButton } from '../../../src/components/ui/WKButton';
 import { WKEmpty } from '../../../src/components/ui/WKEmpty';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
 
-interface CampingSpot {
+type CampingHost = {
   id: string;
   name: string;
-  type: 'wild' | 'official';
-  description: string;
-  image_url?: string;
+  host_type: string;
+  description: string | null;
+  gallery: string[];
   lat: number;
   lng: number;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  address: string | null;
   amenities: string[];
-  capacity?: number;
-  water?: boolean;
-  fire?: boolean;
-  trash?: boolean;
-  price?: string;
-  phone?: string;
-  website?: string;
-}
+  house_rules: string[];
+  capacity: number;
+  price_range: string | null;
+  availability_notes: string | null;
+  country: string | null;
+  region: string | null;
+  is_available: boolean;
+};
 
-const MOCK_CAMPING: Record<string, CampingSpot> = {
-  '1': {
-    id: '1',
-    name: 'Mountain View Campground',
-    type: 'official',
-    description: 'A beautiful official campground with stunning mountain views. Ideal for groups and those who prefer amenities.',
-    lat: 43.5,
-    lng: -7.5,
-    amenities: ['Toilets', 'Water', 'Parking', 'Shop'],
-    capacity: 50,
-    water: true,
-    fire: false,
-    trash: true,
-    price: '€10-15/night',
-    phone: '+34 982 555 123',
-    website: 'mountainviewcamp.es',
-  },
+const AMENITY_ICONS: Record<string, string> = {
+  toilets: 'body-outline', shower: 'water-outline', water: 'water',
+  wifi: 'wifi-outline', parking: 'car-outline', electricity: 'flash-outline',
+  shop: 'bag-outline', restaurant: 'restaurant-outline', fire: 'flame-outline',
+  pool: 'water-outline', laundry: 'shirt-outline', kitchen: 'restaurant-outline',
 };
 
 export default function CampingDetail() {
-  const { user, isLoading } = useAuthGuard();
+  const { isLoading } = useAuthGuard();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [spot, setSpot] = useState<CampingSpot | null>(null);
+  const [spot, setSpot] = useState<CampingHost | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
+  const load = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from('hosts')
+        .select('id, name, host_type, description, gallery, lat, lng, phone, email, website, address, amenities, house_rules, capacity, price_range, availability_notes, country, region, is_available')
+        .eq('id', id)
+        .maybeSingle();
+      setSpot(data as CampingHost | null);
+    } finally {
       setLoading(false);
-      setSpot(MOCK_CAMPING[id] || null);
     }
   }, [id]);
 
-  if (loading) {
+  useEffect(() => { load(); }, [load]);
+
+  const openDirections = () => {
+    if (!spot) return;
+    const url = Platform.OS === 'ios'
+      ? `maps:?daddr=${spot.lat},${spot.lng}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`;
+    Linking.openURL(url);
+  };
+
+  if (isLoading || loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <WKHeader title="Camping Spot" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.amber} />
-        </View>
+        <WKHeader title="Camping" showBack />
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.amber} /></View>
       </SafeAreaView>
     );
   }
@@ -82,299 +90,170 @@ export default function CampingDetail() {
   if (!spot) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <WKHeader title="Camping Spot" />
-        <WKEmpty
-          icon="alert-circle-outline"
-          title="Not Found"
-          message="This camping spot could not be loaded"
-        />
+        <WKHeader title="Camping" showBack />
+        <WKEmpty icon="alert-circle-outline" title="Not found" message="This camping spot could not be loaded." />
       </SafeAreaView>
     );
   }
 
-  const typeColor = spot.type === 'official' ? colors.blue : colors.tramp;
-  const typeLabel = spot.type === 'official' ? 'OFFICIAL CAMPGROUND' : 'WILD CAMPING';
-
-  if (isLoading) return null;
+  const heroImage = spot.gallery?.[0] ?? null;
+  const isWild = spot.host_type === 'camping' && !spot.address;
+  const typeLabel = isWild ? 'Wild Camping' : 'Campsite';
+  const typeColor = isWild ? '#3F6112' : colors.amber;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title={spot.name} />
+      <WKHeader title={spot.name} showBack />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Hero Image */}
-        {spot.image_url && (
-          <Image source={{ uri: spot.image_url }} style={styles.heroImage} />
-        )}
+        {heroImage ? (
+          <Image source={{ uri: heroImage }} style={styles.hero} resizeMode="cover" />
+        ) : null}
 
         <View style={styles.content}>
-          {/* Header Card */}
-          <WKCard variant="gold">
-            <View style={[styles.typeBadge, { backgroundColor: `${typeColor}15` }]}>
-              <Ionicons
-                name={spot.type === 'official' ? 'home' : 'bed-outline'}
-                size={14}
-                color={typeColor}
-              />
-              <Text style={[styles.typeText, { color: typeColor }]}>
-                {typeLabel}
-              </Text>
+          {/* Header card */}
+          <WKCard variant="parchment">
+            <View style={styles.badge}>
+              <View style={[styles.badgeIcon, { backgroundColor: `${typeColor}20` }]}>
+                <Ionicons name="bonfire-outline" size={16} color={typeColor} />
+              </View>
+              <Text style={[styles.badgeText, { color: typeColor }]}>{typeLabel.toUpperCase()}</Text>
+              {spot.is_available ? (
+                <View style={styles.availChip}>
+                  <Text style={styles.availText}>OPEN</Text>
+                </View>
+              ) : (
+                <View style={[styles.availChip, { backgroundColor: '#B03A3A20' }]}>
+                  <Text style={[styles.availText, { color: '#B03A3A' }]}>CLOSED</Text>
+                </View>
+              )}
             </View>
 
-            <Text style={styles.spotName}>{spot.name}</Text>
+            <Text style={styles.name}>{spot.name}</Text>
 
-            {spot.price && (
-              <View style={styles.priceRow}>
-                <Ionicons name="pricetag" size={14} color={colors.green} />
-                <Text style={styles.price}>{spot.price}</Text>
-              </View>
-            )}
+            <View style={styles.metaRow}>
+              {spot.capacity > 0 && (
+                <View style={styles.metaItem}>
+                  <Ionicons name="people-outline" size={14} color={colors.ink2} />
+                  <Text style={styles.metaText}>{spot.capacity} capacity</Text>
+                </View>
+              )}
+              {spot.price_range && (
+                <View style={styles.metaItem}>
+                  <Ionicons name="pricetag-outline" size={14} color={colors.ink2} />
+                  <Text style={styles.metaText}>{spot.price_range}</Text>
+                </View>
+              )}
+              {(spot.region || spot.country) && (
+                <View style={styles.metaItem}>
+                  <Ionicons name="location-outline" size={14} color={colors.ink2} />
+                  <Text style={styles.metaText}>{[spot.region, spot.country].filter(Boolean).join(', ')}</Text>
+                </View>
+              )}
+            </View>
           </WKCard>
 
           {/* Description */}
-          {spot.description && (
+          {spot.description ? (
             <WKCard>
               <Text style={styles.sectionTitle}>About</Text>
               <Text style={styles.description}>{spot.description}</Text>
             </WKCard>
-          )}
+          ) : null}
 
-          {/* Facilities & Features */}
-          {(spot.amenities.length > 0 || spot.capacity || spot.water || spot.fire || spot.trash) && (
-            <WKCard variant="parchment">
-              <Text style={styles.sectionTitle}>Facilities & Features</Text>
-
-              {spot.capacity && (
-                <View style={styles.facilityRow}>
-                  <Ionicons name="people" size={16} color={colors.amber} />
-                  <View style={styles.facilityContent}>
-                    <Text style={styles.facilityLabel}>Capacity</Text>
-                    <Text style={styles.facilityValue}>{spot.capacity} people</Text>
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.facilityToggleRow}>
-                <FacilityToggle icon="water" label="Water" enabled={spot.water ?? false} />
-                <FacilityToggle icon="flame" label="Fire" enabled={spot.fire ?? false} />
-                <FacilityToggle icon="trash" label="Trash" enabled={spot.trash ?? false} />
-              </View>
-
-              {spot.amenities.length > 0 && (
-                <View style={styles.amenitiesSection}>
-                  <Text style={styles.amenitiesLabel}>Features</Text>
-                  <View style={styles.amenitiesGrid}>
-                    {spot.amenities.map((amenity, i) => (
-                      <View key={i} style={styles.amenityTag}>
-                        <Text style={styles.amenityText}>{amenity}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </WKCard>
-          )}
-
-          {/* Contact Details */}
-          {(spot.phone || spot.website) && (
+          {/* Amenities */}
+          {spot.amenities?.length > 0 ? (
             <WKCard>
-              <Text style={styles.sectionTitle}>Contact</Text>
-              <View style={styles.detailsList}>
-                {spot.phone && (
-                  <TouchableOpacity style={styles.detailRow}>
-                    <Ionicons name="call" size={16} color={colors.amber} />
-                    <Text style={styles.detailValue}>{spot.phone}</Text>
-                    <Ionicons name="open" size={14} color={colors.ink3} />
-                  </TouchableOpacity>
-                )}
-                {spot.website && (
-                  <TouchableOpacity style={styles.detailRow}>
-                    <Ionicons name="globe" size={16} color={colors.amber} />
-                    <Text style={styles.detailValue}>{spot.website}</Text>
-                    <Ionicons name="open" size={14} color={colors.ink3} />
-                  </TouchableOpacity>
-                )}
+              <Text style={styles.sectionTitle}>Amenities</Text>
+              <View style={styles.amenityGrid}>
+                {spot.amenities.map((a: string, i: number) => {
+                  const key = a.toLowerCase().replace(/\s+/g, '');
+                  const icon = AMENITY_ICONS[key] ?? 'checkmark-circle-outline';
+                  return (
+                    <View key={i} style={styles.amenityItem}>
+                      <Ionicons name={icon as any} size={18} color={colors.green} />
+                      <Text style={styles.amenityText}>{a}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </WKCard>
-          )}
+          ) : null}
 
-          {/* Map Button */}
-          <WKButton
-            title="View on Map"
-            onPress={() => {
-              // Navigate to map centered on camping spot
-            }}
-            fullWidth
-            style={styles.mapButton}
-          />
+          {/* Contact + location */}
+          <WKCard variant="parchment">
+            <Text style={styles.sectionTitle}>Details</Text>
+            <View style={styles.detailList}>
+              {spot.address ? <DetailRow icon="home-outline" label="Address" value={spot.address} onPress={openDirections} /> : null}
+              {spot.phone ? <DetailRow icon="call-outline" label="Phone" value={spot.phone} onPress={() => Linking.openURL(`tel:${spot.phone}`)} /> : null}
+              {spot.email ? <DetailRow icon="mail-outline" label="Email" value={spot.email} onPress={() => Linking.openURL(`mailto:${spot.email}`)} /> : null}
+              {spot.website ? <DetailRow icon="globe-outline" label="Website" value={spot.website} onPress={() => Linking.openURL(spot.website!.startsWith('http') ? spot.website! : `https://${spot.website}`)} /> : null}
+              {spot.availability_notes ? <DetailRow icon="time-outline" label="Hours / Notes" value={spot.availability_notes} /> : null}
+              <DetailRow icon="navigate-outline" label="Coordinates" value={`${spot.lat.toFixed(5)}, ${spot.lng.toFixed(5)}`} onPress={openDirections} />
+            </View>
+          </WKCard>
+
+          {/* House rules */}
+          {spot.house_rules?.length > 0 ? (
+            <WKCard>
+              <Text style={styles.sectionTitle}>Rules</Text>
+              {spot.house_rules.map((r: string, i: number) => (
+                <View key={i} style={styles.ruleRow}>
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.green} />
+                  <Text style={styles.ruleText}>{r}</Text>
+                </View>
+              ))}
+            </WKCard>
+          ) : null}
+
+          <WKButton title="Get Directions" onPress={openDirections} fullWidth />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function FacilityToggle({ icon, label, enabled }: { icon: string; label: string; enabled: boolean }) {
-  return (
-    <View style={[styles.facilityToggle, !enabled && styles.facilityToggleDisabled]}>
-      <Ionicons
-        name={icon as any}
-        size={16}
-        color={enabled ? colors.green : colors.ink3}
-      />
-      <Text style={[styles.facilityToggleLabel, !enabled && styles.facilityToggleLabelDisabled]}>
-        {label}
-      </Text>
+function DetailRow({ icon, label, value, onPress }: { icon: string; label: string; value: string; onPress?: () => void }) {
+  const inner = (
+    <View style={styles.detailRow}>
+      <View style={styles.detailIcon}>
+        <Ionicons name={icon as any} size={16} color={colors.amber} />
+      </View>
+      <View style={styles.detailContent}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={[styles.detailValue, onPress && { color: colors.amber }]}>{value}</Text>
+      </View>
+      {onPress ? <Ionicons name="chevron-forward" size={16} color={colors.ink3} /> : null}
     </View>
   );
+  return onPress ? <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{inner}</TouchableOpacity> : inner;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  heroImage: {
-    width: '100%',
-    height: 200,
-    backgroundColor: colors.surfaceAlt,
-  },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: spacing.md,
-  },
-  typeText: {
-    fontFamily: 'Courier New',
-    fontSize: 9,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-  },
-  spotName: {
-    ...typography.h2,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(200,118,42,0.1)',
-  },
-  price: {
-    ...typography.h3,
-    color: colors.green,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.ink,
-    marginBottom: spacing.md,
-  },
-  description: {
-    ...typography.body,
-    color: colors.ink2,
-    lineHeight: 24,
-  },
-  facilityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  facilityContent: {
-    flex: 1,
-  },
-  facilityLabel: {
-    ...typography.caption,
-    color: colors.ink3,
-  },
-  facilityValue: {
-    ...typography.body,
-    color: colors.ink,
-    fontWeight: '500',
-  },
-  facilityToggleRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  facilityToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  facilityToggleDisabled: {
-    opacity: 0.5,
-  },
-  facilityToggleLabel: {
-    ...typography.bodySm,
-    color: colors.green,
-    fontWeight: '500',
-  },
-  facilityToggleLabelDisabled: {
-    color: colors.ink3,
-  },
-  amenitiesSection: {
-    paddingTop: spacing.md,
-  },
-  amenitiesLabel: {
-    ...typography.bodySm,
-    color: colors.ink2,
-    marginBottom: spacing.sm,
-  },
-  amenitiesGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  amenityTag: {
-    backgroundColor: colors.parchment,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-  },
-  amenityText: {
-    ...typography.bodySm,
-    color: colors.parchmentInk,
-    fontWeight: '500',
-  },
-  detailsList: {
-    gap: spacing.md,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  detailValue: {
-    ...typography.body,
-    color: colors.ink,
-    fontWeight: '500',
-    flex: 1,
-  },
-  mapButton: {
-    marginVertical: spacing.lg,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  hero: { width: '100%', height: 220, backgroundColor: colors.surfaceAlt },
+  content: { padding: spacing.lg, gap: spacing.lg },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md, flexWrap: 'wrap' },
+  badgeIcon: { width: 28, height: 28, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
+  badgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, fontFamily: 'Courier New' },
+  availChip: { backgroundColor: '#27864A20', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  availText: { fontSize: 9, fontWeight: '800', color: '#27864A', letterSpacing: 1, fontFamily: 'Courier New' },
+  name: { ...typography.h2, color: colors.ink, marginBottom: spacing.sm },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.sm },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { ...typography.bodySm, color: colors.ink2 },
+  sectionTitle: { ...typography.h3, color: colors.ink, marginBottom: spacing.md },
+  description: { ...typography.body, color: colors.ink2, lineHeight: 24 },
+  amenityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  amenityItem: { flexDirection: 'row', alignItems: 'center', gap: 6, width: '45%' },
+  amenityText: { ...typography.bodySm, color: colors.ink },
+  detailList: { gap: 0 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLt },
+  detailIcon: { width: 32, height: 32, borderRadius: 6, backgroundColor: 'rgba(200,118,42,0.1)', justifyContent: 'center', alignItems: 'center' },
+  detailContent: { flex: 1 },
+  detailLabel: { ...typography.caption, color: colors.ink3, marginBottom: 2 },
+  detailValue: { ...typography.bodySm, color: colors.ink, fontWeight: '500' },
+  ruleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.sm },
+  ruleText: { ...typography.bodySm, color: colors.ink, flex: 1 },
 });

@@ -310,12 +310,20 @@ export default function BookingConfirm() {
       {/* Footer actions */}
       <View style={styles.footer}>
         {isConfirmed ? (
-          <WKButton
-            title="Add to calendar (.ics)"
-            onPress={exportICS}
-            variant="primary"
-            fullWidth
-          />
+          <View style={{ gap: 10 }}>
+            <WKButton
+              title="View Stay Details"
+              onPress={() => router.push({ pathname: '/(tabs)/map/booking/active', params: { bookingId: booking.id } } as any)}
+              variant="primary"
+              fullWidth
+            />
+            <WKButton
+              title="Add to calendar (.ics)"
+              onPress={exportICS}
+              variant="outline"
+              fullWidth
+            />
+          </View>
         ) : booking.status === 'completed' ? (
           <WKButton
             title="Leave a Review"
