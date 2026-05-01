@@ -1,39 +1,100 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+/**
+ * WK-123 — arrival instructions. Persists hosts.arrival_instructions text.
+ * Visible to walkers only after their booking is confirmed.
+ */
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
+import { toast } from '../../../src/lib/toast';
+import { haptic } from '../../../src/lib/haptics';
+
+const MAX = 600;
 
 export default function ArrivalInstructionsScreen() {
+  const { user } = useAuthGuard();
+  const [hostId, setHostId] = useState<string | null>(null);
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { (async () => {
+    if (!user) return;
+    const { data } = await supabase.from('hosts')
+      .select('id, arrival_instructions')
+      .eq('profile_id', user.id).limit(1).maybeSingle();
+    if (data) {
+      setHostId(data.id);
+      setText((data as any).arrival_instructions ?? '');
+    }
+    setLoading(false);
+  })(); }, [user]);
+
+  const save = async () => {
+    if (!hostId) { toast.error('Claim your listing first'); return; }
+    setSaving(true);
+    haptic.medium();
+    const { error } = await supabase.from('hosts')
+      .update({ arrival_instructions: text.trim() || null } as any)
+      .eq('id', hostId);
+    setSaving(false);
+    if (error) { toast.error('Could not save'); return; }
+    toast.success('Instructions saved');
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Arrival" showBack />
+        <View style={styles.loadingWrap}><ActivityIndicator color={colors.amber} /></View>
+      </SafeAreaView>
+    );
+  }
+  if (!hostId) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Arrival" showBack />
+        <View style={styles.empty}>
+          <Ionicons name="navigate-outline" size={36} color={colors.amber} />
+          <Text style={styles.emptyTitle}>Claim your listing first</Text>
+          <Text style={styles.emptyBody}>Open MORE → Wanderhost → Become a Wanderhost.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <WKHeader title="Arrival Instructions" showBack />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.iconCircle, { backgroundColor: '#059669' + '15' }]}>
-          <Ionicons name="navigate-outline" size={36} color="#059669" />
-        </View>
-        <Text style={styles.h1}>Arrival Instructions</Text>
-        <Text style={styles.lead}>Write the 'how to find me' note once. Every confirmed walker reads it on the day they arrive — no chasing messages, no missed doors.</Text>
+      <WKHeader title="Arrival" showBack />
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 80 }}>
+        <Text style={styles.lead}>
+          The "how to find me" note. Confirmed walkers see it on the day they arrive — no chasing messages, no missed doors.
+        </Text>
 
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Ionicons name="hammer-outline" size={16} color={colors.amber} />
-            <Text style={styles.rowText}>Free-text directions plus an optional photo of the door. Markdown-light formatting (bold, line breaks). Visible only to walkers with a confirmed booking, not on the public listing.</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Ionicons name="git-branch-outline" size={16} color={colors.amber} />
-            <Text style={styles.rowText}>Tracked as <Text style={styles.mono}>WK-123</Text> in the v1.1 refinement EPIC.</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.amber} />
-            <Text style={styles.rowText}>The Wanderhost claim flow ships first in WK-120; per-host configuration screens follow.</Text>
-          </View>
+        <View style={styles.helpRow}>
+          <Ionicons name="lock-closed-outline" size={14} color={colors.ink3} />
+          <Text style={styles.helpText}>Visible only to walkers with a confirmed booking.</Text>
         </View>
 
-        <Text style={styles.footer}>WANDERKIND = FREE TRAVEL</Text>
+        <TextInput
+          multiline
+          value={text}
+          onChangeText={(v) => { if (v.length <= MAX) setText(v); }}
+          placeholder={'e.g. "After the church, take the small alley on the left. Door is wooden, blue tile next to the bell. If I\'m not in, knock at the bakery — they have my key."'}
+          placeholderTextColor={colors.ink3}
+          style={styles.textarea}
+          textAlignVertical="top"
+        />
+        <Text style={styles.counter}>{text.length} / {MAX}</Text>
+
+        <TouchableOpacity disabled={saving} style={[styles.save, saving && { opacity: 0.6 }]} onPress={save}>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Save instructions</Text>}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -41,30 +102,33 @@ export default function ArrivalInstructionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xl, alignItems: 'center' },
-  iconCircle: {
-    width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center',
-    marginTop: spacing.lg, marginBottom: spacing.lg,
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
+  emptyTitle: { ...typography.h3, color: colors.ink, marginTop: 12 },
+  emptyBody: { ...typography.body, color: colors.ink2, textAlign: 'center' },
+  lead: { ...typography.body, color: colors.ink2, marginBottom: 12 },
+  helpRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginBottom: 16,
   },
-  h1: { ...typography.h2, color: colors.ink, textAlign: 'center', marginBottom: 8 },
-  lead: {
-    ...typography.body, color: colors.ink2, textAlign: 'center',
-    paddingHorizontal: spacing.md, marginBottom: spacing.xl, lineHeight: 24,
+  helpText: { ...typography.caption, color: colors.ink3 },
+  textarea: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: 14,
+    minHeight: 200,
+    ...typography.body,
+    color: colors.ink,
   },
-  card: {
-    backgroundColor: colors.surface, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderLt,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.md, width: '100%', marginBottom: spacing.xl,
+  counter: { ...typography.caption, color: colors.ink3, marginTop: 6, textAlign: 'right' },
+  save: {
+    marginTop: 20,
+    backgroundColor: colors.amber,
+    borderRadius: radii.md,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
-  rowText: { ...typography.bodySm, color: colors.ink2, flex: 1, lineHeight: 20 },
-  divider: { height: 1, backgroundColor: colors.borderLt },
-  mono: {
-    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
-    fontWeight: '700', color: colors.amber, letterSpacing: 1,
-  },
-  footer: {
-    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
-    fontSize: 10, letterSpacing: 3, color: colors.amber, fontWeight: '700',
-    textAlign: 'center', marginTop: spacing.lg,
-  },
+  saveText: { ...typography.body, color: '#fff', fontWeight: '700' },
 });

@@ -1,39 +1,106 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+/**
+ * WK-122 — notification preferences. Toggles persist to profiles.notif_prefs jsonb.
+ */
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WKHeader } from '../../../src/components/ui/WKHeader';
 import { colors, typography, spacing, radii } from '../../../src/lib/theme';
+import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
+import { supabase } from '../../../src/lib/supabase';
+import { toast } from '../../../src/lib/toast';
+import { haptic } from '../../../src/lib/haptics';
+
+type Prefs = {
+  new_request: boolean;
+  new_message: boolean;
+  arrival_today: boolean;
+  weekly_digest: boolean;
+  quiet_hours: boolean;
+};
+
+const DEFAULTS: Prefs = {
+  new_request: true,
+  new_message: true,
+  arrival_today: true,
+  weekly_digest: false,
+  quiet_hours: true,
+};
+
+const ROWS: Array<{ key: keyof Prefs; icon: any; title: string; sub: string }> = [
+  { key: 'new_request',   icon: 'mail-unread-outline',     title: 'New booking requests',  sub: 'Walker asks to stay tonight' },
+  { key: 'new_message',   icon: 'chatbubble-ellipses-outline', title: 'New messages',       sub: 'Direct message from a walker' },
+  { key: 'arrival_today', icon: 'walk-outline',            title: 'Arrival today',         sub: 'Reminder before your guest arrives' },
+  { key: 'weekly_digest', icon: 'newspaper-outline',       title: 'Weekly digest',         sub: 'Sunday summary of activity' },
+  { key: 'quiet_hours',   icon: 'moon-outline',            title: 'Quiet hours 22:00–07:00', sub: 'Hold non-urgent pings overnight' },
+];
 
 export default function NotificationsScreen() {
+  const { user } = useAuthGuard();
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { (async () => {
+    if (!user) return;
+    const { data } = await supabase.from('profiles').select('notif_prefs').eq('id', user.id).maybeSingle();
+    if (data?.notif_prefs && typeof data.notif_prefs === 'object') {
+      setPrefs({ ...DEFAULTS, ...(data.notif_prefs as any) });
+    }
+    setLoading(false);
+  })(); }, [user]);
+
+  const toggle = (k: keyof Prefs) => {
+    haptic.selection();
+    setPrefs(p => ({ ...p, [k]: !p[k] }));
+  };
+
+  const save = async () => {
+    if (!user) return;
+    setSaving(true);
+    haptic.medium();
+    const { error } = await supabase.from('profiles').update({ notif_prefs: prefs as any }).eq('id', user.id);
+    setSaving(false);
+    if (error) { toast.error('Could not save'); return; }
+    toast.success('Notifications saved');
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <WKHeader title="Notifications" showBack />
+        <View style={styles.loadingWrap}><ActivityIndicator color={colors.amber} /></View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <WKHeader title="Notifications" showBack />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.iconCircle, { backgroundColor: '#5A7A2B' + '15' }]}>
-          <Ionicons name="notifications-outline" size={36} color="#5A7A2B" />
-        </View>
-        <Text style={styles.h1}>Notifications</Text>
-        <Text style={styles.lead}>Choose how often Wanderkind taps your shoulder so hosting feels generous, never invasive.</Text>
-
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Ionicons name="hammer-outline" size={16} color={colors.amber} />
-            <Text style={styles.rowText}>Per-event toggles for new requests, messages, arrivals, weekly digest. Quiet hours window 22:00–07:00 local time. A test-push button verifies delivery end-to-end.</Text>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 80 }}>
+        <Text style={styles.lead}>Choose how often Wanderkind taps your shoulder.</Text>
+        {ROWS.map(r => (
+          <View key={r.key} style={styles.row}>
+            <View style={styles.iconBox}>
+              <Ionicons name={r.icon} size={18} color={colors.amber} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.rowTitle}>{r.title}</Text>
+              <Text style={styles.rowSub}>{r.sub}</Text>
+            </View>
+            <Switch
+              value={prefs[r.key]}
+              onValueChange={() => toggle(r.key)}
+              trackColor={{ false: colors.border, true: colors.amberBg }}
+              thumbColor={prefs[r.key] ? colors.amber : colors.ink3}
+            />
           </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Ionicons name="git-branch-outline" size={16} color={colors.amber} />
-            <Text style={styles.rowText}>Tracked as <Text style={styles.mono}>WK-122</Text> in the v1.1 refinement EPIC.</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.amber} />
-            <Text style={styles.rowText}>The Wanderhost claim flow ships first in WK-120; per-host configuration screens follow.</Text>
-          </View>
-        </View>
-
-        <Text style={styles.footer}>WANDERKIND = FREE TRAVEL</Text>
+        ))}
+        <TouchableOpacity disabled={saving} style={[styles.save, saving && { opacity: 0.6 }]} onPress={save}>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Save</Text>}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -41,30 +108,32 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xl, alignItems: 'center' },
-  iconCircle: {
-    width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center',
-    marginTop: spacing.lg, marginBottom: spacing.lg,
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  lead: { ...typography.body, color: colors.ink2, marginBottom: 16 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: 12,
+    marginBottom: 8,
   },
-  h1: { ...typography.h2, color: colors.ink, textAlign: 'center', marginBottom: 8 },
-  lead: {
-    ...typography.body, color: colors.ink2, textAlign: 'center',
-    paddingHorizontal: spacing.md, marginBottom: spacing.xl, lineHeight: 24,
+  iconBox: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.amberBg,
+    alignItems: 'center', justifyContent: 'center',
   },
-  card: {
-    backgroundColor: colors.surface, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderLt,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.md, width: '100%', marginBottom: spacing.xl,
+  rowTitle: { ...typography.body, color: colors.ink, fontWeight: '600' },
+  rowSub: { ...typography.caption, color: colors.ink3, marginTop: 2 },
+  save: {
+    marginTop: 24,
+    backgroundColor: colors.amber,
+    borderRadius: radii.md,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
-  rowText: { ...typography.bodySm, color: colors.ink2, flex: 1, lineHeight: 20 },
-  divider: { height: 1, backgroundColor: colors.borderLt },
-  mono: {
-    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
-    fontWeight: '700', color: colors.amber, letterSpacing: 1,
-  },
-  footer: {
-    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
-    fontSize: 10, letterSpacing: 3, color: colors.amber, fontWeight: '700',
-    textAlign: 'center', marginTop: spacing.lg,
-  },
+  saveText: { ...typography.body, color: '#fff', fontWeight: '700' },
 });
