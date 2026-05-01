@@ -12,6 +12,8 @@ import { StoryViewer } from '../../../src/components/stories/StoryViewer';
 import { useAuth } from '../../../src/stores/auth';
 import { useAuthGuard } from '../../../src/hooks/useAuthGuard';
 import { RouteErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SEED_MOMENTS } from '../../../src/data/seed-moments';
+import { SEED_STORIES } from '../../../src/data/seed-stories';
 
 type MomentWithAuthor = Moment & { author?: Profile };
 
@@ -152,7 +154,8 @@ export default function MomentsFeed() {
       console.error('Failed to fetch moments:', err);
     }
 
-    // DB returned 0 moments — show empty state
+    // DB returned 0 moments — fall back to seed data so the feed never feels empty
+    setMoments(SEED_MOMENTS.slice(0, 30) as unknown as MomentWithAuthor[]);
   }, []);
 
   const fetchLikes = useCallback(async (momentIds: string[]) => {
@@ -228,7 +231,15 @@ export default function MomentsFeed() {
       console.error('Failed to fetch stories:', err);
     }
 
-    // DB returned 0 stories — story bar stays hidden
+    // DB returned 0 stories — inject seed stories with refreshed timestamps
+    const now = Date.now();
+    const refreshed = SEED_STORIES.map((s, i) => ({
+      ...s,
+      created_at: new Date(now - i * 20 * 60 * 1000).toISOString(),       // 20 min apart, newest first
+      expires_at: new Date(now + (11 * 60 + 11) * 60 * 1000).toISOString(), // 11h11m from now
+    }));
+    const grouped = groupStoriesByAuthor(refreshed as any);
+    setStoryGroups(grouped);
   }, []);
 
   const groupStoriesByAuthor = useCallback((stories: any[]): StoryGroup[] => {
