@@ -45,7 +45,10 @@ export default function GuestsScreen() {
         .select('id, trail_name, avatar_url')
         .in('id', walkerIds);
 
-      const pm = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+      const pm = new Map(
+        ((profiles ?? []) as Array<{ id: string; trail_name: string | null; avatar_url: string | null }>)
+          .map(p => [p.id, p])
+      );
       setGuests(bookings.map((b: BookingRow) => ({
         ...b,
         walker_trail_name: pm.get(b.walker_id)?.trail_name ?? 'Wanderkind',

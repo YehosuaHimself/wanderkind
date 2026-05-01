@@ -64,7 +64,10 @@ export default function HostingRequests() {
         .select('id, trail_name, avatar_url, rating')
         .in('id', walkerIds);
 
-      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      const profileMap = new Map(
+        ((profiles || []) as Array<{ id: string; trail_name: string | null; avatar_url: string | null; rating: number | null }>)
+          .map(p => [p.id, p])
+      );
 
       const enriched: RequestWithWalker[] = bookings.map((b: BookingRow) => {
         const p = profileMap.get(b.walker_id);
