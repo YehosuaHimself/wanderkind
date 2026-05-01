@@ -668,9 +668,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderWidth: 1,
-    borderColor: colors.borderLt,
+    borderColor: 'rgba(200,118,42,0.12)',
   },
   filterTabActive: {
     backgroundColor: colors.amberBg,
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   momentCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     marginHorizontal: spacing.lg,
     marginVertical: 6,
     borderRadius: 12,

@@ -149,7 +149,7 @@ function WebInput({
   // iOS Safari can interpret a style change mid-touch as a layout shift and
   // abort soft-keyboard activation.
   const inputStyle: React.CSSProperties = {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     paddingLeft: 16,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,

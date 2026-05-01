@@ -5,7 +5,8 @@ export const colors = {
   // Core
   bg: '#FAFAF5',
   bgDark: '#0B0705',
-  surface: '#FFFFFF',
+  surface: '#FAFAF5',   // parchment — all cards/rows use this; was #FFFFFF
+  white: '#FFFFFF',    // only for QR codes, photo frames, true-white needs
   surfaceAlt: '#F5F0E8',
   surfaceDark: '#140D08',
   parchment: '#F3E7CC',
@@ -43,7 +44,7 @@ export const colors = {
 
   // Borders
   border: '#E8DFD0',
-  borderLt: '#F0EBE2',
+  borderLt: 'rgba(200,118,42,0.10)',  // was #F0EBE2 — now amber-tinted
   borderDark: 'rgba(200,118,42,0.15)',
 
   // Map markers

@@ -16,13 +16,13 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: 'rgba(250,246,239,0.88)',
+            backgroundColor: 'rgba(250,246,239,0.92)',
             borderTopWidth: 0,
             height: Platform.OS === 'ios' ? 84 : Platform.OS === 'web' ? 64 : 62,
             paddingTop: 6,
             paddingBottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 10 : 8,
             elevation: 0,
-            shadowColor: '#000',
+            shadowColor: '#1A120A',
             shadowOffset: { width: 0, height: -1 },
             shadowOpacity: 0.06,
             shadowRadius: 8,
@@ -37,12 +37,10 @@ export default function TabLayout() {
             textTransform: 'uppercase',
           },
         }}
-        initialRouteName="map"
+        initialRouteName="myway"
         screenListeners={({ navigation, route }: { navigation: any; route: any }) => ({
           tabPress: (e) => {
             haptic.light();
-            // If already on this tab but nested inside a stack, pop the stack
-            // back to its root so re-tapping a tab always lands on its index.
             const state = navigation.getState();
             const tabRoute = state.routes.find((r: any) => r.name === route.name) as any;
             const nested = tabRoute?.state;
@@ -50,24 +48,16 @@ export default function TabLayout() {
             if (nested && (nested.index ?? 0) > 0) {
               e.preventDefault();
               if (isFocused) {
-                // We're already on this tab — pop the nested stack to its root.
-                navigation.dispatch({
-                  ...StackActions.popToTop(),
-                  target: nested.key,
-                });
+                navigation.dispatch({ ...StackActions.popToTop(), target: nested.key });
               } else {
-                // Switching to this tab from elsewhere — also reset, so we land
-                // on the tab's index instead of whatever screen was last open.
-                navigation.dispatch({
-                  ...StackActions.popToTop(),
-                  target: nested.key,
-                });
+                navigation.dispatch({ ...StackActions.popToTop(), target: nested.key });
                 navigation.navigate(route.name as never);
               }
             }
           },
         })}
       >
+        {/* MY WAY */}
         <Tabs.Screen
           name="myway"
           options={{
@@ -77,6 +67,8 @@ export default function TabLayout() {
             ),
           }}
         />
+
+        {/* MEMORIES */}
         <Tabs.Screen
           name="moments"
           options={{
@@ -86,30 +78,30 @@ export default function TabLayout() {
             ),
           }}
         />
+
+        {/* MORE — raised center button */}
         <Tabs.Screen
           name="more"
           options={{
             title: '',
             tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
-              <View style={[
-                centerStyles.raised,
-                focused && centerStyles.raisedActive,
-              ]}>
-                <Ionicons name="apps" size={22} color={focused ? '#fff' : colors.amber} />
+              <View style={[centerStyles.raised, focused && centerStyles.raisedActive]}>
+                <Ionicons name="apps" size={22} color={focused ? '#FAF6EF' : colors.amber} />
               </View>
             ),
             tabBarLabel: () => null,
           }}
         />
+
+        {/* MAP — hidden from tab bar (legacy; community map lives in US-02) */}
         <Tabs.Screen
           name="map"
           options={{
-            title: 'Map',
-            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-              <Ionicons name="map-outline" size={size} color={color} />
-            ),
+            href: null,   // removes from tab bar entirely
           }}
         />
+
+        {/* MSG */}
         <Tabs.Screen
           name="messages"
           options={{
@@ -119,6 +111,8 @@ export default function TabLayout() {
             ),
           }}
         />
+
+        {/* ME */}
         <Tabs.Screen
           name="me"
           options={{
@@ -144,7 +138,7 @@ const centerStyles = StyleSheet.create({
     marginTop: -22,
     borderWidth: 1.5,
     borderColor: 'rgba(200,118,42,0.25)',
-    shadowColor: '#000',
+    shadowColor: '#1A120A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 6,
@@ -153,7 +147,7 @@ const centerStyles = StyleSheet.create({
   raisedActive: {
     backgroundColor: colors.amber,
     borderColor: colors.amber,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
   },
 });

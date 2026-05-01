@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../lib/theme';
+import { colors, spacing } from '../../lib/theme';
 
 type Props = {
   title: string;
@@ -22,7 +22,13 @@ export function WKHeader({ title, showBack = true, rightAction }: Props) {
       ) : (
         <View style={styles.spacer} />
       )}
-      <Text style={styles.title} numberOfLines={1}>{title.toUpperCase()}</Text>
+
+      {/* H-LABEL pattern: amber line + courier label */}
+      <View style={styles.titleWrap}>
+        <View style={styles.amberLine} />
+        <Text style={styles.title} numberOfLines={1}>{title.toUpperCase()}</Text>
+      </View>
+
       {rightAction ?? <View style={styles.spacer} />}
     </View>
   );
@@ -44,13 +50,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
+  titleWrap: {
     flex: 1,
-    textAlign: 'center',
-    fontSize: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  amberLine: {
+    width: 16,
+    height: 1.5,
+    backgroundColor: colors.amber,
+    borderRadius: 1,
+  },
+  title: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 10,
     fontWeight: '600',
-    letterSpacing: 2,
-    color: colors.ink,
+    letterSpacing: 3,
+    color: colors.amber,
   },
   spacer: { width: 36 },
 });

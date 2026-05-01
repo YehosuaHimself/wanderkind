@@ -18,10 +18,10 @@ export function WKCard({ children, style, variant = 'default' }: Props) {
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.borderLt,
+    borderColor: 'rgba(200,118,42,0.12)',
     padding: 16,
   },
   gold: {
