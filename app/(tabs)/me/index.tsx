@@ -111,7 +111,7 @@ export default function MeScreen() {
 
     // Try upload — if bucket doesn't exist or RLS blocks, fall back to base64 data URL
     const { error: uploadError } = await supabase.storage
-      .from('profiles')
+      .from('avatars')
       .upload(filename, file, { upsert: true, contentType: 'image/jpeg' });
 
     if (uploadError) {
@@ -125,7 +125,7 @@ export default function MeScreen() {
       throw uploadError;
     }
 
-    const { data: publicData } = supabase.storage.from('profiles').getPublicUrl(filename);
+    const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(filename);
     return publicData.publicUrl;
   };
 
@@ -138,7 +138,7 @@ export default function MeScreen() {
       if (!imageUri || !user) return;
 
       setUploadingAvatar(true);
-      const filename = `avatar_${user.id}_${Date.now()}.jpg`;
+      const filename = `profile_photos/${user.id}/avatar_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
       // Use store's updateProfile for immediate local state + DB persist
@@ -163,7 +163,7 @@ export default function MeScreen() {
       if (!imageUri || !user) return;
 
       setUploadingCover(true);
-      const filename = `cover_${user.id}_${Date.now()}.jpg`;
+      const filename = `profile_photos/${user.id}/cover_${Date.now()}.jpg`;
       const publicUrl = await uploadToStorage(imageUri, filename);
 
       // Use store's updateProfile for immediate local state + DB persist

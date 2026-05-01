@@ -35,7 +35,7 @@ export default function JourneyScreen() {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.subtitle}>
-          Climb the 11 tiers of mastery
+          Your journey is measured in nights — nights you walked, slept in a stranger's home, or trusted the road. Each tier is earned through presence, not payment.
         </Text>
 
         {TIERS.map((tier, idx) => {
@@ -103,12 +103,6 @@ export default function JourneyScreen() {
           );
         })}
 
-        <WKCard variant="gold" style={styles.infoCard}>
-          <Ionicons name="information-circle" size={18} color={colors.gold} />
-          <Text style={styles.infoText}>
-            Each tier unlocks new features and recognition within the Wanderkind community.
-          </Text>
-        </WKCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -205,13 +199,13 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.ink3,
   },
-  infoCard: {
+  _infoCard_unused: {
     flexDirection: 'row',
     marginTop: spacing.xl,
     gap: spacing.md,
     alignItems: 'flex-start',
   },
-  infoText: {
+  _infoText_unused: {
     ...typography.bodySm,
     color: colors.ink2,
     flex: 1,

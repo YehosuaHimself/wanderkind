@@ -14,6 +14,8 @@ import { BiometricGate } from '../../../src/components/verification/BiometricGat
 import { listSeedThreads, isSeedProfileId } from '../../../src/lib/seedMessages';
 import { SEED_PROFILES } from '../../../src/data/seed-profiles';
 
+type MsgTab = '1on1' | 'groups';
+
 type Thread = {
   id: string;
   other_user: {
@@ -32,13 +34,13 @@ export default function MessagesScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { isVerified, gateVisible, openGate, closeGate, require: requireVerification, onVerified } = useBiometricGate();
+  const [msgTab, setMsgTab] = useState<MsgTab>('1on1');
   const [threads, setThreads] = useState<Thread[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Array<{id:string;trail_name:string;avatar_url:string|null;bio:string|null}>>([]);
 
-  // Search wanderkinder by trail_name in Supabase
   useEffect(() => {
     const q = searchQuery.trim().replace(/^@/, '');
     if (!q) { setSearchResults([]); return; }
@@ -76,7 +78,6 @@ export default function MessagesScreen() {
       unread_count: t.unread_count ?? 0,
     }));
 
-    // Merge in seed (NPC) threads the user has started locally.
     let seedThreads: Thread[] = [];
     try {
       const seeds = await listSeedThreads();
@@ -99,7 +100,7 @@ export default function MessagesScreen() {
           } as Thread;
         });
     } catch {
-      // seed threads are best-effort
+      // seed threads best-effort
     }
 
     const merged = [...realThreads, ...seedThreads].sort((a, b) =>
@@ -166,129 +167,167 @@ export default function MessagesScreen() {
     </View>
   );
 
+  const renderGroupsEmpty = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="people-outline" size={48} color={colors.amberLine} />
+      <Text style={styles.emptyTitle}>No group chats yet</Text>
+      <Text style={styles.emptyText}>Group conversations with fellow Wanderkinder coming soon.</Text>
+    </View>
+  );
+
   return (
     <RouteErrorBoundary routeName="Messages">
       <SafeAreaView style={styles.container} edges={['top']}>
+
+        {/* ── Header ────────────────────────────────────────────────── */}
         <View style={styles.header}>
-        <View style={styles.headerLabel}>
-          <View style={styles.headerDot} />
-          <Text style={styles.headerLabelText}>MESSAGES</Text>
+          <View style={styles.headerLabel}>
+            <View style={styles.headerDot} />
+            <Text style={styles.headerLabelText}>MESSAGES</Text>
+          </View>
         </View>
-        <Text style={styles.headerTitle}>Conversations</Text>
-      </View>
 
-      {/* E2E Encryption Trust Banner */}
-      <View style={styles.encryptionBanner}>
-        <Ionicons name="lock-closed" size={13} color="#27864A" />
-        <Text style={styles.encryptionText}>End-to-end encrypted</Text>
-        <Ionicons name="shield-checkmark-outline" size={13} color="#27864A" />
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color={colors.ink3} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search wanderkinder by name or @handle..."
-            placeholderTextColor={colors.ink3}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={() => setIsSearching(true)}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearchQuery(''); setIsSearching(false); }}>
-              <Ionicons name="close-circle" size={16} color={colors.ink3} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Search Results */}
-      {isSearching && searchQuery.trim().length > 0 ? (
-        <FlatList
-          data={searchResults}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No wanderkinder found</Text>
-              <Text style={styles.emptyText}>Try a different name or @handle</Text>
-            </View>
-          )}
-          renderItem={({ item }: { item: any }) => (
+        {/* ── Large caps tab toggle: 1:1 | GROUPS ───────────────────── */}
+        <View style={styles.tabBar}>
+          {([
+            { key: '1on1' as MsgTab, label: '1:1' },
+            { key: 'groups' as MsgTab, label: 'GROUPS' },
+          ]).map(tab => (
             <TouchableOpacity
-              style={styles.threadRow}
-              onPress={() => {
-                setSearchQuery('');
-                setIsSearching(false);
-                if (isSeedProfileId(item.id)) {
-                  router.push(`/(tabs)/messages/seed/${item.id}` as any);
-                } else {
-                  router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
-                }
-              }}
+              key={tab.key}
+              style={styles.tab}
+              onPress={() => { haptic.selection(); setMsgTab(tab.key); }}
               activeOpacity={0.7}
             >
-              <View style={styles.avatar}>
-                {item.avatar_url ? (
-                  <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
-                ) : (
-                  <Ionicons name="person" size={18} color={colors.ink3} />
+              <Text style={[styles.tabText, msgTab === tab.key && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+              {msgTab === tab.key && <View style={styles.tabUnderline} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── E2E banner ─────────────────────────────────────────────── */}
+        <View style={styles.encryptionBanner}>
+          <Ionicons name="lock-closed" size={13} color="#27864A" />
+          <Text style={styles.encryptionText}>End-to-end encrypted</Text>
+          <Ionicons name="shield-checkmark-outline" size={13} color="#27864A" />
+        </View>
+
+        {/* ── GROUPS placeholder ─────────────────────────────────────── */}
+        {msgTab === 'groups' ? (
+          renderGroupsEmpty()
+        ) : (
+          <>
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={16} color={colors.ink3} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search wanderkinder by name or @handle..."
+                  placeholderTextColor={colors.ink3}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onFocus={() => setIsSearching(true)}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => { setSearchQuery(''); setIsSearching(false); }}>
+                    <Ionicons name="close-circle" size={16} color={colors.ink3} />
+                  </TouchableOpacity>
                 )}
               </View>
-              <View style={styles.threadInfo}>
-                <Text style={styles.threadName}>{item.trail_name}</Text>
-                <Text style={styles.threadPreview} numberOfLines={1}>
-                  {item.bio ? item.bio.slice(0, 60) + (item.bio.length > 60 ? '...' : '') : 'Wanderkind'}
-                </Text>
-              </View>
-              <View style={styles.newMsgBadge}>
-                <Ionicons name="chatbubble-outline" size={14} color={colors.amber} />
-              </View>
-            </TouchableOpacity>
-          )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-        />
-      ) : (
-        <FlatList
-          data={threads}
-          renderItem={renderThread}
-          keyExtractor={item => item.id}
-          ListEmptyComponent={renderEmpty}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
-          }
-          showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={Platform.OS !== 'web'}
-          initialNumToRender={10}
-        />
-      )}
+            </View>
 
-      {/* Biometric gate — slides in above FAB when needed */}
-      {gateVisible && (
-        <BiometricGate
-          action="send messages"
-          onVerified={() => { onVerified(); closeGate(); }}
-          onDismiss={closeGate}
-        />
-      )}
+            {/* Thread / Search list */}
+            {isSearching && searchQuery.trim().length > 0 ? (
+              <FlatList
+                data={searchResults}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={() => (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyTitle}>No wanderkinder found</Text>
+                    <Text style={styles.emptyText}>Try a different name or @handle</Text>
+                  </View>
+                )}
+                renderItem={({ item }: { item: any }) => (
+                  <TouchableOpacity
+                    style={styles.threadRow}
+                    onPress={() => {
+                      setSearchQuery('');
+                      setIsSearching(false);
+                      if (isSeedProfileId(item.id)) {
+                        router.push(`/(tabs)/messages/seed/${item.id}` as any);
+                      } else {
+                        router.push(`/(tabs)/messages/new?userId=${item.id}&name=${encodeURIComponent(item.trail_name)}` as any);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.avatar}>
+                      {item.avatar_url ? (
+                        <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
+                      ) : (
+                        <Ionicons name="person" size={18} color={colors.ink3} />
+                      )}
+                    </View>
+                    <View style={styles.threadInfo}>
+                      <Text style={styles.threadName}>{item.trail_name}</Text>
+                      <Text style={styles.threadPreview} numberOfLines={1}>
+                        {item.bio ? item.bio.slice(0, 60) + (item.bio.length > 60 ? '...' : '') : 'Wanderkind'}
+                      </Text>
+                    </View>
+                    <View style={styles.newMsgBadge}>
+                      <Ionicons name="chatbubble-outline" size={14} color={colors.amber} />
+                    </View>
+                  </TouchableOpacity>
+                )}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+              />
+            ) : (
+              <FlatList
+                data={threads}
+                renderItem={renderThread}
+                keyExtractor={item => item.id}
+                ListEmptyComponent={renderEmpty}
+                contentContainerStyle={styles.list}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />
+                }
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={Platform.OS !== 'web'}
+                initialNumToRender={10}
+              />
+            )}
+          </>
+        )}
 
-      {/* FAB — New Message */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={requireVerification(() => { haptic.medium(); router.push('/(tabs)/messages/new' as any); })}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+        {/* Biometric gate */}
+        {gateVisible && (
+          <BiometricGate
+            action="send messages"
+            onVerified={() => { onVerified(); closeGate(); }}
+            onDismiss={closeGate}
+          />
+        )}
+
+        {/* FAB — only in 1:1 tab */}
+        {msgTab === '1on1' && (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={requireVerification(() => { haptic.medium(); router.push('/(tabs)/messages/new' as any); })}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
     </RouteErrorBoundary>
   );
@@ -309,12 +348,71 @@ function formatTime(iso: string): string {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+
+  header: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  headerLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerDot: {
+    width: 14,
+    height: 1.5,
+    borderRadius: 1,
+    backgroundColor: colors.amber,
+  },
+  headerLabelText: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 10,
+    letterSpacing: 3,
+    color: colors.amber,
+    fontWeight: '600',
+  },
+
+  // ── Tabs ──
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLt,
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    marginRight: spacing.xl,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  tabText: {
+    fontFamily: Platform.OS === 'web' ? "'Courier New', monospace" : 'Courier New',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: colors.ink3,
+  },
+  tabTextActive: {
+    color: colors.amber,
+  },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: colors.amber,
+    borderRadius: 1,
+  },
+
   encryptionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: 7,
     backgroundColor: 'rgba(39,134,74,0.06)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(39,134,74,0.1)',
@@ -327,39 +425,8 @@ const styles = StyleSheet.create({
     color: '#27864A',
     textTransform: 'uppercase',
   },
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: 8,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLt,
-  },
-  headerLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  headerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.amber,
-  },
-  headerLabelText: {
-    fontFamily: 'Courier New',
-    fontSize: 10,
-    letterSpacing: 3,
-    color: colors.amber,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.ink,
-  },
-  list: {
-    paddingVertical: 4,
-  },
+
+  list: { paddingVertical: 4 },
   threadRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -391,14 +458,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  threadTime: {
-    fontSize: 11,
-    color: colors.ink3,
-  },
-  threadPreview: {
-    ...typography.bodySm,
-    color: colors.ink2,
-  },
+  threadTime: { fontSize: 11, color: colors.ink3 },
+  threadPreview: { ...typography.bodySm, color: colors.ink2 },
   unreadBadge: {
     minWidth: 20,
     height: 20,
@@ -408,11 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
   },
-  unreadText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
+  unreadText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
   separator: {
     height: 1,
     backgroundColor: colors.borderLt,
@@ -433,12 +490,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.ink,
-    padding: 0,
-  },
+  searchInput: { flex: 1, fontSize: 14, color: colors.ink, padding: 0 },
   newMsgBadge: {
     width: 32,
     height: 32,
@@ -471,7 +523,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     zIndex: 10,
   },
-  emptyIcon: { marginBottom: 16 },
   emptyTitle: { ...typography.h3, color: colors.ink, marginBottom: 8, textAlign: 'center' },
   emptyText: { ...typography.bodySm, color: colors.ink2, textAlign: 'center', lineHeight: 20 },
   emptyBtn: {
@@ -484,10 +535,5 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginTop: 16,
   },
-  emptyBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FAF6EF',
-    letterSpacing: 0.2,
-  },
+  emptyBtnText: { fontSize: 14, fontWeight: '700', color: '#FAF6EF', letterSpacing: 0.2 },
 });

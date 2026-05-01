@@ -30,61 +30,64 @@ type AppTile = {
   wide?: boolean;
   /** Optional subtitle shown beneath the title (only on wide tiles). */
   subtitle?: string;
+  /** When true, tile is greyed out and not pressable. */
+  disabled?: boolean;
 };
 
 // PAGE 1: Core features — identity, credentials, journey
 const page1Tiles: AppTile[] = [
   {
     icon: 'home',
-    title: 'Your Offering',
+    title: 'YOUR OFFERING',
     route: '/(tabs)/more/wanderhost',
     accent: colors.amber,
     bgTint: `${colors.amber}12`,
   },
   {
     icon: 'document-text',
-    title: 'Wanderkind Pass',
+    title: 'WANDERKIND PASS',
     route: '/(tabs)/more/passes',
     accent: colors.amber,
     bgTint: `${colors.amber}12`,
   },
   {
     icon: 'footsteps',
-    title: 'Wanderkind Journey',
+    title: 'WANDERKIND JOURNEY',
     route: '/(tabs)/more/journey',
     accent: '#2D6A4F',
     bgTint: 'rgba(45,106,79,0.08)',
   },
   {
     icon: 'ribbon',
-    title: 'Stamps & Visas',
+    title: 'STAMPS & VISAS',
     route: '/(tabs)/more/stamps',
     accent: '#6B21A8',
     bgTint: 'rgba(107,33,168,0.06)',
   },
   {
     icon: 'bag-check',
-    title: 'Packlist & Tips',
+    title: 'PACKLIST & TIPS',
     route: '/(tabs)/more/packlist',
     accent: colors.green,
     bgTint: `${colors.green}12`,
   },
   {
     icon: 'create',
-    title: 'Write',
+    title: 'WRITE',
     route: '/(tabs)/more/book',
     accent: colors.ink2,
+    disabled: true,
   },
   {
     icon: 'car',
-    title: 'Hitchhike',
+    title: 'HITCHHIKE',
     route: '/(tabs)/more/tramp-mode',
     accent: '#E67E22',
     bgTint: 'rgba(230,126,34,0.08)',
   },
   {
     icon: 'megaphone',
-    title: 'Host Push',
+    title: 'HOST PUSH',
     route: '/(tabs)/more/host-push',
     accent: '#C8762A',
     bgTint: 'rgba(200,118,42,0.07)',
@@ -95,27 +98,27 @@ const page1Tiles: AppTile[] = [
 const page2Tiles: AppTile[] = [
   {
     icon: 'shield-checkmark',
-    title: 'Verification',
+    title: 'VERIFICATION',
     route: '/(tabs)/more/verification',
     accent: '#22863A',
     bgTint: 'rgba(34,134,58,0.08)',
   },
   {
     icon: 'warning',
-    title: 'Emergency & Contacts',
+    title: 'EMERGENCY & CONTACTS',
     route: '/(tabs)/more/emergency',
     accent: colors.red,
     bgTint: colors.redBg,
   },
   {
     icon: 'settings',
-    title: 'Trust & Settings',
+    title: 'TRUST & SETTINGS',
     route: '/(tabs)/more/settings',
     accent: colors.ink2,
   },
   {
     icon: 'information-circle',
-    title: 'About',
+    title: 'ABOUT',
     route: '/(tabs)/more/about',
     accent: colors.ink3,
   },
@@ -191,9 +194,9 @@ export default function MoreScreen() {
           return (
             <TouchableOpacity
               key={tile.route + tile.title}
-              style={[styles.tile, { height: TILE_HEIGHT }, tile.bgTint ? { backgroundColor: tile.bgTint } : null]}
-              onPress={() => { haptic.light(); router.push(tile.route as any); }}
-              activeOpacity={0.7}
+              style={[styles.tile, { height: TILE_HEIGHT }, tile.bgTint ? { backgroundColor: tile.bgTint } : null, tile.disabled ? styles.tileDisabled : null]}
+              onPress={tile.disabled ? undefined : () => { haptic.light(); router.push(tile.route as any); }}
+              activeOpacity={tile.disabled ? 1 : 0.7}
             >
               <View style={[styles.tileIconCircle, { backgroundColor: `${tile.accent || colors.ink3}15` }]}>
                 <Ionicons name={tile.icon as any} size={22} color={tile.accent ?? colors.ink2} />
@@ -384,5 +387,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amber,
     width: 20,
     borderRadius: 4,
+  },
+  tileDisabled: {
+    opacity: 0.35,
   },
 });
