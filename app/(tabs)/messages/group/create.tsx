@@ -36,7 +36,7 @@ export default function CreateGroupChat() {
   const [selectedMembers, setSelectedMembers] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

@@ -87,7 +87,7 @@ export default function CheckInScreen() {
       .gte('start_date', today)
       .order('start_date')
       .limit(20)
-      .then(({ data }) => {
+      .then(({ data }: { data: any }) => {
         if (!data) return;
         const items: CheckInGuest[] = data.map((b: any) => ({
           id: b.id,
@@ -163,7 +163,7 @@ export default function CheckInScreen() {
             </View>
             <FlatList
               data={guests}
-              renderItem={({ item }) => (
+              renderItem={({ item }: { item: any }) => (
                 <GuestCheckInItem
                   guest={item}
                   onCheck={handleCheckIn}

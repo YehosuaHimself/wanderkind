@@ -210,7 +210,7 @@ export default function MessagesScreen() {
               <Text style={styles.emptyText}>Try a different name or @handle</Text>
             </View>
           )}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: any }) => (
             <TouchableOpacity
               style={styles.threadRow}
               onPress={() => {

@@ -36,7 +36,7 @@ export default function NewMessage() {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-select user when passed via URL params (e.g. from feed DM button)
   useEffect(() => {

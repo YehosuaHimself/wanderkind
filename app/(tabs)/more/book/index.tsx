@@ -81,7 +81,7 @@ export default function JournalHub() {
     },
   };
 
-  const currentTab = tabInfo[activeTab];
+  const currentTab = (tabInfo as any)[activeTab];
 
   const renderEntry = ({ item }: { item: BlogPost }) => (
     <TouchableOpacity

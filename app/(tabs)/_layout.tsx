@@ -38,7 +38,7 @@ export default function TabLayout() {
           },
         }}
         initialRouteName="map"
-        screenListeners={({ navigation, route }) => ({
+        screenListeners={({ navigation, route }: { navigation: any; route: any }) => ({
           tabPress: (e) => {
             haptic.light();
             // If already on this tab but nested inside a stack, pop the stack
@@ -72,7 +72,7 @@ export default function TabLayout() {
           name="myway"
           options={{
             title: 'My Way',
-            tabBarIcon: ({ color, size }) => (
+            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
               <MaterialCommunityIcons name="map-marker-path" size={size} color={color} />
             ),
           }}
@@ -81,7 +81,7 @@ export default function TabLayout() {
           name="moments"
           options={{
             title: 'Memories',
-            tabBarIcon: ({ color, size }) => (
+            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
               <Ionicons name="image-outline" size={size} color={color} />
             ),
           }}
@@ -90,7 +90,7 @@ export default function TabLayout() {
           name="more"
           options={{
             title: '',
-            tabBarIcon: ({ color, focused }) => (
+            tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
               <View style={[
                 centerStyles.raised,
                 focused && centerStyles.raisedActive,
@@ -105,8 +105,8 @@ export default function TabLayout() {
           name="map"
           options={{
             title: 'Map',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="heart-outline" size={size} color={color} />
+            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+              <Ionicons name="map-outline" size={size} color={color} />
             ),
           }}
         />
@@ -114,7 +114,7 @@ export default function TabLayout() {
           name="messages"
           options={{
             title: 'MSG',
-            tabBarIcon: ({ color, size }) => (
+            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
               <Ionicons name="paper-plane-outline" size={size} color={color} />
             ),
           }}
@@ -123,7 +123,7 @@ export default function TabLayout() {
           name="me"
           options={{
             title: 'Me',
-            tabBarIcon: ({ color, size }) => (
+            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
               <Ionicons name="person-outline" size={size} color={color} />
             ),
           }}

@@ -21,6 +21,7 @@ const DARK_BG = '#0B0705';
 const ACCENT = colors.passHosp; // #8B1A2B — deep crimson
 
 export default function HospitalityPassScreen() {
+  const _AnimView = Animated.View as any;
   useAuthGuard();
 
   const { profile } = useAuth();
@@ -96,7 +97,7 @@ export default function HospitalityPassScreen() {
       <View style={styles.wrapper}>
         <View style={styles.page}>
           {/* Security Line Animation */}
-          <Animated.View
+          <_AnimView
             style={[
               styles.securityLine,
               {
@@ -120,11 +121,11 @@ export default function HospitalityPassScreen() {
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
-            <Animated.View style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
+            <_AnimView style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
               <Text style={styles.threadText}>
                 HOSPITALITY·PASS·OPEN·DOOR·WANDERHOST·TRUST·HOSPITALITY·PASS·OPEN·DOOR·WANDERHOST·TRUST·
               </Text>
-            </Animated.View>
+            </_AnimView>
           </View>
 
           {/* Embassy Header */}

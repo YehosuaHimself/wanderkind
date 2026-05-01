@@ -121,7 +121,7 @@ export default function Search() {
       ) : !query.trim() ? (
         <WKEmpty icon="search-outline" title="Search Wanderkind" message="Find hosts, wanderers, and routes" iconColor={colors.amberLine} />
       ) : currentResults.length === 0 ? (
-        <WKEmpty icon="search-outline" title="No results" message={`No ${TAB_LABELS[activeTab].toLowerCase()} matched "${query}"`} iconColor={colors.amberLine} />
+        <WKEmpty icon="search-outline" title="No results" message={`No ${(TAB_LABELS as any)[activeTab]?.toLowerCase()} matched "${query}"`} iconColor={colors.amberLine} />
       ) : (
         <FlatList
           data={currentResults as any[]}

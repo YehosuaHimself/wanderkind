@@ -118,16 +118,19 @@ function WebScanFallback() {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* @ts-ignore - video/canvas are web-only elements */}
       <View style={{ flex: 1, position: 'relative' }}>
-        <video
-          ref={videoRef as any}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' } as any}
-          autoPlay
-          playsInline
-          muted
-        />
-        <canvas ref={canvasRef as any} style={{ display: 'none' } as any} />
+        {/* web-only: video + canvas rendered via createElement to avoid TS JSX errors */}
+        {(React.createElement as any)('video', {
+          ref: videoRef,
+          style: { width: '100%', height: '100%', objectFit: 'cover' },
+          autoPlay: true,
+          playsInline: true,
+          muted: true,
+        })}
+        {(React.createElement as any)('canvas', {
+          ref: canvasRef,
+          style: { display: 'none' },
+        })}
         <View style={styles.overlay}>
           <View style={styles.scanFrame} />
           <Text style={styles.instructionText}>Point camera at QR code</Text>

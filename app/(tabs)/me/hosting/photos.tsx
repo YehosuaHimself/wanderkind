@@ -22,7 +22,7 @@ export default function PhotosScreen() {
   const { user, isLoading } = useAuthGuard();
   React.useEffect(() => {
     if (!user) return;
-    supabase.from('hosts').select('photos').eq('host_id', user.id).single().then(({ data }) => {
+    supabase.from('hosts').select('photos').eq('host_id', user.id).single().then(({ data }: { data: any }) => {
       if (data?.photos && Array.isArray(data.photos)) {
         setPhotos(data.photos.map((uri: string, i: number) => ({ id: String(i), uri })));
       }

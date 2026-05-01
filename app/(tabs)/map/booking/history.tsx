@@ -141,7 +141,7 @@ export default function MyBookings() {
           keyExtractor={(b) => b.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          renderItem={({ item }) => {
+          renderItem={({ item }: { item: any }) => {
             const s = item.status || 'pending';
             const tint = STATUS_TINT[s] ?? colors.ink2;
             const bg = STATUS_BG[s] ?? 'rgba(155,142,126,0.06)';

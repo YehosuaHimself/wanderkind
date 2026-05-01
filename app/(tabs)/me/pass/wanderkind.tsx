@@ -40,6 +40,7 @@ const getInitials = (trailName?: string): string => {
 };
 
 export default function WanderkindPassScreen() {
+  const _AnimView = Animated.View as any;
   useAuthGuard();
 
   const { profile } = useAuth();
@@ -165,7 +166,7 @@ export default function WanderkindPassScreen() {
           </View>
 
           {/* Security Line Animation */}
-          <Animated.View
+          <_AnimView
             style={[
               styles.securityLine,
               {
@@ -176,7 +177,7 @@ export default function WanderkindPassScreen() {
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
-            <Animated.View
+            <_AnimView
               style={[
                 styles.thread,
                 {
@@ -187,7 +188,7 @@ export default function WanderkindPassScreen() {
               <Text style={styles.threadText}>
                 WANDERKIND·EMBASSY·DIGITAL·WANDERKIND·EMBASSY·DIGITAL·WANDERKIND·EMBASSY·DIGITAL·
               </Text>
-            </Animated.View>
+            </_AnimView>
           </View>
 
           {/* Embassy Header */}
@@ -285,7 +286,7 @@ export default function WanderkindPassScreen() {
           </View>
 
           {/* Security Line Animation */}
-          <Animated.View
+          <_AnimView
             style={[
               styles.securityLine,
               {
@@ -296,7 +297,7 @@ export default function WanderkindPassScreen() {
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
-            <Animated.View
+            <_AnimView
               style={[
                 styles.thread,
                 {
@@ -307,7 +308,7 @@ export default function WanderkindPassScreen() {
               <Text style={styles.threadText}>
                 SECURITY·MATRIX·CERTIFICATION·SECURITY·MATRIX·CERTIFICATION·SECURITY·MATRIX·CERTIFICATION·
               </Text>
-            </Animated.View>
+            </_AnimView>
           </View>
 
           {/* Embassy Header */}

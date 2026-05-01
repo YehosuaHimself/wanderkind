@@ -8,6 +8,7 @@ import { supabase } from '../../../../src/lib/supabase';
 import { useAuthGuard } from '../../../../src/hooks/useAuthGuard';
 
 export default function StampCeremony() {
+  const _AnimView = Animated.View as any;
   const { user, isLoading } = useAuthGuard();
   // Never block rendering — content is always accessible
 
@@ -61,7 +62,7 @@ export default function StampCeremony() {
 
         {/* Animated Stamp */}
         <View style={styles.stampContainer}>
-          <Animated.View
+          <_AnimView
             style={[
               styles.stamp,
               {
@@ -73,10 +74,10 @@ export default function StampCeremony() {
             <View style={styles.stampCircle}>
               <Ionicons name="ribbon" size={64} color={colors.surface} />
             </View>
-          </Animated.View>
+          </_AnimView>
 
           {/* Animated Particles */}
-          <Animated.View
+          <_AnimView
             style={[
               styles.particles,
               { opacity: particleOpacity },
@@ -98,7 +99,7 @@ export default function StampCeremony() {
                 <Ionicons name="sparkles" size={20} color={colors.gold} />
               </View>
             ))}
-          </Animated.View>
+          </_AnimView>
         </View>
 
         <Text style={styles.celebrationText}>

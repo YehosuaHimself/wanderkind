@@ -32,7 +32,7 @@ export default function CreateBookEntry() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const autoSaveTimeout = React.useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { pickFromLibrary } = useWKImagePicker({ aspect: [4, 3] });
 

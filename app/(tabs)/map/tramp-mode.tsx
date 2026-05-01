@@ -41,6 +41,7 @@ interface RideEntry {
 }
 
 export default function TrampMode() {
+  const _AnimView = Animated.View as any;
   const { user, isLoading } = useAuthGuard();
   const router = useRouter();
   const { profile } = useAuth();
@@ -227,12 +228,12 @@ export default function TrampMode() {
         <StatusBar barStyle="light-content" />
 
         {/* Pulsing glow ring */}
-        <Animated.View style={[signalStyles.glowRing, { opacity: glowAnim }]} />
+        <_AnimView style={[signalStyles.glowRing, { opacity: glowAnim }]} />
 
         {/* The large W */}
-        <Animated.View style={[signalStyles.wContainer, { transform: [{ scale: pulseAnim }] }]}>
+        <_AnimView style={[signalStyles.wContainer, { transform: [{ scale: pulseAnim }] }]}>
           <Text style={signalStyles.wLetter}>W</Text>
-        </Animated.View>
+        </_AnimView>
 
         {/* WANDERKIND label */}
         <Text style={signalStyles.brandLabel}>WANDERKIND</Text>

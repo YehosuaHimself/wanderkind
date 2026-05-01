@@ -81,6 +81,7 @@ function distanceKm(
 }
 
 export default function ShuffleScreen() {
+  const _AnimView = Animated.View as any;
   const router = useRouter();
   const { user, profile } = useAuthStore();
 
@@ -382,11 +383,11 @@ export default function ShuffleScreen() {
             {/* LISTENING */}
             {shuffleStatus === 'listening' && (
               <View style={styles.centeredBlock}>
-                <Animated.View style={{ transform: [{ scale: pulse }] }}>
+                <_AnimView style={{ transform: [{ scale: pulse }] }}>
                   <View style={[styles.iconCircle, styles.iconCircleListening]}>
                     <Ionicons name="radio-outline" size={34} color={ACCENT} />
                   </View>
-                </Animated.View>
+                </_AnimView>
                 <Text style={styles.stateTitle}>Listening to the way…</Text>
                 <Text style={styles.stateBody}>
                   Your profile has been shared with WanderHosts within{' '}

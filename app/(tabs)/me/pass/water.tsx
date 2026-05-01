@@ -22,6 +22,7 @@ const ACCENT = colors.passWater; // #4CA8C9 — cerulean blue
 const CARD_WIDTH = 300; // approximate for animation sizing
 
 export default function WaterPassScreen() {
+  const _AnimView = Animated.View as any;
   useAuthGuard();
 
   const { profile } = useAuth();
@@ -97,7 +98,7 @@ export default function WaterPassScreen() {
       <View style={styles.pageWrapper}>
         <View style={styles.page}>
           {/* Security Line: vertical moving line */}
-          <Animated.View
+          <_AnimView
             style={[
               styles.securityLine,
               { transform: [{ translateX: securityLineAnimation }] },
@@ -112,11 +113,11 @@ export default function WaterPassScreen() {
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
-            <Animated.View style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
+            <_AnimView style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
               <Text style={styles.threadText}>
                 WATER·PASS·SOURCE·FOUNTAIN·STEWARDSHIP·SUSTAIN·WATER·PASS·SOURCE·FOUNTAIN·STEWARDSHIP·SUSTAIN·
               </Text>
-            </Animated.View>
+            </_AnimView>
           </View>
 
           {/* Embassy Header */}

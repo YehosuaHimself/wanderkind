@@ -21,6 +21,7 @@ const DARK_BG = '#0B0705';
 const ACCENT = colors.passFood; // #27864A — deep green
 
 export default function FoodPassScreen() {
+  const _AnimView = Animated.View as any;
   useAuthGuard();
 
   const { profile } = useAuth();
@@ -102,15 +103,15 @@ export default function FoodPassScreen() {
           <View style={[styles.corner, styles.cornerBR]}><View style={[styles.bracketH, { right: 0, bottom: 0 }]} /><View style={[styles.bracketV, { right: 0, bottom: 0 }]} /></View>
 
           {/* Security Line - Vertical moving line */}
-          <Animated.View style={[styles.securityLine, { transform: [{ translateX: securityLineAnimation }] }]} />
+          <_AnimView style={[styles.securityLine, { transform: [{ translateX: securityLineAnimation }] }]} />
 
           {/* Kinetic Text Track */}
           <View style={styles.threadContainer}>
-            <Animated.View style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
+            <_AnimView style={[styles.thread, { transform: [{ translateX: textTrackAnimation }] }]}>
               <Text style={styles.threadText}>
                 FOOD·PASS·DONATIVO·SHARED·MEALS·COMMUNITY·FOOD·PASS·DONATIVO·SHARED·MEALS·COMMUNITY·FOOD·PASS·
               </Text>
-            </Animated.View>
+            </_AnimView>
           </View>
 
           {/* Embassy Header */}
