@@ -13,111 +13,205 @@
       #root { display: flex; height: 100%; flex: 1; }
     </style>
 
-    <!--
-      WK WHITE-SCREEN SHIELD
-      Shows a recovery UI instead of a blank page if the React bundle
-      fails to load, throws a module-level error, or hangs on startup.
-      React calls window.__wkMounted() once it has rendered successfully.
-    -->
-    <style id="wk-fallback-style">
+    <!-- ═══════════════════════════════════════════════════════════
+         WK GATE SHELL
+         Full-screen immersive loading experience shown before React
+         mounts. Dismissed (fade-up) the instant React paints #root.
+         Falls back to an error state if the bundle hangs.
+    ══════════════════════════════════════════════════════════════ -->
+    <style id="wk-shell-style">
+      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
       #wk-shell {
         position: fixed; inset: 0; z-index: 9999;
-        background: #FAFAF5;
+        background: #FAF6EF;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center;
-        padding: 32px;
+        overflow: hidden;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        transition: opacity 0.55s cubic-bezier(0.4,0,0.2,1),
+                    transform 0.55s cubic-bezier(0.4,0,0.2,1);
       }
-      #wk-shell .card {
-        background: #fff; border: 1px solid #EDE8DC; border-radius: 20px;
-        padding: 32px 28px; max-width: 340px; width: 100%;
+      #wk-shell.dismissing {
+        opacity: 0;
+        transform: translateY(-18px);
+        pointer-events: none;
+      }
+
+      /* ── Ambient grain texture ── */
+      #wk-shell::before {
+        content: '';
+        position: absolute; inset: 0; z-index: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+      }
+
+      /* ── Soft radial glow behind the W ── */
+      #wk-glow {
+        position: absolute;
+        width: 340px; height: 340px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(200,118,42,0.09) 0%, transparent 70%);
+        animation: wk-glow-pulse 3s ease-in-out infinite;
+        z-index: 0;
+      }
+      @keyframes wk-glow-pulse {
+        0%,100% { transform: scale(1);   opacity: 1; }
+        50%      { transform: scale(1.1); opacity: 0.7; }
+      }
+
+      /* ── Content stack ── */
+      #wk-content {
+        position: relative; z-index: 1;
+        display: flex; flex-direction: column;
+        align-items: center;
+      }
+
+      /* ── W lettermark ── */
+      #wk-w-wrap {
+        margin-bottom: 28px;
+        animation: wk-breathe 3s ease-in-out infinite;
+        filter: drop-shadow(0 6px 18px rgba(200,118,42,0.18));
+      }
+      @keyframes wk-breathe {
+        0%,100% { transform: scale(1);    opacity: 1; }
+        50%      { transform: scale(1.04); opacity: 0.9; }
+      }
+
+      /* ── Brand name ── */
+      #wk-brand {
+        font-family: 'Courier New', 'Courier', monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 7px;
+        color: #3D2B1A;
+        text-transform: uppercase;
+        margin-bottom: 28px;
+        opacity: 0;
+        animation: wk-fadeup 0.7s ease 0.35s forwards;
+      }
+
+      /* ── Trail line ── */
+      #wk-trail {
+        width: 56px; height: 1px;
+        background: linear-gradient(90deg, transparent, #C8762A 30%, #C8762A 70%, transparent);
+        margin-bottom: 28px;
+        opacity: 0;
+        transform: scaleX(0);
+        animation: wk-trail-in 0.9s cubic-bezier(0.4,0,0.2,1) 0.6s forwards;
+      }
+      @keyframes wk-trail-in {
+        to { opacity: 1; transform: scaleX(1); }
+      }
+
+      /* ── Cycling phrase ── */
+      #wk-msg {
+        font-size: 13px;
+        color: #9B8E7E;
+        font-style: italic;
+        letter-spacing: 0.3px;
+        opacity: 0;
+        min-height: 20px;
         text-align: center;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        animation: wk-fadeup 0.6s ease 0.85s forwards;
+        transition: opacity 0.4s ease;
       }
-      #wk-shell .spinner {
-        width: 28px; height: 28px; margin: 0 auto 20px;
-        border: 3px solid rgba(200,118,42,0.2);
-        border-top-color: #C8762A; border-radius: 50%;
-        animation: wk-spin 0.8s linear infinite;
+      #wk-msg.fading { opacity: 0 !important; }
+
+      /* ── Three amber dots (replaces spinner) ── */
+      #wk-dots {
+        display: flex; gap: 6px; margin-top: 36px;
+        opacity: 0;
+        animation: wk-fadeup 0.6s ease 1.1s forwards;
       }
-      @keyframes wk-spin { to { transform: rotate(360deg); } }
-      #wk-shell .icon {
-        display: none; font-size: 28px; margin-bottom: 16px;
+      .wk-dot {
+        width: 5px; height: 5px; border-radius: 50%;
+        background: #C8762A; opacity: 0.25;
       }
-      #wk-shell h1 {
-        font-size: 18px; font-weight: 600; color: #1A1A18;
-        margin: 0 0 8px; letter-spacing: -0.3px;
+      .wk-dot:nth-child(1) { animation: wk-dot-pulse 1.4s ease-in-out 0s infinite; }
+      .wk-dot:nth-child(2) { animation: wk-dot-pulse 1.4s ease-in-out 0.22s infinite; }
+      .wk-dot:nth-child(3) { animation: wk-dot-pulse 1.4s ease-in-out 0.44s infinite; }
+      @keyframes wk-dot-pulse {
+        0%,100% { opacity: 0.2; transform: translateY(0); }
+        50%      { opacity: 1;   transform: translateY(-4px); }
       }
-      #wk-shell p {
-        font-size: 14px; color: #888; line-height: 1.5; margin: 0 0 24px;
+
+      /* ── Error state ── */
+      #wk-error {
+        display: none;
+        margin-top: 32px; text-align: center;
+        opacity: 0;
+        animation: wk-fadeup 0.5s ease forwards;
       }
-      #wk-shell button {
-        display: none; background: #C8762A; color: #fff; border: none;
-        padding: 13px 28px; border-radius: 24px;
-        font-size: 14px; font-weight: 700; cursor: pointer;
+      #wk-error.visible { display: block; }
+      #wk-error p {
+        font-size: 13px; color: #9B8E7E; line-height: 1.6;
+        max-width: 260px; margin: 0 auto 20px;
       }
-      #wk-shell button:hover { background: #b56a25; }
+      #wk-error button {
+        background: #C8762A; color: #fff; border: none;
+        padding: 12px 28px; border-radius: 24px;
+        font-size: 13px; font-weight: 700;
+        cursor: pointer; letter-spacing: 0.5px;
+        transition: background 0.2s;
+      }
+      #wk-error button:hover { background: #b56a25; }
+
+      @keyframes wk-fadeup {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      /* ── Bottom wordmark ── */
+      #wk-footer {
+        position: absolute; bottom: 32px;
+        font-size: 10px; color: #C4B8A8; letter-spacing: 2px;
+        font-family: 'Courier New', monospace;
+        opacity: 0;
+        animation: wk-fadeup 0.5s ease 1.4s forwards;
+      }
     </style>
 
     <script>
-      // Called by React once the app tree has successfully rendered
+      /* ─── Dismiss shell ─────────────────────────────────────── */
       window.__wkMounted = function () {
         var el = document.getElementById('wk-shell');
-        if (el) {
-          el.style.transition = 'opacity 0.3s';
-          el.style.opacity = '0';
-          setTimeout(function () { el.remove(); }, 350);
-        }
+        if (!el || el.dataset.dismissed) return;
+        el.dataset.dismissed = '1';
+        el.classList.add('dismissing');
+        setTimeout(function () { el.remove(); }, 600);
       };
 
+      /* ─── Error state ───────────────────────────────────────── */
       function __wkCrash(detail) {
         var shell = document.getElementById('wk-shell');
-        if (!shell) return;
-        shell.querySelector('.spinner').style.display = 'none';
-        shell.querySelector('.icon').style.display = 'block';
-        shell.querySelector('h1').textContent = 'Wanderkind needs a moment';
-        shell.querySelector('p').textContent = detail || 'Something went wrong. Your data is safe.';
-        shell.querySelector('button').style.display = 'inline-block';
+        if (!shell || shell.dataset.dismissed) return;
+        var dots  = document.getElementById('wk-dots');
+        var msg   = document.getElementById('wk-msg');
+        var err   = document.getElementById('wk-error');
+        if (dots) dots.style.display = 'none';
+        if (msg)  msg.style.display  = 'none';
+        if (err) {
+          err.querySelector('p').textContent =
+            detail || 'Something went wrong. Your data is safe.';
+          err.classList.add('visible');
+        }
       }
 
-      // Catch script load / syntax errors
-      window.addEventListener('error', function (e) {
-        __wkCrash(null);
-      });
+      window.addEventListener('error', function () { __wkCrash(null); });
+      window.addEventListener('unhandledrejection', function () { __wkCrash(null); });
 
-      // Catch unhandled promise rejections
-      window.addEventListener('unhandledrejection', function (e) {
-        __wkCrash(null);
-      });
-
-      // ──────────────────────────────────────────────────────────────────
-      // SHELL DISMISSAL — DOM-driven, not React-driven
-      //
-      // The previous version waited for React to call window.__wkMounted()
-      // from a useEffect in app/_layout.tsx. If anything in the React render
-      // path stalled (slow Supabase init, Suspense, etc.) the useEffect
-      // never ran, the shell never dismissed, and the user saw a false crash.
-      //
-      // Now: a MutationObserver watches #root. The instant React paints any
-      // child into it, we dismiss the shell — regardless of useEffect timing,
-      // regardless of whether app/_layout.tsx ever calls __wkMounted.
-      // ──────────────────────────────────────────────────────────────────
+      /* ─── DOM-driven dismissal (MutationObserver) ────────────── */
       (function () {
         function fireCrashUi() {
           if (document.getElementById('wk-shell')) {
             __wkCrash('The app took too long to start. Try reloading.');
           }
         }
-
         function watchRootForMount() {
           var root = document.getElementById('root');
-          if (!root) return false;
-          // If React already painted before we got here, dismiss now
-          if (root.childElementCount > 0) {
-            window.__wkMounted();
-            return true;
-          }
-          // Otherwise observe and dismiss on first child added
+          if (!root) return;
+          if (root.childElementCount > 0) { window.__wkMounted(); return; }
           try {
             var obs = new MutationObserver(function () {
               if (root.childElementCount > 0) {
@@ -126,35 +220,53 @@
               }
             });
             obs.observe(root, { childList: true });
-          } catch (e) { /* MutationObserver missing — fall back to timeout only */ }
-          return true;
+          } catch (e) {}
         }
-
         function startCountdown() {
           watchRootForMount();
           var scriptEl = document.querySelector('script[src*="_expo/static/js"]');
-          if (!scriptEl) {
-            // No bundle in the DOM at all → structural failure, fail fast
-            setTimeout(fireCrashUi, 8000);
-            return;
-          }
-          // Bundle present: give it 20s of post-load grace to mount React
+          if (!scriptEl) { setTimeout(fireCrashUi, 8000); return; }
           var started = false;
           function start() {
-            if (started) return;
-            started = true;
+            if (started) return; started = true;
             setTimeout(fireCrashUi, 20000);
           }
           scriptEl.addEventListener('load', start);
-          // Belt-and-braces: if 'load' never fires, start anyway after 30s
           setTimeout(start, 30000);
         }
-
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', startCountdown);
         } else {
           startCountdown();
         }
+      })();
+
+      /* ─── Cycling phrases ────────────────────────────────────── */
+      (function () {
+        var phrases = [
+          'Following the path…',
+          'The way opens…',
+          'Finding your footing…',
+          'The road awaits…',
+          'Every step counts…',
+          'Walking together…',
+        ];
+        var idx = 0;
+        function cycle() {
+          var el = document.getElementById('wk-msg');
+          if (!el) return;
+          el.classList.add('fading');
+          setTimeout(function () {
+            idx = (idx + 1) % phrases.length;
+            el.textContent = phrases[idx];
+            el.classList.remove('fading');
+          }, 400);
+        }
+        setTimeout(function () {
+          var el = document.getElementById('wk-msg');
+          if (el) el.textContent = phrases[0];
+          setInterval(cycle, 2600);
+        }, 1200);
       })();
     </script>
   </head>
@@ -162,18 +274,40 @@
   <body>
     <noscript>You need to enable JavaScript to run Wanderkind.</noscript>
 
-    <!-- Loading / error fallback — visible before React, removed on mount -->
+    <!-- ══ GATE SHELL ══════════════════════════════════════════ -->
     <div id="wk-shell">
-      <div class="card">
-        <div class="spinner"></div>
-        <div class="icon">🌿</div>
-        <h1>Wanderkind</h1>
-        <p>Loading your journey…</p>
-        <button onclick="window.location.href='/'">Reload App</button>
-      </div>
-    </div>
+      <div id="wk-glow"></div>
 
-    <!-- Expo app root -->
+      <div id="wk-content">
+        <!-- W lettermark SVG -->
+        <div id="wk-w-wrap">
+          <svg width="80" height="66" viewBox="0 0 80 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 6 L18 60 L28 32 L40 56 L52 32 L62 60 L76 6" stroke="#C8762A" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div id="wk-brand">Wanderkind</div>
+
+        <div id="wk-trail"></div>
+
+        <div id="wk-msg"></div>
+
+        <div id="wk-dots">
+          <div class="wk-dot"></div>
+          <div class="wk-dot"></div>
+          <div class="wk-dot"></div>
+        </div>
+
+        <div id="wk-error">
+          <p>The app took too long to start.</p>
+          <button onclick="window.location.reload()">Reload</button>
+        </div>
+      </div>
+
+      <div id="wk-footer">WANDER &middot; CONNECT &middot; REST</div>
+    </div>
+    <!-- ═══════════════════════════════════════════════════════ -->
+
     <div id="root"></div>
   </body>
 </html>
